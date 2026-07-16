@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Afrisinc | Technology & Media from Africa to the World</title>
+    <meta
+      name="description"
+      content="Afrisinc is a multi-department parent company pioneering innovation across technology, media, digital products, and global services."
+    />
+    <meta name="author" content="Afrisinc" />
+    <meta
+      name="keywords"
+      content="African tech, media company, technology, SaaS, innovation, digital products"
+    />
+
+    <meta
+      property="og:title"
+      content="Afrisinc | Technology & Media from Africa to the World"
+    />
+    <meta
+      property="og:description"
+      content="Building the future of technology and media from Africa to the world."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://afrisinc.com" />
+    <meta property="og:image" content="https://afrisinc.com/afrisic-logo.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@Afrisinc" />
+    <meta
+      name="twitter:image"
+      content="https://afrisinc.com/afrisic-logo.png"
+    />
+
+    <!-- Facebook Domain Verification -->
+    <meta
+      name="facebook-domain-verification"
+      content="awop6rjuatg8d4xs8msdh67sn4c9l1"
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/afrisic-logo.png" />
+
+    <!-- Prevent flash of wrong theme (FOUT) -->
+    <script>
+      (function () {
+        var stored = localStorage.getItem("theme");
+        var system = window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+        var theme = stored || system;
+        if (theme === "dark") document.documentElement.classList.add("dark");
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

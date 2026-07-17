@@ -38,7 +38,7 @@ const createApiClient = () => {
       }
 
       throw error;
-    }
+    },
   );
 
   return instance;

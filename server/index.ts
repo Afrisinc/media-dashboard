@@ -2,7 +2,6 @@ import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import fs from "node:fs";
-import { seoMiddleware } from "./seo-middleware.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === "production";
@@ -41,9 +40,6 @@ async function createServer() {
     // Production: serve static files
     app.use(express.static(distPath, { index: false }));
   }
-
-  // SSR middleware for social crawlers on article pages
-  app.use(seoMiddleware);
 
   // Fallback: serve index.html for SPA routing
   app.get("*", async (req, res) => {

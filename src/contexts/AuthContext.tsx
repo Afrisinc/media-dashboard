@@ -1,4 +1,16 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  loginService,
+  registerService,
+  resetPasswordService,
+  AuthResponse,
+} from "@/services/auth";
 
 interface CustomUser {
   id: string;
@@ -19,6 +31,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  handleSSO: (token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,16 +52,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored custom user and token
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
     const tokenExpiresAt = localStorage.getItem("token_expires_at");
 
     if (storedUser && storedToken) {
       try {
-        // Check if token has expired
-        if (tokenExpiresAt && Date.now() > parseInt(tokenExpiresAt)) {
-          // Token expired, clear storage
+        if (tokenExpiresAt && Date.now() > Number.parseInt(tokenExpiresAt)) {
           localStorage.removeItem("user");
           localStorage.removeItem("token");
           localStorage.removeItem("token_type");
@@ -58,33 +68,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setToken(storedToken);
         }
       } catch {
-        // Failed to parse stored user data
+        setUser(null);
+        setToken(null);
       }
     }
 
-    // Mark as not loading after checking localStorage
     setLoading(false);
   }, []);
 
+  const handleSSO = (ssoToken: string) => {
+    localStorage.setItem("token", ssoToken);
+    localStorage.setItem("token_type", "Bearer");
+    setToken(ssoToken);
+
+    const now = new Date();
+    const expiresAt = now.getTime() + 7 * 24 * 60 * 60 * 1000;
+    localStorage.setItem("token_expires_at", String(expiresAt));
+  };
+
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
-      const { getRuntimeConfig } = await import("@/lib/config");
-      const config = getRuntimeConfig();
-      const response = await fetch(`${config.serverUrl}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password, fullName }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        return {
-          error: new Error(errorData.resp_msg || "Registration failed"),
-        };
-      }
-
+      await registerService({ email, password, fullName });
       return { error: null };
     } catch (error) {
       return {
@@ -96,51 +100,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Call custom endpoint instead of Supabase
-      const { getRuntimeConfig } = await import("@/lib/config");
-      const config = getRuntimeConfig();
-      const response = await fetch(`${config.serverUrl}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = (await loginService(email, password)) as AuthResponse;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return { error: new Error(errorData.resp_msg || "Login failed") };
-      }
-
-      const data = await response.json();
-
-      if (data.success && data.data?.token && data.data?.user_id) {
-        // Create user object from response data
+      if (response.success && response.data?.token && response.data?.user_id) {
         const customUser: CustomUser = {
-          id: data.data.user_id,
-          email: data.data.email,
-          accountIds: data.data.account_ids || [],
+          id: response.data.user_id,
+          email: response.data.email,
+          accountIds: response.data.account_ids || [],
         };
         setUser(customUser);
-        setToken(data.data.token);
+        setToken(response.data.token);
         localStorage.setItem("user", JSON.stringify(customUser));
-        localStorage.setItem("token", data.data.token);
+        localStorage.setItem("token", response.data.token);
 
-        // Store token metadata
-        if (data.data.token_type) {
-          localStorage.setItem("token_type", data.data.token_type);
+        if (response.data.token_type) {
+          localStorage.setItem("token_type", response.data.token_type);
         }
-        if (data.data.expires_in) {
+        if (response.data.expires_in) {
           localStorage.setItem(
             "token_expires_at",
-            String(Date.now() + data.data.expires_in * 1000),
+            String(Date.now() + response.data.expires_in * 1000),
           );
         }
 
         return { error: null };
       }
 
-      return { error: new Error(data.resp_msg || "Login failed") };
+      return { error: new Error(response.resp_msg || "Login failed") };
     } catch (error) {
       return {
         error: error instanceof Error ? error : new Error("Login failed"),
@@ -159,23 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const resetPassword = async (email: string) => {
     try {
-      const { getRuntimeConfig } = await import("@/lib/config");
-      const config = getRuntimeConfig();
-      const response = await fetch(`${config.serverUrl}/auth/reset-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        return {
-          error: new Error(errorData.resp_msg || "Password reset failed"),
-        };
-      }
-
+      await resetPasswordService(email);
       return { error: null };
     } catch (error) {
       return {
@@ -185,20 +155,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session: null,
-        token,
-        loading,
-        signUp,
-        signIn,
-        signOut,
-        resetPassword,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      session: null,
+      token,
+      loading,
+      signUp,
+      signIn,
+      signOut,
+      resetPassword,
+      handleSSO,
+    }),
+    [user, token, loading, signUp, signIn, signOut, resetPassword, handleSSO],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

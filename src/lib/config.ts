@@ -1,5 +1,7 @@
 export interface RuntimeConfig {
   serverUrl: string;
+  apiUrl: string;
+  authUiUrl: string;
 }
 
 let config: RuntimeConfig | null = null;
@@ -23,18 +25,20 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
 
     const runtimeConfig = await response.json();
 
-    // Priority: VITE_API_URL env var (set at build time) > config.json > empty string
     config = {
       serverUrl: import.meta.env.VITE_API_URL || runtimeConfig.serverUrl || "",
+      apiUrl: import.meta.env.VITE_API_URL || runtimeConfig.apiUrl || "",
+      authUiUrl:
+        import.meta.env.VITE_AUTH_UI_URL || runtimeConfig.authUiUrl || "",
     };
-
-    // Configuration loaded
 
     configLoaded = true;
     return config;
   } catch {
     config = {
       serverUrl: import.meta.env.VITE_API_URL || "",
+      apiUrl: import.meta.env.VITE_API_URL || "",
+      authUiUrl: import.meta.env.VITE_AUTH_UI_URL || "",
     };
     configLoaded = true;
     return config;

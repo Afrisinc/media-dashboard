@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { getRuntimeConfig } from "@/lib/config";
+import { getToken } from "@/lib/authUtils";
 
 export interface AIPost {
   id: string;
@@ -26,7 +27,7 @@ export const useAIPosts = (limit: number = 10) => {
     queryKey: ["ai-posts", limit],
     queryFn: async () => {
       const config = getRuntimeConfig();
-      const token = localStorage.getItem("token");
+      const token = getToken();
 
       if (!token) throw new Error("Not authenticated");
 
@@ -46,13 +47,12 @@ export const useAIPosts = (limit: number = 10) => {
 
       const data = await response.json();
 
-      // Map the API response to AIPost format, ensuring topic_name is set
       return (data.data?.data || []).map((post: AIPost) => ({
         ...post,
         topic_name: post.topic_name || post.topic || "Untitled",
       })) as AIPost[];
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -68,14 +68,11 @@ export const useGenerateAIPost = () => {
       platform: "facebook" | "instagram" | "both";
       formMode?: "test" | "production";
     }) => {
-      // Get token from localStorage (set during login)
-      const token = localStorage.getItem("token");
+      const token = getToken();
       if (!token) throw new Error("Not authenticated");
 
-      const { getRuntimeConfig } = await import("@/lib/config");
       const config = getRuntimeConfig();
 
-      // Create an AbortController with 1 minute (60000ms) timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000);
 

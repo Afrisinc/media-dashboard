@@ -1,3 +1,5 @@
 {
-  "serverUrl": ""
+  "serverUrl": "",
+  "apiUrl": "",
+  "authUiUrl": ""
 }

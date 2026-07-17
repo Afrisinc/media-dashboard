@@ -12,6 +12,7 @@ import {
 import { Newspaper, Settings, Globe, Sparkles, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { getRuntimeConfig } from "@/lib/config";
 
 const mainItems = [
   { title: "AI Content", url: "/dashboard/ai-content", icon: Sparkles },
@@ -30,8 +31,8 @@ export const DashboardSidebar = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    // Redirect to landing page
-    window.location.href = "/";
+    const config = getRuntimeConfig();
+    window.location.href = config.authUiUrl || "/";
   };
 
   return (

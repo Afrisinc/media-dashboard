@@ -18,6 +18,7 @@ import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardMedia from "./pages/dashboard/Media";
 import DashboardSettings from "./pages/dashboard/Settings";
 import AIContent from "./pages/dashboard/AIContent";
+import SSOCallback from "./pages/SSOCallback";
 
 import NotFound from "./pages/NotFound";
 import TestComponent from "./pages/TestComponent";
@@ -83,6 +84,8 @@ const App = () => {
                 <ScrollToTop />
                 <AuthProvider>
                   <Routes>
+                    <Route path="/sso/callback" element={<SSOCallback />} />
+
                     {/* Dashboard Routes - at root level */}
                     <Route path="/" element={<DashboardLayout />}>
                       <Route index element={<AIContent />} />

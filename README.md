@@ -1,1 +1,0 @@
-Author: @elissadesign@afrisinc.com

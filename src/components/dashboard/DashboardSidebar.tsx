@@ -15,13 +15,11 @@ import { Button } from "@/components/ui/button";
 import { getRuntimeConfig } from "@/lib/config";
 
 const mainItems = [
-  { title: "AI Content", url: "/dashboard/ai-content", icon: Sparkles },
-  { title: "Media", url: "/dashboard/media", icon: Newspaper },
+  { title: "AI Content", url: "/ai-content", icon: Sparkles },
+  { title: "Media", url: "/media", icon: Newspaper },
 ];
 
-const bottomItems = [
-  { title: "Settings", url: "/dashboard/settings", icon: Settings },
-];
+const bottomItems = [{ title: "Settings", url: "/settings", icon: Settings }];
 
 export const DashboardSidebar = () => {
   const location = useLocation();

@@ -11,8 +11,13 @@
     "build:server": "tsc -p tsconfig.server.json",
     "start": "NODE_ENV=production node dist-server/index.js",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "preview": "vite preview",
-    "format": "prettier --write ."
+    "prepare": "husky install",
+    "checks": "npm run format && npm run lint:fix && npm run type-check && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

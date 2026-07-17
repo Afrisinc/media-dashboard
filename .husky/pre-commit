@@ -1,0 +1,39 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+npm run format:check > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "❌ Prettier formatting issues found. Running prettier --write..."
+  npm run format
+  git add -A
+fi
+
+echo "✓ Formatting check passed"
+
+npm run lint:fix > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "❌ ESLint errors found and fixed"
+  git add -A
+  exit 1
+fi
+
+echo "✓ Linting passed"
+
+npm run type-check
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript type errors found"
+  exit 1
+fi
+
+echo "✓ Type check passed"
+
+npm run build > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "❌ Build failed"
+  exit 1
+fi
+
+echo "✓ Build successful"
+echo "✅ All checks passed!"

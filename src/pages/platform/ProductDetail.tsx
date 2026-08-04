@@ -14,6 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { IconBox } from "@/components/ui/icon-box";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { LabeledProgress } from "@/components/ui/labeled-progress";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   ArrowLeft,
   Layers,
@@ -137,9 +142,7 @@ export default function ProductDetail() {
       ) : (
         <div className="space-y-4">
           <div className="flex items-start gap-4">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <Layers className="w-6 h-6 text-primary" />
-            </div>
+            <IconBox icon={Layers} tone="primary" size="lg" />
             <div className="flex-1">
               <h1 className="heading-section">
                 {productDetails?.name || enrollment?.productName}
@@ -160,67 +163,34 @@ export default function ProductDetail() {
           ))}
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-up">
-          <Card className="border-border hover:shadow-card-hover transition-all duration-300">
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                  Total Enrollments
-                </p>
-                <div className="text-3xl font-bold">
-                  {enrollment?.totalEnrollments || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Accounts using this product
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border hover:shadow-card-hover transition-all duration-300">
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                  Active
-                </p>
-                <div className="text-3xl font-bold text-emerald-600">
-                  {enrollment?.active || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Currently active
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border hover:shadow-card-hover transition-all duration-300">
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                  Suspended
-                </p>
-                <div className="text-3xl font-bold text-red-600">
-                  {enrollment?.suspended || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Suspended accounts
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border hover:shadow-card-hover transition-all duration-300">
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                  Revenue
-                </p>
-                <div className="text-3xl font-bold">$12.4K</div>
-                <p className="text-xs text-emerald-600">↑ 12% this month</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatGrid columns={4} className="animate-fade-up">
+          <StatCard
+            className="border-border hover:shadow-card-hover transition-all duration-300"
+            label="Total Enrollments"
+            value={enrollment?.totalEnrollments || 0}
+            subtitle="Accounts using this product"
+          />
+          <StatCard
+            className="border-border hover:shadow-card-hover transition-all duration-300"
+            valueClassName="text-emerald"
+            label="Active"
+            value={enrollment?.active || 0}
+            subtitle="Currently active"
+          />
+          <StatCard
+            className="border-border hover:shadow-card-hover transition-all duration-300"
+            valueClassName="text-destructive"
+            label="Suspended"
+            value={enrollment?.suspended || 0}
+            subtitle="Suspended accounts"
+          />
+          <StatCard
+            className="border-border hover:shadow-card-hover transition-all duration-300"
+            label="Revenue"
+            value="$12.4K"
+            delta={{ value: "12% this month", direction: "up" }}
+          />
+        </StatGrid>
       )}
 
       {/* Tabs */}
@@ -260,58 +230,41 @@ export default function ProductDetail() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">Free Plans</span>
-                      <span className="text-sm font-bold">
-                        {enrollment?.plans.FREE || 0}
-                      </span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full"
-                        style={{
-                          width: `${enrollment?.totalEnrollments ? (enrollment.plans.FREE / enrollment.totalEnrollments) * 100 : 0}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">Pro Plans</span>
-                      <span className="text-sm font-bold">
-                        {enrollment?.plans.PRO || 0}
-                      </span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-blue-500 h-2 rounded-full"
-                        style={{
-                          width: `${enrollment?.totalEnrollments ? (enrollment.plans.PRO / enrollment.totalEnrollments) * 100 : 0}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium">
-                        Enterprise Plans
-                      </span>
-                      <span className="text-sm font-bold">
-                        {enrollment?.plans.ENTERPRISE || 0}
-                      </span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-purple-500 h-2 rounded-full"
-                        style={{
-                          width: `${enrollment?.totalEnrollments ? (enrollment.plans.ENTERPRISE / enrollment.totalEnrollments) * 100 : 0}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
+                  <LabeledProgress
+                    label="Free Plans"
+                    valueLabel={String(enrollment?.plans.FREE || 0)}
+                    value={
+                      enrollment?.totalEnrollments
+                        ? (enrollment.plans.FREE /
+                            enrollment.totalEnrollments) *
+                          100
+                        : 0
+                    }
+                    indicatorClassName="bg-primary"
+                  />
+                  <LabeledProgress
+                    label="Pro Plans"
+                    valueLabel={String(enrollment?.plans.PRO || 0)}
+                    value={
+                      enrollment?.totalEnrollments
+                        ? (enrollment.plans.PRO / enrollment.totalEnrollments) *
+                          100
+                        : 0
+                    }
+                    indicatorClassName="bg-forest"
+                  />
+                  <LabeledProgress
+                    label="Enterprise Plans"
+                    valueLabel={String(enrollment?.plans.ENTERPRISE || 0)}
+                    value={
+                      enrollment?.totalEnrollments
+                        ? (enrollment.plans.ENTERPRISE /
+                            enrollment.totalEnrollments) *
+                          100
+                        : 0
+                    }
+                    indicatorClassName="bg-gold"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -374,9 +327,7 @@ export default function ProductDetail() {
                   ))}
                 </div>
               ) : !accounts || accounts.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No enrolled accounts
-                </p>
+                <EmptyState variant="compact" title="No enrolled accounts" />
               ) : (
                 <div className="rounded-lg border border-border/50 overflow-hidden">
                   <Table>
@@ -407,15 +358,7 @@ export default function ProductDetail() {
                             {account.ownerName || account.owner?.email}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={
-                                account.status === "ACTIVE"
-                                  ? "default"
-                                  : "destructive"
-                              }
-                            >
-                              {account.status}
-                            </Badge>
+                            <StatusBadge status={account.status} />
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {new Date(account.createdAt).toLocaleDateString()}

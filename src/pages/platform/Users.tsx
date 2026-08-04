@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Eye, Ban, CheckCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,13 +60,6 @@ export default function PlatformUsers() {
   const suspendMutation = useSuspendUser();
   const reactivateMutation = useReactivateUser();
 
-  const statusVariant = (s: string) =>
-    s === "ACTIVE"
-      ? "default"
-      : s === "SUSPENDED"
-        ? "destructive"
-        : "secondary";
-
   const handleAction = async () => {
     if (!confirmAction) return;
     try {
@@ -112,7 +106,7 @@ export default function PlatformUsers() {
         { label: "Suspended", value: "SUSPENDED" },
         { label: "Pending", value: "PENDING" },
       ],
-      render: (value) => <Badge variant={statusVariant(value)}>{value}</Badge>,
+      render: (value) => <StatusBadge status={value} />,
     },
     {
       key: "createdAt",
@@ -173,10 +167,10 @@ export default function PlatformUsers() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Users Management</h1>
-        <p className="text-muted-foreground">View and manage platform users</p>
-      </div>
+      <PageHeader
+        title="Users Management"
+        subtitle="View and manage platform users"
+      />
 
       <DataTable
         columns={columns}

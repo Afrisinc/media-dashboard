@@ -2,7 +2,9 @@ import { useState } from "react";
 import { usePlatformOverview, useGrowthData } from "@/hooks/usePlatform";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Users,
   Building2,
@@ -44,73 +46,68 @@ export default function PlatformOverview() {
       label: "Total Users",
       value: data?.totalUsers,
       icon: Users,
-      color: "text-primary",
+      iconTone: "primary" as const,
     },
     {
       label: "Total Accounts",
       value: data?.totalAccounts,
       icon: CreditCard,
-      color: "text-secondary",
+      iconTone: "secondary" as const,
     },
     {
       label: "Organizations",
       value: data?.totalOrganizations,
       icon: Building2,
-      color: "text-accent",
+      iconTone: "primary" as const,
     },
     {
       label: "Total Enrollments",
       value: data?.totalEnrollments,
       icon: Layers,
-      color: "text-primary",
+      iconTone: "primary" as const,
     },
     {
       label: "Active Users",
       value: data?.activeUsers,
       icon: TrendingUp,
-      color: "text-secondary",
+      iconTone: "secondary" as const,
     },
     {
       label: "Suspended",
       value: data?.suspendedUsers,
       icon: AlertTriangle,
-      color: "text-destructive",
+      iconTone: "destructive" as const,
     },
   ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Platform Overview</h1>
-        <p className="text-muted-foreground">
-          Global analytics for the Afrisinc Auth platform
-        </p>
-      </div>
+      <PageHeader
+        title="Platform Overview"
+        subtitle="Global analytics for the Afrisinc Auth platform"
+      />
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-4">
-              {isLoading ? (
+      <StatGrid columns={6}>
+        {stats.map((s) =>
+          isLoading ? (
+            <Card key={s.label}>
+              <CardContent className="p-4">
                 <Skeleton className="h-16 w-full" />
-              ) : (
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <s.icon className={`h-4 w-4 ${s.color}`} />
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {s.label}
-                    </span>
-                  </div>
-                  <span className="text-2xl font-bold">
-                    {s.value?.toLocaleString()}
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <StatCard
+              key={s.label}
+              size="sm"
+              label={s.label}
+              value={s.value?.toLocaleString() ?? "—"}
+              icon={s.icon}
+              iconTone={s.iconTone}
+            />
+          ),
+        )}
+      </StatGrid>
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
@@ -200,29 +197,15 @@ export default function PlatformOverview() {
           <CardTitle className="text-base font-semibold">
             Growth Metrics
           </CardTitle>
-          <div className="flex gap-2">
-            <Button
-              variant={growthRange === "7d" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGrowthRange("7d")}
-            >
-              7 Days
-            </Button>
-            <Button
-              variant={growthRange === "30d" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGrowthRange("30d")}
-            >
-              30 Days
-            </Button>
-            <Button
-              variant={growthRange === "90d" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGrowthRange("90d")}
-            >
-              90 Days
-            </Button>
-          </div>
+          <SegmentedControl
+            value={growthRange}
+            onChange={setGrowthRange}
+            options={[
+              { label: "7 Days", value: "7d" },
+              { label: "30 Days", value: "30d" },
+              { label: "90 Days", value: "90d" },
+            ]}
+          />
         </CardHeader>
         <CardContent>
           {growthLoading ? (

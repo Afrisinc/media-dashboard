@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,10 +6,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { HelmetProvider } from "react-helmet-async";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { CookieBanner } from "@/components/CookieBanner";
+import { AfrisincLoader } from "@/components/AfrisincLoader";
 
 // Public Pages removed - dashboard only
 
@@ -17,6 +18,9 @@ import { CookieBanner } from "@/components/CookieBanner";
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardMedia from "./pages/dashboard/Media";
 import DashboardSettings from "./pages/dashboard/Settings";
+import DashboardAutomation from "./pages/dashboard/Automation";
+import DashboardAgents from "./pages/dashboard/Agents";
+import DashboardAnalytics from "./pages/dashboard/Analytics";
 import AIContent from "./pages/dashboard/AIContent";
 import SSOCallback from "./pages/SSOCallback";
 
@@ -66,6 +70,51 @@ function injectGAScript() {
   document.head.appendChild(script);
 }
 
+const AppContent = () => {
+  const { loading: authLoading } = useAuth();
+  const [showContent, setShowContent] = useState(false);
+
+  useEffect(() => {
+    if (authLoading) {
+      setShowContent(false);
+    } else {
+      // Minimum delay of 600ms for loader animation
+      const timer = setTimeout(() => setShowContent(true), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading]);
+
+  if (!showContent) {
+    return <AfrisincLoader message="Initializing dashboard..." />;
+  }
+
+  return (
+    <>
+      <Routes>
+        <Route path="/sso/callback" element={<SSOCallback />} />
+
+        {/* Dashboard Routes - at root level */}
+        <Route path="/" element={<DashboardLayout />}>
+          <Route index element={<DashboardMedia />} />
+          <Route path="ai-content" element={<AIContent />} />
+          <Route path="media" element={<DashboardMedia />} />
+          <Route path="automation" element={<DashboardAutomation />} />
+          <Route path="agents" element={<DashboardAgents />} />
+          <Route path="analytics" element={<DashboardAnalytics />} />
+          <Route path="settings" element={<DashboardSettings />} />
+        </Route>
+
+        {/* Test Component Route */}
+        <Route path="/testcomponent" element={<TestComponent />} />
+
+        {/* Catch-all */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <CookieBanner />
+    </>
+  );
+};
+
 const App = () => {
   // Inject GA4 script on component mount
   useEffect(() => {
@@ -83,24 +132,7 @@ const App = () => {
               <AnalyticsProvider>
                 <ScrollToTop />
                 <AuthProvider>
-                  <Routes>
-                    <Route path="/sso/callback" element={<SSOCallback />} />
-
-                    {/* Dashboard Routes - at root level */}
-                    <Route path="/" element={<DashboardLayout />}>
-                      <Route index element={<AIContent />} />
-                      <Route path="ai-content" element={<AIContent />} />
-                      <Route path="media" element={<DashboardMedia />} />
-                      <Route path="settings" element={<DashboardSettings />} />
-                    </Route>
-
-                    {/* Test Component Route */}
-                    <Route path="/testcomponent" element={<TestComponent />} />
-
-                    {/* Catch-all */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  <CookieBanner />
+                  <AppContent />
                 </AuthProvider>
               </AnalyticsProvider>
             </BrowserRouter>

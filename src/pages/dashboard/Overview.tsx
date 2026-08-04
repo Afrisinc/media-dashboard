@@ -5,33 +5,36 @@ import {
   Package,
   DollarSign,
   ArrowUpRight,
-  ArrowDownRight,
   Activity,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { IconBox } from "@/components/ui/icon-box";
 
 const stats = [
   {
-    title: "Total Revenue",
+    label: "Total Revenue",
     value: "$124,500",
-    change: "+12.5%",
-    up: true,
+    delta: { value: "+12.5%", direction: "up" as const },
     icon: DollarSign,
   },
   {
-    title: "Active Users",
+    label: "Active Users",
     value: "2,450",
-    change: "+8.2%",
-    up: true,
+    delta: { value: "+8.2%", direction: "up" as const },
     icon: Users,
   },
-  { title: "Products", value: "48", change: "+3", up: true, icon: Package },
   {
-    title: "Growth Rate",
+    label: "Products",
+    value: "48",
+    delta: { value: "+3", direction: "up" as const },
+    icon: Package,
+  },
+  {
+    label: "Growth Rate",
     value: "24.5%",
-    change: "-2.1%",
-    up: false,
+    delta: { value: "-2.1%", direction: "down" as const },
     icon: TrendingUp,
   },
 ];
@@ -71,41 +74,19 @@ const DashboardOverview = () => (
     </div>
 
     {/* Stat Cards */}
-    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <StatGrid columns={4} className="sm:gap-6">
       {stats.map((stat, idx) => (
-        <Card
-          key={stat.title}
+        <StatCard
+          key={stat.label}
+          label={stat.label}
+          value={stat.value}
+          icon={stat.icon}
+          delta={stat.delta}
           className="border-border hover:border-primary/25 hover:shadow-card-hover transition-all duration-300 animate-fade-up"
           style={{ animationDelay: `${idx * 100}ms` }}
-        >
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-start justify-between">
-                <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                  {stat.title}
-                </span>
-                <div className="p-2 rounded-lg bg-muted">
-                  <stat.icon className="w-4 h-4 text-muted-foreground" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-3xl font-bold">{stat.value}</div>
-                <div
-                  className={`text-xs font-semibold flex items-center gap-1 ${stat.up ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
-                >
-                  {stat.up ? (
-                    <ArrowUpRight className="w-3 h-3" />
-                  ) : (
-                    <ArrowDownRight className="w-3 h-3" />
-                  )}
-                  {stat.change}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        />
       ))}
-    </div>
+    </StatGrid>
 
     {/* Activity & Actions */}
     <div className="grid lg:grid-cols-3 gap-6">

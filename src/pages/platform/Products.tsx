@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
+import { IconBox } from "@/components/ui/icon-box";
 import { Layers, ChevronRight, Plus } from "lucide-react";
 import { CreateProductDialog } from "@/components/platform/CreateProductDialog";
 import type { ProductEnrollment } from "@/types/platform";
@@ -16,18 +18,16 @@ export default function PlatformProducts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="heading-section">Product Enrollments</h1>
-          <p className="text-secondary">
-            View enrollment stats and manage accounts per product
-          </p>
-        </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Product
-        </Button>
-      </div>
+      <PageHeader
+        title="Product Enrollments"
+        subtitle="View enrollment stats and manage accounts per product"
+        action={
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Product
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -47,9 +47,7 @@ export default function PlatformProducts() {
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
-                  <div className="p-2.5 rounded-lg bg-primary/10">
-                    <Layers className="w-5 h-5 text-primary" />
-                  </div>
+                  <IconBox icon={Layers} tone="primary" />
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </div>
               </CardHeader>

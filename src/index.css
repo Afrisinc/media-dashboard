@@ -6,56 +6,116 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 220 20% 10%;
+    --background: 40 26% 98%;
+    --foreground: 222 28% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 222 28% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 222 28% 13%;
 
-    --primary: 200 97% 45%;
+    --primary: 200 85% 36%;
     --primary-foreground: 0 0% 100%;
     --primary-400: 202 81% 56%;
     --primary-300: 201 78% 67%;
     --primary-200: 203 84% 79%;
     --primary-100: 203 87% 89%;
 
-    --secondary: 160 40% 25%;
+    --secondary: 160 40% 30%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 15% 95%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 40 22% 97%;
+    --muted-foreground: 222 10% 41%;
 
-    --accent: 200 97% 45%;
+    --accent: 200 85% 36%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 62% 45%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 15% 90%;
-    --input: 220 15% 90%;
-    --ring: 200 97% 45%;
+    --border: 30 14% 88%;
+    --input: 30 14% 88%;
+    --ring: 200 85% 36%;
 
     --radius: 0.75rem;
 
     /* Custom Afrisinc tokens */
-    --forest: 160 40% 25%;
-    --forest-light: 160 35% 35%;
+    --forest: 160 40% 30%;
+    --forest-light: 160 42% 34%;
     --charcoal: 220 20% 15%;
     --indigo: 240 40% 30%;
     --cream: 40 30% 96%;
 
     /* Terracotta (used by service cards) */
-    --terra: 22 88% 52%;
+    --terra: 20 74% 44%;
     --terra-light: 22 80% 62%;
     --terra-muted: 22 50% 94%;
 
     /* Gold accent */
-    --gold: 38 90% 50%;
+    --gold: 34 78% 38%;
     --gold-light: 40 95% 62%;
     --gold-muted: 38 60% 92%;
+
+    /* Amber (test-mode / warning accent) */
+    --amber: 34 82% 40%;
+
+    /* Emerald (success / live status accent) */
+    --emerald: 152 52% 33%;
+    --emerald-mid: 152 52% 32%;
+    --emerald-light: 152 55% 29%;
+
+    /* Elevation scale — dashboard surfaces, lightest to sunken */
+    --shell: 40 24% 96%;
+    --bar: 40 24% 96%;
+    --card-hi: 40 30% 99%;
+    --card-hi-2: 0 0% 100%;
+    --stage: 40 18% 93%;
+    --stage-2: 40 14% 90%;
+    --sunk: 40 18% 95%;
+    --sunk-2: 40 22% 96.5%;
+    --inset: 40 22% 97%;
+    --inset-2: 40 18% 95%;
+    --inset-3: 40 16% 94%;
+    --track: 30 12% 89%;
+    --track-2: 30 12% 88%;
+    --border-2: 30 14% 86%;
+    --border-3: 30 14% 84%;
+    --border-4: 30 14% 82%;
+    --border-5: 30 14% 80%;
+    --border-6: 30 14% 78%;
+    --line: 30 10% 72%;
+    --line-2: 30 10% 68%;
+    --active: 35 16% 88%;
+    --active-2: 35 16% 90%;
+    --overlay: 222 20% 22%;
+
+    /* Text scale — foreground, lightest to dimmest */
+    --ink-b: 222 24% 16%;
+    --ink-c: 222 22% 18%;
+    --ink-d: 222 20% 21%;
+    --ink-e: 222 18% 24%;
+    --ink-f: 222 16% 28%;
+    --mut-2: 222 14% 27%;
+    --mut-3: 222 13% 31%;
+    --mut-4: 222 12% 34%;
+    --mut-5: 222 11% 37%;
+    --dim-2: 222 10% 43%;
+    --dim-3: 222 10% 45%;
+    --dim-4: 222 10% 47%;
+    --dim-5: 222 9% 49%;
+    --dim-6: 222 9% 51%;
+    --dim-7: 222 8% 57%;
+    --dim-8: 222 8% 63%;
+
+    /* Platform brand colors */
+    --platform-facebook: 217 84% 41%;
+    --platform-instagram: 337 72% 41%;
+    --platform-tiktok: 175 76% 26%;
+    --platform-youtube: 0 66% 41%;
+    --platform-linkedin: 210 70% 36%;
+    --platform-whatsapp: 142 68% 29%;
+    --platform-spotify: 141 72% 28%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(
@@ -89,13 +149,13 @@
   }
 
   .dark {
-    --background: 222 20% 7%;
+    --background: 222 19% 8.2%;
     --foreground: 210 20% 95%;
 
     --card: 222 18% 10%;
     --card-foreground: 210 20% 95%;
 
-    --popover: 222 18% 10%;
+    --popover: 222 18% 12%;
     --popover-foreground: 210 20% 95%;
 
     --primary: 200 90% 50%;
@@ -108,7 +168,7 @@
     --secondary: 160 35% 30%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 222 15% 15%;
+    --muted: 222 15% 13%;
     --muted-foreground: 215 15% 65%;
 
     --accent: 200 90% 50%;
@@ -122,7 +182,7 @@
     --ring: 200 90% 50%;
 
     --forest: 160 35% 30%;
-    --forest-light: 160 30% 45%;
+    --forest-light: 160 30% 55%;
     --charcoal: 220 18% 12%;
     --indigo: 240 35% 45%;
     --cream: 40 20% 15%;
@@ -134,6 +194,66 @@
     --gold: 38 85% 55%;
     --gold-light: 40 90% 65%;
     --gold-muted: 38 40% 18%;
+
+    /* Amber (test-mode / warning accent) */
+    --amber: 38 92% 50%;
+
+    /* Emerald (success / live status accent) */
+    --emerald: 152 60% 45%;
+    --emerald-mid: 152 60% 50%;
+    --emerald-light: 152 60% 55%;
+
+    /* Elevation scale — dashboard surfaces, lightest to sunken */
+    --shell: 222 20% 7%;
+    --bar: 222 18% 9%;
+    --card-hi: 222 18% 11%;
+    --card-hi-2: 222 18% 12%;
+    --stage: 222 22% 6%;
+    --stage-2: 222 22% 8%;
+    --sunk: 222 15% 11%;
+    --sunk-2: 222 15% 12%;
+    --inset: 222 15% 13%;
+    --inset-2: 222 15% 14%;
+    --inset-3: 222 15% 15%;
+    --track: 222 15% 16%;
+    --track-2: 222 15% 17%;
+    --border-2: 222 15% 19%;
+    --border-3: 222 15% 20%;
+    --border-4: 222 15% 22%;
+    --border-5: 222 15% 24%;
+    --border-6: 222 15% 25%;
+    --line: 222 15% 30%;
+    --line-2: 222 15% 32%;
+    --active: 222 18% 22%;
+    --active-2: 222 18% 20%;
+    --overlay: 222 30% 3%;
+
+    /* Text scale — foreground, lightest to dimmest */
+    --ink-b: 210 20% 93%;
+    --ink-c: 210 20% 92%;
+    --ink-d: 210 20% 90%;
+    --ink-e: 210 20% 88%;
+    --ink-f: 210 20% 85%;
+    --mut-2: 215 15% 70%;
+    --mut-3: 215 15% 72%;
+    --mut-4: 215 15% 75%;
+    --mut-5: 215 15% 78%;
+    --dim-2: 215 15% 62%;
+    --dim-3: 215 15% 58%;
+    --dim-4: 215 15% 55%;
+    --dim-5: 215 15% 52%;
+    --dim-6: 215 15% 50%;
+    --dim-7: 215 15% 45%;
+    --dim-8: 215 15% 40%;
+
+    /* Platform brand colors */
+    --platform-facebook: 214 89% 52%;
+    --platform-instagram: 348 75% 57%;
+    --platform-tiktok: 174 72% 63%;
+    --platform-youtube: 0 100% 60%;
+    --platform-linkedin: 210 63% 50%;
+    --platform-whatsapp: 142 70% 49%;
+    --platform-spotify: 141 73% 42%;
 
     --gradient-primary: linear-gradient(
       135deg,

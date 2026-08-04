@@ -13,6 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CopyableText } from "@/components/ui/copyable-text";
+import { IconBox } from "@/components/ui/icon-box";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { UpdateOrganizationDialog } from "@/components/platform/UpdateOrganizationDialog";
 import {
   usePlatformOrganizationMembers,
@@ -38,9 +42,6 @@ interface OrganizationDetailsSheetProps {
   onClose: () => void;
   onAddMember?: () => void;
 }
-
-const statusVariant = (s?: string) =>
-  s === "ACTIVE" ? "default" : s === "SUSPENDED" ? "destructive" : "secondary";
 
 export function OrganizationDetailsSheet({
   organization,
@@ -81,21 +82,17 @@ export function OrganizationDetailsSheet({
         {/* Header */}
         <SheetHeader className="flex-shrink-0">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Building2 className="h-6 w-6 text-primary" />
-            </div>
+            <IconBox icon={Building2} tone="primary" size="avatar" />
             <div className="flex-1 min-w-0">
               <SheetTitle>{organization.name}</SheetTitle>
               <SheetDescription className="truncate">
                 {organization.legal_name || "N/A"}
               </SheetDescription>
             </div>
-            <Badge
-              variant={statusVariant(organization.status)}
+            <StatusBadge
+              status={organization.status}
               className="flex-shrink-0"
-            >
-              {organization.status || "ACTIVE"}
-            </Badge>
+            />
           </div>
         </SheetHeader>
 
@@ -212,9 +209,7 @@ export function OrganizationDetailsSheet({
 
                       <div className="flex justify-between items-center pt-2 border-t">
                         <span className="text-muted-foreground">Status</span>
-                        <Badge variant={statusVariant(organization.status)}>
-                          {organization.status || "ACTIVE"}
-                        </Badge>
+                        <StatusBadge status={organization.status} />
                       </div>
 
                       {organization.createdAt && (
@@ -243,27 +238,21 @@ export function OrganizationDetailsSheet({
                 </Card>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold">
-                        {membersData?.members.length || 0}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Total Members
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold">
-                        {membersData?.members.filter((m) => m.role === "OWNER")
-                          .length || 0}
-                      </div>
-                      <p className="text-xs text-muted-foreground">Owners</p>
-                    </CardContent>
-                  </Card>
-                </div>
+                <StatGrid columns={2}>
+                  <StatCard
+                    size="sm"
+                    label="Total Members"
+                    value={membersData?.members.length || 0}
+                  />
+                  <StatCard
+                    size="sm"
+                    label="Owners"
+                    value={
+                      membersData?.members.filter((m) => m.role === "OWNER")
+                        .length || 0
+                    }
+                  />
+                </StatGrid>
               </TabsContent>
 
               {/* Members Tab */}
@@ -289,10 +278,10 @@ export function OrganizationDetailsSheet({
                 ) : !membersData?.members.length ? (
                   <Card>
                     <CardContent className="py-12 text-center">
-                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-                      <p className="text-muted-foreground">
-                        No members in this organization
-                      </p>
+                      <EmptyState
+                        icon={Users}
+                        title="No members in this organization"
+                      />
                     </CardContent>
                   </Card>
                 ) : (
@@ -330,15 +319,7 @@ export function OrganizationDetailsSheet({
                             {/* Badges row */}
                             <div className="flex gap-2 flex-wrap">
                               <Badge variant="secondary">{member.role}</Badge>
-                              <Badge
-                                variant={
-                                  member.status === "ACTIVE"
-                                    ? "default"
-                                    : "destructive"
-                                }
-                              >
-                                {member.status || "ACTIVE"}
-                              </Badge>
+                              <StatusBadge status={member.status} />
                             </div>
 
                             {/* Details row */}

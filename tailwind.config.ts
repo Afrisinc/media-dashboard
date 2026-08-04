@@ -20,11 +20,85 @@ export default {
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
+        border: {
+          DEFAULT: "hsl(var(--border))",
+          2: "hsl(var(--border-2))",
+          3: "hsl(var(--border-3))",
+          4: "hsl(var(--border-4))",
+          5: "hsl(var(--border-5))",
+          6: "hsl(var(--border-6))",
+        },
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        shell: "hsl(var(--shell))",
+        bar: "hsl(var(--bar))",
+        stage: {
+          DEFAULT: "hsl(var(--stage))",
+          2: "hsl(var(--stage-2))",
+        },
+        sunk: {
+          DEFAULT: "hsl(var(--sunk))",
+          2: "hsl(var(--sunk-2))",
+        },
+        inset: {
+          DEFAULT: "hsl(var(--inset))",
+          2: "hsl(var(--inset-2))",
+          3: "hsl(var(--inset-3))",
+        },
+        track: {
+          DEFAULT: "hsl(var(--track))",
+          2: "hsl(var(--track-2))",
+        },
+        active: {
+          DEFAULT: "hsl(var(--active))",
+          2: "hsl(var(--active-2))",
+        },
+        line: {
+          DEFAULT: "hsl(var(--line))",
+          2: "hsl(var(--line-2))",
+        },
+        overlay: "hsl(var(--overlay))",
+        ink: {
+          DEFAULT: "hsl(var(--foreground))",
+          b: "hsl(var(--ink-b))",
+          c: "hsl(var(--ink-c))",
+          d: "hsl(var(--ink-d))",
+          e: "hsl(var(--ink-e))",
+          f: "hsl(var(--ink-f))",
+        },
+        mut: {
+          DEFAULT: "hsl(var(--muted-foreground))",
+          2: "hsl(var(--mut-2))",
+          3: "hsl(var(--mut-3))",
+          4: "hsl(var(--mut-4))",
+          5: "hsl(var(--mut-5))",
+        },
+        dim: {
+          2: "hsl(var(--dim-2))",
+          3: "hsl(var(--dim-3))",
+          4: "hsl(var(--dim-4))",
+          5: "hsl(var(--dim-5))",
+          6: "hsl(var(--dim-6))",
+          7: "hsl(var(--dim-7))",
+          8: "hsl(var(--dim-8))",
+        },
+        amber: "hsl(var(--amber))",
+        emerald: {
+          DEFAULT: "hsl(var(--emerald))",
+          mid: "hsl(var(--emerald-mid))",
+          light: "hsl(var(--emerald-light))",
+        },
+        platform: {
+          facebook: "hsl(var(--platform-facebook))",
+          instagram: "hsl(var(--platform-instagram))",
+          tiktok: "hsl(var(--platform-tiktok))",
+          youtube: "hsl(var(--platform-youtube))",
+          linkedin: "hsl(var(--platform-linkedin))",
+          whatsapp: "hsl(var(--platform-whatsapp))",
+          spotify: "hsl(var(--platform-spotify))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -56,6 +130,8 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+          hi: "hsl(var(--card-hi))",
+          "hi-2": "hsl(var(--card-hi-2))",
         },
         forest: {
           DEFAULT: "hsl(var(--forest))",

@@ -12,6 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CopyableText } from "@/components/ui/copyable-text";
+import { IconBox } from "@/components/ui/icon-box";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { usePlatformUserAccounts } from "@/hooks/usePlatform";
 import type { PlatformUser } from "@/types/platform";
 import { User, Briefcase, Package } from "lucide-react";
@@ -21,9 +25,6 @@ interface UserAccountsSheetProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const statusVariant = (s: string) =>
-  s === "ACTIVE" ? "default" : s === "SUSPENDED" ? "destructive" : "secondary";
 
 export function UserAccountsSheet({
   user,
@@ -42,21 +43,14 @@ export function UserAccountsSheet({
         {/* Header */}
         <SheetHeader className="flex-shrink-0">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <User className="h-6 w-6 text-primary" />
-            </div>
+            <IconBox icon={User} tone="primary" size="avatar" />
             <div className="flex-1 min-w-0">
               <SheetTitle>{user.fullName || user.email}</SheetTitle>
               <SheetDescription className="truncate">
                 {user.email}
               </SheetDescription>
             </div>
-            <Badge
-              variant={statusVariant(user.status)}
-              className="flex-shrink-0"
-            >
-              {user.status}
-            </Badge>
+            <StatusBadge status={user.status} className="flex-shrink-0" />
           </div>
         </SheetHeader>
 
@@ -130,9 +124,7 @@ export function UserAccountsSheet({
 
                       <div className="flex justify-between items-center pt-2 border-t">
                         <span className="text-muted-foreground">Status</span>
-                        <Badge variant={statusVariant(user.status)}>
-                          {user.status}
-                        </Badge>
+                        <StatusBadge status={user.status} />
                       </div>
 
                       <div className="flex justify-between items-center">
@@ -157,31 +149,23 @@ export function UserAccountsSheet({
                 </Card>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold">
-                        {data?.accounts.length || 0}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Total Accounts
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold">
-                        {data?.accounts.reduce(
-                          (sum, acc) => sum + acc.products.length,
-                          0,
-                        ) || 0}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Total Products
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
+                <StatGrid columns={2}>
+                  <StatCard
+                    size="sm"
+                    label="Total Accounts"
+                    value={data?.accounts.length || 0}
+                  />
+                  <StatCard
+                    size="sm"
+                    label="Total Products"
+                    value={
+                      data?.accounts.reduce(
+                        (sum, acc) => sum + acc.products.length,
+                        0,
+                      ) || 0
+                    }
+                  />
+                </StatGrid>
               </TabsContent>
 
               {/* Accounts Tab */}
@@ -195,10 +179,10 @@ export function UserAccountsSheet({
                 ) : !data?.accounts.length ? (
                   <Card>
                     <CardContent className="py-12 text-center">
-                      <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-                      <p className="text-muted-foreground">
-                        No accounts found for this user
-                      </p>
+                      <EmptyState
+                        icon={Briefcase}
+                        title="No accounts found for this user"
+                      />
                     </CardContent>
                   </Card>
                 ) : (
@@ -252,16 +236,10 @@ export function UserAccountsSheet({
                                     >
                                       {product.plan}
                                     </Badge>
-                                    <Badge
-                                      variant={
-                                        product.status === "ACTIVE"
-                                          ? "default"
-                                          : "destructive"
-                                      }
+                                    <StatusBadge
+                                      status={product.status}
                                       className="text-xs whitespace-nowrap"
-                                    >
-                                      {product.status}
-                                    </Badge>
+                                    />
                                   </div>
                                 </div>
                               ))}

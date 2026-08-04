@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { ShieldAlert, ShieldCheck, Key, AlertTriangle } from "lucide-react";
 import { LoginEventsTable } from "@/components/platform/LoginEventsTable";
 
@@ -21,57 +23,56 @@ export default function PlatformSecurity() {
       label: "Failed Logins (24h)",
       value: data?.failedLogins24h,
       icon: ShieldAlert,
-      color: "text-destructive",
+      iconTone: "destructive" as const,
     },
     {
       label: "Token Issuance",
       value: data?.tokenIssuanceCount,
       icon: Key,
-      color: "text-primary",
+      iconTone: "primary" as const,
     },
     {
       label: "Suspicious Activity",
       value: data?.suspiciousActivity ? "Detected" : "None",
       icon: data?.suspiciousActivity ? AlertTriangle : ShieldCheck,
-      color: data?.suspiciousActivity ? "text-destructive" : "text-secondary",
+      iconTone: data?.suspiciousActivity
+        ? ("destructive" as const)
+        : ("secondary" as const),
     },
   ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Security Monitoring</h1>
-        <p className="text-muted-foreground">
-          Monitor login attempts, tokens, and suspicious activity
-        </p>
-      </div>
+      <PageHeader
+        title="Security Monitoring"
+        subtitle="Monitor login attempts, tokens, and suspicious activity"
+      />
 
       {/* Stat cards */}
-      <div className="grid sm:grid-cols-3 gap-4">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-5">
-              {isLoading ? (
+      <StatGrid columns={3}>
+        {stats.map((s) =>
+          isLoading ? (
+            <Card key={s.label}>
+              <CardContent className="p-5">
                 <Skeleton className="h-16 w-full" />
-              ) : (
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <s.icon className={`h-4 w-4 ${s.color}`} />
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {s.label}
-                    </span>
-                  </div>
-                  <span className="text-2xl font-bold">
-                    {typeof s.value === "number"
-                      ? s.value.toLocaleString()
-                      : s.value}
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <StatCard
+              key={s.label}
+              size="sm"
+              label={s.label}
+              value={
+                typeof s.value === "number"
+                  ? s.value.toLocaleString()
+                  : (s.value ?? "—")
+              }
+              icon={s.icon}
+              iconTone={s.iconTone}
+            />
+          ),
+        )}
+      </StatGrid>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Top IPs */}

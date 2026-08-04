@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useGrowthData } from "@/hooks/usePlatform";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   ChartContainer,
   ChartTooltip,
@@ -28,26 +29,17 @@ export default function PlatformGrowth() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Growth Analytics</h1>
-          <p className="text-muted-foreground">
-            Track user, account, and enrollment growth over time
-          </p>
-        </div>
-        <div className="flex gap-1 bg-muted rounded-lg p-1">
-          {RANGES.map((r) => (
-            <Button
-              key={r.value}
-              variant={range === r.value ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setRange(r.value)}
-            >
-              {r.label}
-            </Button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Growth Analytics"
+        subtitle="Track user, account, and enrollment growth over time"
+        action={
+          <SegmentedControl
+            value={range}
+            onChange={setRange}
+            options={RANGES}
+          />
+        }
+      />
 
       {isLoading ? (
         <div className="grid gap-6">

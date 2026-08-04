@@ -275,7 +275,7 @@ To enable export:
 
 ## Examples
 
-See `/src/pages/platform/UsersNew.tsx` for a complete implementation example.
+See `/src/pages/platform/Users.tsx` for a complete implementation example.
 
 ## Components Included
 

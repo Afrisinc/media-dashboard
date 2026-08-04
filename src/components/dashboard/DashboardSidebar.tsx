@@ -9,14 +9,26 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Newspaper, Settings, Globe, Sparkles, LogOut } from "lucide-react";
+import {
+  Newspaper,
+  Settings,
+  Globe,
+  Sparkles,
+  LogOut,
+  Workflow,
+  Bot,
+  BarChart3,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { getRuntimeConfig } from "@/lib/config";
 
 const mainItems = [
+  { title: "Media Studio", url: "/media", icon: Newspaper },
   { title: "AI Content", url: "/ai-content", icon: Sparkles },
-  { title: "Media", url: "/media", icon: Newspaper },
+  { title: "Automation", url: "/automation", icon: Workflow },
+  { title: "AI Agents", url: "/agents", icon: Bot },
+  { title: "Analytics", url: "/analytics", icon: BarChart3 },
 ];
 
 const bottomItems = [{ title: "Settings", url: "/settings", icon: Settings }];
@@ -49,9 +61,10 @@ export const DashboardSidebar = () => {
             <span className="font-bold text-foreground text-sm leading-tight">
               Afrisinc
             </span>
-            <span className="text-xs text-muted-foreground">Dashboard</span>
+            <span className="text-xs text-muted-foreground">Media OS</span>
           </div>
         </Link>
+        <div className="kente-border mt-4" />
       </div>
       <SidebarContent>
         {/* Dashboard */}

@@ -5,7 +5,8 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { IconBox } from "@/components/ui/icon-box";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import CreatePostForm from "@/components/dashboard/CreatePostForm";
 import PostsTable from "@/components/dashboard/PostsTable";
 import { useAIPosts } from "@/hooks/useAIPosts";
@@ -31,9 +32,7 @@ const AIContent = () => {
     <div className="space-y-8 animate-fade-up">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="p-2.5 rounded-lg bg-primary/10">
-          <Sparkles className="w-5 h-5 text-primary" />
-        </div>
+        <IconBox icon={Sparkles} tone="primary" />
         <div>
           <h1 className="heading-section">AI Content Studio</h1>
           <p className="text-secondary">
@@ -43,28 +42,19 @@ const AIContent = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <StatGrid columns={4}>
         {statCards.map((stat) => (
-          <Card
+          <StatCard
             key={stat.label}
+            size="sm"
+            label={stat.label}
+            value={stat.value}
+            icon={stat.icon}
+            iconTone="muted"
             className="border-border/50 hover:shadow-card transition-shadow duration-300"
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-semibold uppercase">
-                    {stat.label}
-                  </p>
-                  <p className="text-2xl font-bold mt-2">{stat.value}</p>
-                </div>
-                <div className="p-2.5 rounded-lg bg-muted">
-                  <stat.icon className="w-4 h-4 text-muted-foreground" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          />
         ))}
-      </div>
+      </StatGrid>
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">

@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CopyableText } from "@/components/ui/copyable-text";
+import { IconBox } from "@/components/ui/icon-box";
+import { EmptyState } from "@/components/ui/empty-state";
 import { EnrollProductDialog } from "@/components/platform/EnrollProductDialog";
 import type { PlatformAccount } from "@/types/platform";
 import { Briefcase, Package, Plus } from "lucide-react";
@@ -48,9 +50,7 @@ export function AccountDetailsSheet({
         {/* Header */}
         <SheetHeader className="flex-shrink-0">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Briefcase className="h-6 w-6 text-primary" />
-            </div>
+            <IconBox icon={Briefcase} tone="primary" size="avatar" />
             <div className="flex-1 min-w-0">
               <SheetTitle>{ownerName}</SheetTitle>
               <SheetDescription className="truncate">
@@ -188,10 +188,7 @@ export function AccountDetailsSheet({
                 {!account.products || account.products.length === 0 ? (
                   <Card>
                     <CardContent className="py-12 text-center">
-                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-                      <p className="text-muted-foreground">
-                        No products enrolled
-                      </p>
+                      <EmptyState icon={Package} title="No products enrolled" />
                     </CardContent>
                   </Card>
                 ) : (

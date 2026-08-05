@@ -31,7 +31,7 @@ export const useAIPosts = (limit: number = 10) => {
 
       if (!token) throw new Error("Not authenticated");
 
-      const url = `${config.serverUrl}/generated-posts?limit=${limit}`;
+      const url = `${config.serverUrl}/media/generated-posts?limit=${limit}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -78,7 +78,7 @@ export const useGenerateAIPost = () => {
 
       try {
         const response = await fetch(
-          `${config.serverUrl}/content/ai/generate`,
+          `${config.serverUrl}/media/content/ai/generate`,
           {
             method: "POST",
             headers: {

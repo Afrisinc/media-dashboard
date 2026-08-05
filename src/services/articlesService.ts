@@ -213,7 +213,7 @@ export async function fetchArticles(
     searchParams.append("page", page.toString());
     searchParams.append("limit", limit.toString());
 
-    const url = `${config.serverUrl}/articles?${searchParams.toString()}`;
+    const url = `${config.serverUrl}/media/articles?${searchParams.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -281,7 +281,7 @@ export async function fetchArticlesByCategory(
     searchParams.append("page", page.toString());
     searchParams.append("limit", limit.toString());
 
-    const url = `${config.serverUrl}/articles/category/${encodeURIComponent(category)}?${searchParams.toString()}`;
+    const url = `${config.serverUrl}/media/articles/category/${encodeURIComponent(category)}?${searchParams.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -335,7 +335,7 @@ export async function fetchArticlesByCategory(
  */
 export async function fetchArticleById(id: string): Promise<Article | null> {
   const config = getRuntimeConfig();
-  const url = `${config.serverUrl}/articles/${encodeURIComponent(id)}`;
+  const url = `${config.serverUrl}/media/articles/${encodeURIComponent(id)}`;
 
   const response = await fetch(url, {
     method: "GET",
@@ -364,7 +364,7 @@ export async function fetchArticleBySlug(
 ): Promise<Article | null> {
   try {
     const config = getRuntimeConfig();
-    const url = `${config.serverUrl}/articles/slug/${encodeURIComponent(slug)}`;
+    const url = `${config.serverUrl}/media/articles/slug/${encodeURIComponent(slug)}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -396,7 +396,7 @@ export async function fetchCategories(): Promise<ArticleCategory[]> {
     }
 
     const config = getRuntimeConfig();
-    const url = `${config.serverUrl}/articles?limit=100`;
+    const url = `${config.serverUrl}/media/articles?limit=100`;
 
     const response = await fetch(url, {
       method: "GET",

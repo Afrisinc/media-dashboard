@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
 export interface Topic {
   id: string;
@@ -8,8 +7,7 @@ export interface Topic {
   created_at: string;
 }
 
-// Default topics to use as fallback
-const DEFAULT_TOPICS: Topic[] = [
+const TOPICS: Topic[] = [
   {
     id: "innovation",
     name: "Innovation",
@@ -57,26 +55,6 @@ const DEFAULT_TOPICS: Topic[] = [
 export const useTopics = () => {
   return useQuery({
     queryKey: ["topics"],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("topics")
-          .select("*")
-          .order("name");
-
-        if (error) {
-          return DEFAULT_TOPICS;
-        }
-
-        // If database returns empty or null, use defaults
-        if (!data || data.length === 0) {
-          return DEFAULT_TOPICS;
-        }
-
-        return data as Topic[];
-      } catch {
-        return DEFAULT_TOPICS;
-      }
-    },
+    queryFn: async () => TOPICS,
   });
 };

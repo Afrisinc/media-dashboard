@@ -6,6 +6,7 @@ import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { IconBox } from "@/components/ui/icon-box";
 import { LabeledProgress } from "@/components/ui/labeled-progress";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { ListRow } from "@/components/ui/list-row";
 import {
   MediaPreviewDialog,
   type PreviewItem,

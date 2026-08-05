@@ -9,7 +9,6 @@ import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
-import { CookieBanner } from "@/components/CookieBanner";
 import { AfrisincLoader } from "@/components/AfrisincLoader";
 
 // Public Pages removed - dashboard only
@@ -89,29 +88,26 @@ const AppContent = () => {
   }
 
   return (
-    <>
-      <Routes>
-        <Route path="/sso/callback" element={<SSOCallback />} />
+    <Routes>
+      <Route path="/sso/callback" element={<SSOCallback />} />
 
-        {/* Dashboard Routes - at root level */}
-        <Route path="/" element={<DashboardLayout />}>
-          <Route index element={<DashboardMedia />} />
-          <Route path="ai-content" element={<AIContent />} />
-          <Route path="media" element={<DashboardMedia />} />
-          <Route path="automation" element={<DashboardAutomation />} />
-          <Route path="agents" element={<DashboardAgents />} />
-          <Route path="analytics" element={<DashboardAnalytics />} />
-          <Route path="settings" element={<DashboardSettings />} />
-        </Route>
+      {/* Dashboard Routes - at root level */}
+      <Route path="/" element={<DashboardLayout />}>
+        <Route index element={<DashboardMedia />} />
+        <Route path="ai-content" element={<AIContent />} />
+        <Route path="media" element={<DashboardMedia />} />
+        <Route path="automation" element={<DashboardAutomation />} />
+        <Route path="agents" element={<DashboardAgents />} />
+        <Route path="analytics" element={<DashboardAnalytics />} />
+        <Route path="settings" element={<DashboardSettings />} />
+      </Route>
 
-        {/* Test Component Route */}
-        <Route path="/testcomponent" element={<TestComponent />} />
+      {/* Test Component Route */}
+      <Route path="/testcomponent" element={<TestComponent />} />
 
-        {/* Catch-all */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <CookieBanner />
-    </>
+      {/* Catch-all */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 

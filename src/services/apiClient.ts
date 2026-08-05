@@ -1,13 +1,20 @@
 import axios, { AxiosInstance } from "axios";
 import { logoutHandler, getToken } from "@/lib/authUtils";
-import { getRuntimeConfig } from "@/lib/config";
+import { getRuntimeConfig, isRuntimeConfigLoaded } from "@/lib/config";
+
+let apiClientInstance: AxiosInstance | null = null;
 
 const createApiClient = () => {
-  const config = getRuntimeConfig();
+  let baseURL: string;
 
-  const instance = axios.create({
-    baseURL: config.serverUrl || config.apiUrl || import.meta.env.VITE_API_URL,
-  });
+  try {
+    const config = getRuntimeConfig();
+    baseURL = config.serverUrl || config.apiUrl || "";
+  } catch {
+    baseURL = import.meta.env.VITE_API_URL || "";
+  }
+
+  const instance = axios.create({ baseURL });
 
   instance.interceptors.request.use(async (request) => {
     const token = getToken();
@@ -44,13 +51,9 @@ const createApiClient = () => {
   return instance;
 };
 
-let apiClientInstance: AxiosInstance | null = null;
-
-const getApiClient = () => {
-  if (!apiClientInstance) {
+export default function getApiClient() {
+  if (!apiClientInstance || !isRuntimeConfigLoaded()) {
     apiClientInstance = createApiClient();
   }
   return apiClientInstance;
-};
-
-export default getApiClient;
+}

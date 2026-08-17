@@ -53,6 +53,20 @@
         if (theme === "dark") document.documentElement.classList.add("dark");
       })();
     </script>
+
+    <!-- Prevent flash of white background before app CSS loads -->
+    <style>
+      html,
+      body,
+      #root {
+        background-color: hsl(40 26% 98%);
+      }
+      html.dark,
+      html.dark body,
+      html.dark #root {
+        background-color: hsl(222 19% 8.2%);
+      }
+    </style>
   </head>
 
   <body>

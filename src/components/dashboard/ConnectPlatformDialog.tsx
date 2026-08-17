@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,47 +10,271 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import type { SocialPlatformKey, ScopeDef } from "@/config/socialPlatforms";
+import {
+  useSaveIntegrationCredentials,
+  useAddSocialMediaAccount,
+  useAddAccountFromFacebookPage,
+  useSocialMediaIntegrations,
+  useAvailablePages,
+  type FacebookPage,
+  type OAuthCallbackResponse,
+} from "@/hooks/useSocialMediaIntegrations";
+import { PageSelectionDialog } from "./PageSelectionDialog";
 
 export interface ConnectPlatform {
-  name: string;
+  key: SocialPlatformKey;
+  displayName: string;
   short: string;
   tone: string;
-  accounts: { name: string; meta: string }[];
-  scopes: { label: string; desc: string; required: boolean }[];
+  scopes: ScopeDef[];
 }
 
 interface ConnectPlatformDialogProps {
   platform: ConnectPlatform | null;
   onClose: () => void;
-  /** Fired once the user authorizes the connection (entering the "Done" step). */
   onConnected?: () => void;
 }
 
-const stepLabels = ["App credentials", "Choose account", "Permissions", "Done"];
+const stepLabels = [
+  "Credentials",
+  "Authorize",
+  "Select Pages",
+  "Confirm",
+  "Done",
+];
 
 export function ConnectPlatformDialog({
   platform,
   onClose,
   onConnected,
 }: ConnectPlatformDialogProps) {
+  const { data: integrations } = useSocialMediaIntegrations();
   const [step, setStep] = useState(0);
-  const [accountIdx, setAccountIdx] = useState(0);
   const [appId, setAppId] = useState("");
   const [appSecret, setAppSecret] = useState("");
+  const [callbackUrl, setCallbackUrl] = useState("");
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [oauthState, setOauthState] = useState<string | null>(null);
+  const [pages, setPages] = useState<FacebookPage[]>([]);
+  const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [optionalScopes, setOptionalScopes] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
+
+  const saveCredentials = useSaveIntegrationCredentials();
+  const addAccount = useAddSocialMediaAccount();
+  const addPageAccount = useAddAccountFromFacebookPage();
+  const { data: availablePages, refetch: refetchPages } = useAvailablePages(
+    platform?.key,
+  );
+
+  useEffect(() => {
+    if (!platform) return;
+
+    // Set default callback URL
+    const baseUrl = window.location.origin;
+    setCallbackUrl(`${baseUrl}/oauth/callback/${platform.key}`);
+
+    // If platform is already connected with credentials, skip to page selection
+    const integration = integrations?.find((i) => i.platform === platform.key);
+    if (integration?.appId && integration?.connected) {
+      setAppId(integration.appId);
+      setStep(2); // Jump to Select Pages (step 2)
+      refetchPages();
+    }
+  }, [platform, integrations, refetchPages]);
+
+  useEffect(() => {
+    // When starting at step 2 (already connected), populate pages from availablePages
+    if (step === 2 && availablePages?.available) {
+      setPages(availablePages.available);
+    }
+  }, [step, availablePages]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pagesParam = params.get("pages");
+    const platformParam = params.get("platform");
+
+    if (pagesParam && platformParam === platform?.key) {
+      try {
+        const fetchedPages = JSON.parse(pagesParam);
+        setPages(fetchedPages);
+        setStep(2); // Move to page selection
+        window.history.replaceState({}, "", window.location.pathname);
+      } catch (e) {
+        console.error("Failed to parse pages from URL", e);
+      }
+    }
+  }, [platform]);
 
   const handleClose = () => {
     onClose();
     setStep(0);
-    setAccountIdx(0);
     setAppId("");
     setAppSecret("");
+    setAccountId(null);
+    setOauthState(null);
+    setPages([]);
+    setSelectedPageIds(new Set());
+    setOptionalScopes(new Set());
   };
 
   if (!platform) return null;
 
-  const credsReady = appId.trim().length > 3 && appSecret.trim().length > 5;
-  const account = platform.accounts[accountIdx];
+  const credsReady =
+    appId.trim().length > 3 &&
+    appSecret.trim().length > 5 &&
+    callbackUrl.trim().length > 10;
+
+  const toggleScope = (id: string) => {
+    setOptionalScopes((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const togglePageId = (pageId: string) => {
+    setSelectedPageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(pageId)) next.delete(pageId);
+      else next.add(pageId);
+      return next;
+    });
+  };
+
+  const handleSaveCredentials = async () => {
+    setSubmitting(true);
+    try {
+      await saveCredentials.mutateAsync({
+        platform: platform.key,
+        appId: appId.trim(),
+        appSecret: appSecret.trim(),
+        callbackUrl: callbackUrl.trim(),
+      });
+      setStep(1);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAuthorize = async () => {
+    setSubmitting(true);
+    try {
+      const scopes = platform.scopes
+        .filter((scope) => scope.required || optionalScopes.has(scope.id))
+        .map((scope) => scope.id);
+
+      const result = await addAccount.mutateAsync({
+        platform: platform.key,
+        name: platform.displayName,
+        scopes,
+      });
+
+      console.log("[OAuth Debug]", "API Response:", result);
+      console.log("[OAuth Debug]", "oauthState:", result.oauthState);
+
+      setAccountId(result.id);
+      setOauthState(result.oauthState || result.state);
+
+      // Build OAuth URL
+      const authUrl = new URL("https://www.facebook.com/v18.0/dialog/oauth");
+      authUrl.searchParams.append("client_id", appId.trim());
+      authUrl.searchParams.append("redirect_uri", callbackUrl.trim());
+      authUrl.searchParams.append("state", result.oauthState || result.state);
+      authUrl.searchParams.append("scope", scopes.join(","));
+      authUrl.searchParams.append("response_type", "code");
+
+      console.log("[OAuth Debug]", "Redirect URL:", authUrl.toString());
+      console.log("[OAuth Debug]", "Waiting 3 seconds before redirect...");
+
+      // Wait 3 seconds so you can see the Network response
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      window.location.href = authUrl.toString();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleConfirmPages = async () => {
+    setSubmitting(true);
+    try {
+      const scopes = platform.scopes
+        .filter((scope) => scope.required || optionalScopes.has(scope.id))
+        .map((scope) => scope.id);
+
+      for (const pageId of selectedPageIds) {
+        const page = pages.find((p) => p.id === pageId);
+        if (!page) {
+          console.error(`[OAuth] Page not found: ${pageId}`);
+          continue;
+        }
+
+        if (!page.access_token) {
+          console.error(`[OAuth] Page ${page.name} missing access_token`, page);
+          throw new Error(
+            `Page "${page.name}" is missing access token from Facebook`,
+          );
+        }
+
+        console.log(`[OAuth] Adding page: ${page.name} (${pageId})`);
+
+        await addPageAccount.mutateAsync({
+          platform: platform.key,
+          pageId,
+          pageName: page.name,
+          scopes,
+          accessToken: page.access_token,
+        });
+
+        console.log(`[OAuth] Successfully added page: ${page.name}`);
+      }
+
+      console.log("[OAuth] All pages connected successfully");
+      onConnected?.();
+      setStep(4); // Done
+    } catch (error) {
+      console.error("[OAuth] Error connecting pages:", error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePrimaryAction = async () => {
+    if (step === 0) {
+      await handleSaveCredentials();
+      return;
+    }
+
+    if (step === 1) {
+      await handleAuthorize();
+      return;
+    }
+
+    if (step === 2) {
+      setStep(3);
+      return;
+    }
+
+    if (step === 3) {
+      await handleConfirmPages();
+      return;
+    }
+
+    handleClose();
+  };
+
+  const primaryDisabled =
+    submitting ||
+    (step === 0 && !credsReady) ||
+    (step === 3 && selectedPageIds.size === 0);
 
   return (
     <Dialog open={!!platform} onOpenChange={(open) => !open && handleClose()}>
@@ -67,12 +291,12 @@ export function ConnectPlatformDialog({
             </span>
             <div>
               <DialogTitle>
-                {step === 3
-                  ? `${platform.name} connected`
-                  : `Connect ${platform.name}`}
+                {step === 4
+                  ? `${platform.displayName} connected`
+                  : `Connect ${platform.displayName}`}
               </DialogTitle>
               <DialogDescription>
-                Step {step + 1} of 4 — {stepLabels[step]}
+                Step {step + 1} of {stepLabels.length} — {stepLabels[step]}
               </DialogDescription>
             </div>
           </div>
@@ -93,14 +317,13 @@ export function ConnectPlatformDialog({
 
         {step === 0 && (
           <div className="flex flex-col gap-3.5">
-            <p className="text-xs text-mut-2">
-              Create an app in the {platform.name} developer portal, then paste
-              its credentials here. Afrisinc uses them to request publishing
-              access on your behalf.
+            <p className="text-xs text-muted-foreground">
+              Create an app in the {platform.displayName} developer portal, then
+              paste its credentials here.
             </p>
             <div>
               <label className="mb-1.5 block text-xs font-bold">
-                {platform.name} App ID / Client ID
+                App ID / Client ID
               </label>
               <Input
                 value={appId}
@@ -110,11 +333,9 @@ export function ConnectPlatformDialog({
               />
             </div>
             <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-xs font-bold">
-                  App Secret / Client Secret
-                </label>
-              </div>
+              <label className="mb-1.5 block text-xs font-bold">
+                App Secret / Client Secret
+              </label>
               <Input
                 type="password"
                 value={appSecret}
@@ -125,149 +346,186 @@ export function ConnectPlatformDialog({
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-bold">
-                Redirect / callback URI
+                OAuth Callback URL
               </label>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value={`https://app.afrisinc.com/oauth/${platform.name.toLowerCase()}/callback`}
-                  className="bg-sunk-2 font-mono text-xs text-muted-foreground"
-                />
-                <Button variant="outline" size="icon" className="flex-shrink-0">
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
+              <Input
+                value={callbackUrl}
+                onChange={(e) => setCallbackUrl(e.target.value)}
+                placeholder="https://yourdomain.com/oauth/callback/facebook"
+                className="font-mono text-xs"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Must match your app settings in {platform.displayName}
+              </p>
             </div>
           </div>
         )}
 
         {step === 1 && (
-          <div className="flex flex-col gap-2">
-            <p className="mb-1 text-xs text-mut-2">
-              You’re signed in as Afrisinc — pick the destination.
+          <div className="flex flex-col gap-3.5">
+            <p className="text-xs text-muted-foreground">
+              Review the permissions Afrisinc will request. Publishing rights
+              are required.
             </p>
-            {platform.accounts.map((acc, idx) => (
-              <button
-                key={acc.name}
-                onClick={() => setAccountIdx(idx)}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left",
-                  idx === accountIdx
-                    ? "border-primary/55 bg-primary/[0.08]"
-                    : "border-border bg-inset",
-                )}
-              >
-                <span
-                  className={cn(
-                    "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[10.5px] font-bold",
-                    platform.tone,
-                  )}
-                >
-                  {acc.name
-                    .replace(/[^A-Za-z]/g, "")
-                    .slice(0, 2)
-                    .toUpperCase() || "AF"}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold">{acc.name}</span>
-                  <span className="block text-xs text-dim-4">{acc.meta}</span>
-                </span>
-                {idx === accountIdx && (
-                  <Check className="h-4 w-4 flex-shrink-0 text-primary" />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="flex flex-col gap-2">
-            <p className="mb-1 text-xs text-mut-2">
-              Afrisinc will use these permissions on {account.name}. Publishing
-              rights are required — that's what lets your AI team post without
-              you.
-            </p>
-            {platform.scopes.map((scope) => (
-              <div
-                key={scope.label}
-                className="flex items-start gap-2.5 rounded-lg border border-border bg-inset px-3 py-2.5"
-              >
-                <span className="mt-0.5 flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded bg-primary text-primary-foreground">
-                  <Check className="h-2.5 w-2.5" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-bold">{scope.label}</span>
-                  <span className="mt-0.5 block text-[11px] text-dim-4">
-                    {scope.desc}
-                  </span>
-                </span>
-                <Badge
-                  variant={scope.required ? "default" : "secondary"}
-                  className="flex-shrink-0 text-[9.5px] uppercase"
-                >
-                  {scope.required ? "Required" : "Optional"}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="flex flex-col items-center gap-3 py-2 text-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald/15 text-emerald">
-              <Check className="h-6 w-6" />
-            </span>
-            <p className="text-base font-extrabold">{account.name} is live</p>
-            <p className="max-w-xs text-xs text-muted-foreground">
-              Afrisinc can now publish to {platform.name} without you. It
-              appears everywhere media is routed.
-            </p>
-            <div className="mt-1 flex w-full flex-col gap-1.5 text-left">
-              {[
-                `Added to the ${platform.name} channel in the ⌘K composer`,
-                "Workflows fan out to it on the next run",
-                "Reach and engagement start flowing into Analytics",
-              ].map((text) => (
+            <div className="flex flex-col gap-2">
+              {platform.scopes.map((scope) => (
                 <div
-                  key={text}
-                  className="flex items-center gap-2.5 rounded-lg border border-border bg-inset px-3 py-2.5"
+                  key={scope.label}
+                  className="flex items-start gap-2.5 rounded-lg border border-border bg-inset px-3 py-2.5"
                 >
-                  <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
-                  <span className="text-xs text-mut-3">{text}</span>
+                  <Checkbox
+                    checked={scope.required || optionalScopes.has(scope.id)}
+                    disabled={scope.required}
+                    onCheckedChange={() => toggleScope(scope.id)}
+                    className="mt-0.5"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-bold">
+                      {scope.label}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                      {scope.desc}
+                    </span>
+                  </span>
+                  <Badge
+                    variant={scope.required ? "default" : "secondary"}
+                    className="flex-shrink-0 text-[9.5px] uppercase"
+                  >
+                    {scope.required ? "Required" : "Optional"}
+                  </Badge>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-2.5 border-t border-border pt-3.5">
-          <span className="flex-1 text-xs text-dim-4">
+        {step === 2 && (
+          <div className="flex flex-col gap-3">
+            <p className="text-xs text-muted-foreground">
+              Select which {platform.displayName} pages to connect
+            </p>
+            {pages.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                Loading pages...
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+                {pages.map((page) => (
+                  <label
+                    key={page.id}
+                    className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-inset cursor-pointer transition-colors"
+                  >
+                    <Checkbox
+                      checked={selectedPageIds.has(page.id)}
+                      onCheckedChange={() => togglePageId(page.id)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold truncate">{page.name}</p>
+                      {page.category && (
+                        <p className="text-xs text-muted-foreground">
+                          {page.category}
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="flex flex-col gap-3">
+            <p className="text-xs text-muted-foreground">
+              Confirm the {selectedPageIds.size} page
+              {selectedPageIds.size === 1 ? "" : "s"} you want to connect
+            </p>
+            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+              {Array.from(selectedPageIds).map((pageId) => {
+                const page = pages.find((p) => p.id === pageId);
+                if (!page) return null;
+                return (
+                  <div
+                    key={pageId}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border bg-inset"
+                  >
+                    <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold">{page.name}</p>
+                      {page.category && (
+                        <p className="text-xs text-muted-foreground">
+                          {page.category}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="flex flex-col items-center gap-3 py-2 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald/15 text-emerald">
+              <Check className="h-6 w-6" />
+            </span>
+            <p className="text-base font-extrabold">
+              {selectedPageIds.size} page{selectedPageIds.size === 1 ? "" : "s"}{" "}
+              connected
+            </p>
+            <p className="max-w-xs text-xs text-muted-foreground">
+              Your pages are now ready to use with Afrisinc.
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2.5 border-t border-border pt-4">
+          <span className="flex-1 text-xs text-muted-foreground">
             {step === 0 &&
-              (credsReady ? "Credentials ready" : "Both fields are required")}
-            {step === 1 && account.name}
-            {step === 2 && "2 optional permissions included"}
-            {step === 3 && "Synced just now"}
+              (credsReady ? "Credentials ready" : "All fields required")}
+            {step === 1 &&
+              `${optionalScopes.size} optional permission${optionalScopes.size === 1 ? "" : "s"}`}
+            {step === 2 &&
+              (selectedPageIds.size === 0
+                ? "Select at least one page"
+                : `${selectedPageIds.size} page${selectedPageIds.size === 1 ? "" : "s"} selected`)}
+            {step === 3 &&
+              `Connecting ${selectedPageIds.size} page${selectedPageIds.size === 1 ? "" : "s"}`}
+            {step === 4 && "Complete"}
           </span>
-          {(step === 1 || step === 2) && (
-            <Button variant="outline" onClick={() => setStep((s) => s - 1)}>
+          {(step === 1 || step === 2 || step === 3) && (
+            <Button
+              variant="outline"
+              disabled={submitting}
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+            >
               Back
             </Button>
           )}
-          <Button
-            disabled={step === 0 && !credsReady}
-            onClick={() => {
-              if (step === 3) {
-                handleClose();
-                return;
-              }
-              if (step === 2) onConnected?.();
-              setStep((s) => s + 1);
-            }}
-          >
-            {step === 0 && "Continue"}
-            {step === 1 && "Continue"}
-            {step === 2 && "Authorize & connect"}
-            {step === 3 && "Done"}
+          <Button disabled={primaryDisabled} onClick={handlePrimaryAction}>
+            {step === 0 && (submitting ? "Saving..." : "Continue")}
+            {step === 1 &&
+              (submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Redirecting...
+                </>
+              ) : (
+                "Authorize with Facebook"
+              ))}
+            {step === 2 && "Continue"}
+            {step === 3 &&
+              (submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                "Connect Pages"
+              ))}
+            {step === 4 && "Done"}
           </Button>
         </div>
       </DialogContent>

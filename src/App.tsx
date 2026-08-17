@@ -22,6 +22,7 @@ import DashboardAgents from "./pages/dashboard/Agents";
 import DashboardAnalytics from "./pages/dashboard/Analytics";
 import AIContent from "./pages/dashboard/AIContent";
 import SSOCallback from "./pages/SSOCallback";
+import OAuthCallback from "./pages/oauth/callback";
 
 import NotFound from "./pages/NotFound";
 import TestComponent from "./pages/TestComponent";
@@ -90,6 +91,7 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/sso/callback" element={<SSOCallback />} />
+      <Route path="/oauth/callback/:platform" element={<OAuthCallback />} />
 
       {/* Dashboard Routes - at root level */}
       <Route path="/" element={<DashboardLayout />}>

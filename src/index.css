@@ -21,6 +21,10 @@
     --primary-300: 201 78% 67%;
     --primary-200: 203 84% 79%;
     --primary-100: 203 87% 89%;
+    --primary-light: 202 82% 57%;
+    --primary-lighter: 202 72% 67%;
+    --primary-muted: 202 62% 78%;
+    --primary-pale: 202 85% 90%;
 
     --secondary: 160 40% 30%;
     --secondary-foreground: 0 0% 100%;
@@ -164,6 +168,10 @@
     --primary-300: 201 80% 68%;
     --primary-200: 203 84% 79%;
     --primary-100: 203 87% 89%;
+    --primary-light: 202 75% 55%;
+    --primary-lighter: 202 65% 62%;
+    --primary-muted: 202 40% 35%;
+    --primary-pale: 202 30% 20%;
 
     --secondary: 160 35% 30%;
     --secondary-foreground: 0 0% 100%;
@@ -537,6 +545,9 @@
   .animation-delay-100 {
     animation-delay: 100ms;
   }
+  .animation-delay-150 {
+    animation-delay: 150ms;
+  }
   .animation-delay-200 {
     animation-delay: 200ms;
   }
@@ -554,6 +565,9 @@
   }
   .animation-delay-700 {
     animation-delay: 700ms;
+  }
+  .animation-delay-2000 {
+    animation-delay: 2000ms;
   }
 
   /* Screen reader only — visually hidden but accessible */

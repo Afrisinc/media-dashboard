@@ -106,6 +106,10 @@ export default {
           300: "hsl(var(--primary-300))",
           200: "hsl(var(--primary-200))",
           100: "hsl(var(--primary-100))",
+          light: "hsl(var(--primary-light))",
+          lighter: "hsl(var(--primary-lighter))",
+          muted: "hsl(var(--primary-muted))",
+          pale: "hsl(var(--primary-pale))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -165,11 +169,37 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "fade-in-up": {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "dot-bounce": {
+          "0%, 80%, 100%": { transform: "scale(0.6)", opacity: "0.4" },
+          "40%": { transform: "scale(1)", opacity: "1" },
+        },
+        "logo-pulse": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.06)", opacity: "0.85" },
+        },
+        blob: {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "33%": { transform: "translate(30px, -20px) scale(1.05)" },
+          "66%": { transform: "translate(-20px, 20px) scale(0.95)" },
+        },
+        gradient: {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         shimmer: "shimmer 3s linear infinite",
+        "fade-in-up": "fade-in-up 0.5s ease-out both",
+        "dot-bounce": "dot-bounce 1.4s ease-in-out infinite",
+        "logo-pulse": "logo-pulse 2s ease-in-out infinite",
+        blob: "blob 7s ease-in-out infinite",
+        gradient: "gradient 6s ease infinite",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

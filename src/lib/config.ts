@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    __ENV__?: Record<string, string>;
+  }
+}
+
 export interface RuntimeConfig {
   serverUrl: string;
   apiUrl: string;
@@ -37,35 +43,52 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   }
 
   try {
-    const response = await fetch("/config.json", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-    });
+    // Check for runtime-injected environment variables first (via env-config.js)
+    const injectedEnv = window.__ENV__;
+    const apiUrl = injectedEnv?.VITE_API_URL || import.meta.env.VITE_API_URL;
+    const authUiUrl =
+      injectedEnv?.VITE_AUTH_UI_URL || import.meta.env.VITE_AUTH_UI_URL;
 
-    if (!response.ok) {
-      throw new Error(`Failed to load config.json: ${response.status}`);
+    // Only load config.json if we don't have the required env vars
+    if (!apiUrl || !authUiUrl) {
+      const response = await fetch("/config.json", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load config.json: ${response.status}`);
+      }
+
+      const runtimeConfig = await response.json();
+
+      config = validateConfig({
+        serverUrl: runtimeConfig.serverUrl || apiUrl,
+        apiUrl: runtimeConfig.apiUrl || apiUrl,
+        authUiUrl: runtimeConfig.authUiUrl || authUiUrl,
+      });
+    } else {
+      config = validateConfig({
+        serverUrl: apiUrl,
+        apiUrl: apiUrl,
+        authUiUrl: authUiUrl,
+      });
     }
-
-    const runtimeConfig = await response.json();
-
-    config = validateConfig({
-      serverUrl: import.meta.env.VITE_API_URL || runtimeConfig.serverUrl,
-      apiUrl: import.meta.env.VITE_API_URL || runtimeConfig.apiUrl,
-      authUiUrl: import.meta.env.VITE_AUTH_UI_URL || runtimeConfig.authUiUrl,
-    });
 
     configLoaded = true;
     return config;
   } catch (error) {
     console.error(
-      "Failed to load config.json, falling back to environment variables",
+      "Failed to load config, falling back to environment variables",
       error,
     );
+    const injectedEnv = window.__ENV__;
     config = validateConfig({
-      serverUrl: import.meta.env.VITE_API_URL,
-      apiUrl: import.meta.env.VITE_API_URL,
-      authUiUrl: import.meta.env.VITE_AUTH_UI_URL,
+      serverUrl: injectedEnv?.VITE_API_URL || import.meta.env.VITE_API_URL,
+      apiUrl: injectedEnv?.VITE_API_URL || import.meta.env.VITE_API_URL,
+      authUiUrl:
+        injectedEnv?.VITE_AUTH_UI_URL || import.meta.env.VITE_AUTH_UI_URL,
     });
     configLoaded = true;
     return config;

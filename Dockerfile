@@ -15,10 +15,14 @@ RUN pnpm build
 FROM nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
+COPY public/env-config.js /usr/share/nginx/html/env-config.js
 
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+
+RUN chmod +x /docker-entrypoint.sh
 
 ENV PORT=8019
 EXPOSE 8019
 
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

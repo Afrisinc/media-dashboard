@@ -161,60 +161,19 @@ const AIContent = () => {
 
           {/* Tab Content - Manual Posting */}
           <TabsContent value="manual" className="p-6 space-y-6 m-0">
-            <div className="grid lg:grid-cols-2 gap-8">
-              <div>
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-blue-500/10">
-                      <Send className="w-4 h-4 text-blue-500" />
-                    </div>
-                    Post Content Manually
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Post your own content to any social media platform
-                  </p>
-                </div>
-                <SocialMediaPostForm />
-              </div>
-
-              <div className="hidden lg:flex items-start">
-                <div className="w-full space-y-4 pt-12">
-                  <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Send className="w-4 h-4 text-blue-500" />
-                      Posting Options
-                    </h4>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li className="flex gap-2">
-                        <span className="text-blue-500 font-semibold">→</span>
-                        <span>Post to 5+ social media platforms</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-blue-500 font-semibold">→</span>
-                        <span>Add images, links, and hashtags</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-blue-500 font-semibold">→</span>
-                        <span>Schedule posts for later</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-blue-500 font-semibold">→</span>
-                        <span>Batch post multiple items at once</span>
-                      </li>
-                    </ul>
+            <div>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <Send className="w-4 h-4 text-blue-500" />
                   </div>
-
-                  <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                    <h4 className="font-semibold text-sm mb-2">
-                      Best Practice
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Use scheduling to post at optimal times when your audience
-                      is most active for maximum engagement.
-                    </p>
-                  </div>
-                </div>
+                  Post Content Manually
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Post your own content to any social media platform
+                </p>
               </div>
+              <SocialMediaPostForm />
             </div>
           </TabsContent>
         </Tabs>

@@ -14,9 +14,12 @@ export interface SocialMediaContent {
   tags?: string[];
 }
 
+export type SocialPostFormat = "feed" | "story" | "reel";
+
 export interface SocialMediaPostPayload {
   platform: SocialPlatformKey;
   pageId: string;
+  format?: SocialPostFormat;
   content: SocialMediaContent;
   media?: {
     type?: "image" | "video" | "carousel";
@@ -39,6 +42,7 @@ export interface SocialMediaPostPayload {
 export interface BatchPostPayload {
   platform: SocialPlatformKey;
   pageId: string;
+  format?: SocialPostFormat;
   content: SocialMediaContent[];
   media?: {
     type?: "image" | "video" | "carousel";

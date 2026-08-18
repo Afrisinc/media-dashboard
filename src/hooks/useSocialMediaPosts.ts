@@ -22,6 +22,7 @@ export interface SocialMediaPost {
   shares: number;
   views: number;
   mediaUrls?: string[] | null;
+  postFormat?: string | null;
   mediaType?: string | null;
   altText?: string | null;
   errorMessage?: string | null;

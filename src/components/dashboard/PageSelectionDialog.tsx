@@ -19,6 +19,8 @@ interface PageSelectionDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   isSubmitting?: boolean;
+  /** Instagram requires each Page to have a linked professional account. */
+  requiresInstagramAccount?: boolean;
 }
 
 export function PageSelectionDialog({
@@ -29,16 +31,28 @@ export function PageSelectionDialog({
   onConfirm,
   onCancel,
   isSubmitting = false,
+  requiresInstagramAccount = false,
 }: PageSelectionDialogProps) {
   const hasSelection = selectedPageIds.size > 0;
+
+  const isEligible = (page: FacebookPage) =>
+    !requiresInstagramAccount || !!page.instagramBusinessAccount;
+
+  const eligibleCount = pages.filter(isEligible).length;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Select Pages to Connect</DialogTitle>
+          <DialogTitle>
+            {requiresInstagramAccount
+              ? "Select Instagram Accounts to Connect"
+              : "Select Pages to Connect"}
+          </DialogTitle>
           <DialogDescription>
-            Choose which pages you want to connect to Afrisinc
+            {requiresInstagramAccount
+              ? "Instagram publishes through the Facebook Page it is linked to. Only Pages with a linked professional account can be connected."
+              : "Choose which pages you want to connect to Afrisinc"}
           </DialogDescription>
         </DialogHeader>
 
@@ -48,28 +62,61 @@ export function PageSelectionDialog({
           </div>
         ) : (
           <div className="flex flex-col gap-2 max-h-96 overflow-y-auto">
-            {pages.map((page) => (
-              <label
-                key={page.id}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-inset cursor-pointer transition-colors"
-              >
-                <Checkbox
-                  checked={selectedPageIds.has(page.id)}
-                  onCheckedChange={() => onPageToggle(page.id)}
-                  className="mt-1"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{page.name}</p>
-                  {page.category && (
-                    <p className="text-xs text-muted-foreground">
-                      {page.category}
-                    </p>
+            {pages.map((page) => {
+              const eligible = isEligible(page);
+              const instagram = page.instagramBusinessAccount;
+
+              return (
+                <label
+                  key={page.id}
+                  className={cn(
+                    "flex items-start gap-3 p-3 rounded-lg border border-border transition-colors",
+                    eligible
+                      ? "hover:bg-inset cursor-pointer"
+                      : "opacity-60 cursor-not-allowed",
                   )}
-                </div>
-              </label>
-            ))}
+                >
+                  <Checkbox
+                    checked={selectedPageIds.has(page.id)}
+                    onCheckedChange={() => onPageToggle(page.id)}
+                    disabled={!eligible}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate">
+                      {requiresInstagramAccount && instagram?.username
+                        ? `@${instagram.username}`
+                        : page.name}
+                    </p>
+                    {requiresInstagramAccount ? (
+                      <p className="text-xs text-muted-foreground">
+                        {eligible
+                          ? `via ${page.name}`
+                          : `${page.name} — no Instagram professional account linked`}
+                      </p>
+                    ) : (
+                      page.category && (
+                        <p className="text-xs text-muted-foreground">
+                          {page.category}
+                        </p>
+                      )
+                    )}
+                  </div>
+                </label>
+              );
+            })}
           </div>
         )}
+
+        {requiresInstagramAccount &&
+          pages.length > 0 &&
+          eligibleCount === 0 && (
+            <p className="text-xs text-muted-foreground border-t border-border pt-3">
+              None of your Pages have a linked Instagram professional account.
+              In Instagram, switch the account to Business or Creator, then link
+              it to a Facebook Page from Page settings.
+            </p>
+          )}
 
         <div className="flex items-center gap-2.5 border-t border-border pt-4">
           <span className="flex-1 text-xs text-muted-foreground">

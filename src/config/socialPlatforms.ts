@@ -38,6 +38,39 @@ const socialScopes: ScopeDef[] = [
   },
 ];
 
+/**
+ * Instagram publishes through Instagram API with Facebook Login, so the user
+ * authorises through Facebook but the permissions are Instagram's.
+ * `instagram_content_publish` is the one that actually allows posting — without
+ * it a connection succeeds and every publish then fails.
+ */
+const instagramScopes: ScopeDef[] = [
+  {
+    id: "instagram_basic",
+    label: "Read profile",
+    desc: "Identify the Instagram account and read its media.",
+    required: true,
+  },
+  {
+    id: "instagram_content_publish",
+    label: "Publish posts & media",
+    desc: "Post on your behalf — the core of autopilot.",
+    required: true,
+  },
+  {
+    id: "pages_show_list",
+    label: "List your Pages",
+    desc: "Find the Facebook Page your Instagram account is linked to.",
+    required: true,
+  },
+  {
+    id: "pages_read_engagement",
+    label: "Read insights",
+    desc: "Pull reach, engagement and follower data for analytics.",
+    required: true,
+  },
+];
+
 const webScopes: ScopeDef[] = [
   {
     id: "publish_articles",
@@ -87,8 +120,8 @@ export const PLATFORM_CATALOG: Record<SocialPlatformKey, PlatformCatalogEntry> =
       displayName: "Instagram",
       short: "IG",
       tone: "text-platform-instagram bg-platform-instagram/10",
-      scopeSummary: "Publish, DMs, insights",
-      scopes: socialScopes,
+      scopeSummary: "Publish, insights",
+      scopes: instagramScopes,
     },
     tiktok: {
       displayName: "TikTok",

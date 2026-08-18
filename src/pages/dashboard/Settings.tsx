@@ -23,6 +23,8 @@ import {
   useSocialMediaIntegrations,
   useAvailablePages,
   useDeleteAccount,
+  useAddAccountFromFacebookPage,
+  type FacebookPage,
 } from "@/hooks/useSocialMediaIntegrations";
 
 function formatSyncedAgo(iso: string | null): string {
@@ -47,6 +49,23 @@ type ExpandedPlatformViewProps = {
 function ExpandedPlatformView({ row }: ExpandedPlatformViewProps) {
   const { data: pages, isLoading } = useAvailablePages(row.key);
   const deleteAccount = useDeleteAccount();
+  const addAccount = useAddAccountFromFacebookPage();
+
+  const isInstagram = row.key === "instagram";
+
+  const handleAdd = (page: FacebookPage) => {
+    if (!page.access_token) return;
+
+    addAccount.mutate({
+      platform: row.key,
+      pageId: page.id,
+      pageName: page.name,
+      scopes: row.catalog.scopes
+        .filter((scope) => scope.required)
+        .map((scope) => scope.id),
+      accessToken: page.access_token,
+    });
+  };
 
   return (
     <div className="flex flex-col gap-2.5 px-6 pb-4 pl-[70px]">
@@ -106,40 +125,66 @@ function ExpandedPlatformView({ row }: ExpandedPlatformViewProps) {
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Available Pages
             </p>
-            {pages.available.map((page) => (
-              <div
-                key={page.id}
-                className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-background px-3.5 py-2.5"
-              >
-                <span
+            {pages.available.map((page) => {
+              const instagram = page.instagramBusinessAccount;
+              const eligible = !isInstagram || !!instagram;
+              const displayName =
+                isInstagram && instagram?.username
+                  ? `@${instagram.username}`
+                  : page.name;
+
+              return (
+                <div
+                  key={page.id}
                   className={cn(
-                    "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[10.5px] font-bold",
-                    row.catalog.tone,
+                    "flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-background px-3.5 py-2.5",
+                    !eligible && "opacity-60",
                   )}
                 >
-                  {page.name
-                    .replace(/[^A-Za-z]/g, "")
-                    .slice(0, 2)
-                    .toUpperCase() || "AF"}
-                </span>
-                <div className="min-w-[120px] flex-1">
-                  <p className="text-xs font-bold">{page.name}</p>
-                  {page.category && (
-                    <p className="mt-0.5 text-[11px] text-dim-5">
-                      {page.category}
-                    </p>
-                  )}
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[10.5px] font-bold",
+                      row.catalog.tone,
+                    )}
+                  >
+                    {displayName
+                      .replace(/[^A-Za-z]/g, "")
+                      .slice(0, 2)
+                      .toUpperCase() || "AF"}
+                  </span>
+                  <div className="min-w-[120px] flex-1">
+                    <p className="text-xs font-bold">{displayName}</p>
+                    {isInstagram ? (
+                      <p className="mt-0.5 text-[11px] text-dim-5">
+                        {eligible
+                          ? `via ${page.name}`
+                          : `${page.name} — no Instagram professional account linked`}
+                      </p>
+                    ) : (
+                      page.category && (
+                        <p className="mt-0.5 text-[11px] text-dim-5">
+                          {page.category}
+                        </p>
+                      )
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-shrink-0 h-7 px-2 text-[10.5px]"
+                    onClick={() => handleAdd(page)}
+                    disabled={!eligible || addAccount.isPending}
+                  >
+                    {addAccount.isPending ? (
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    ) : (
+                      <Plus className="h-3 w-3 mr-1" />
+                    )}
+                    Add
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-shrink-0 h-7 px-2 text-[10.5px]"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )
       )}

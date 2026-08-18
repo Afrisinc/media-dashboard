@@ -21,11 +21,27 @@ export interface SocialMediaIntegrationDTO {
   accounts: SocialMediaAccountDTO[];
 }
 
+export interface InstagramBusinessAccount {
+  id: string;
+  username?: string;
+  profilePictureUrl?: string;
+}
+
 export interface FacebookPage {
   id: string;
   name: string;
   access_token?: string;
   category?: string;
+  picture?: {
+    data?: {
+      height: number;
+      is_silhouette: boolean;
+      url: string;
+      width: number;
+    };
+  };
+  /** Instagram only. Null means the Page has no linked professional account. */
+  instagramBusinessAccount?: InstagramBusinessAccount | null;
 }
 
 export interface OAuthCallbackResponse {
@@ -217,7 +233,9 @@ export const useAddAccountFromFacebookPage = () => {
 
 export const useAvailablePages = (platform?: SocialPlatformKey) => {
   return useQuery({
-    queryKey: [QUERY_KEY, "available-pages", platform],
+    // Spread, not nested — invalidateQueries(QUERY_KEY) only prefix-matches a
+    // flat key, and this query must refetch when an account is added or removed.
+    queryKey: [...QUERY_KEY, "available-pages", platform],
     queryFn: async () => {
       if (!platform) return { available: [], connected: [] };
       const data = await authorizedFetch(

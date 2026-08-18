@@ -177,9 +177,6 @@ export function ConnectPlatformDialog({
         scopes,
       });
 
-      console.log("[OAuth Debug]", "API Response:", result);
-      console.log("[OAuth Debug]", "oauthState:", result.oauthState);
-
       setAccountId(result.id);
       setOauthState(result.oauthState || result.state);
 
@@ -190,12 +187,6 @@ export function ConnectPlatformDialog({
       authUrl.searchParams.append("state", result.oauthState || result.state);
       authUrl.searchParams.append("scope", scopes.join(","));
       authUrl.searchParams.append("response_type", "code");
-
-      console.log("[OAuth Debug]", "Redirect URL:", authUrl.toString());
-      console.log("[OAuth Debug]", "Waiting 3 seconds before redirect...");
-
-      // Wait 3 seconds so you can see the Network response
-      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       window.location.href = authUrl.toString();
     } finally {
@@ -271,6 +262,11 @@ export function ConnectPlatformDialog({
     handleClose();
   };
 
+  const isInstagram = platform.key === "instagram";
+  const eligiblePageCount = isInstagram
+    ? pages.filter((page) => page.instagramBusinessAccount).length
+    : pages.length;
+
   const primaryDisabled =
     submitting ||
     (step === 0 && !credsReady) ||
@@ -318,9 +314,26 @@ export function ConnectPlatformDialog({
         {step === 0 && (
           <div className="flex flex-col gap-3.5">
             <p className="text-xs text-muted-foreground">
-              Create an app in the {platform.displayName} developer portal, then
-              paste its credentials here.
+              {isInstagram
+                ? "Instagram uses your Facebook app — the same App ID and secret. Add the Instagram product to it in the Meta App Dashboard."
+                : `Create an app in the ${platform.displayName} developer portal, then paste its credentials here.`}
             </p>
+            {isInstagram && (
+              <div className="rounded-lg border border-border bg-inset p-3">
+                <p className="text-xs font-bold">Before you connect</p>
+                <ul className="mt-1.5 flex flex-col gap-1 text-xs text-muted-foreground">
+                  <li>
+                    • Your Instagram account must be a Business or Creator
+                    account
+                  </li>
+                  <li>• It must be linked to a Facebook Page you administer</li>
+                  <li>
+                    • If that Page requires Page Publishing Authorization,
+                    complete it first — publishing fails until you do
+                  </li>
+                </ul>
+              </div>
+            )}
             <div>
               <label className="mb-1.5 block text-xs font-bold">
                 App ID / Client ID
@@ -402,7 +415,9 @@ export function ConnectPlatformDialog({
         {step === 2 && (
           <div className="flex flex-col gap-3">
             <p className="text-xs text-muted-foreground">
-              Select which {platform.displayName} pages to connect
+              {isInstagram
+                ? "Instagram publishes through the Facebook Page it is linked to. Only Pages with a linked professional account can be connected."
+                : `Select which ${platform.displayName} pages to connect`}
             </p>
             {pages.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
@@ -410,27 +425,57 @@ export function ConnectPlatformDialog({
               </div>
             ) : (
               <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-                {pages.map((page) => (
-                  <label
-                    key={page.id}
-                    className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-inset cursor-pointer transition-colors"
-                  >
-                    <Checkbox
-                      checked={selectedPageIds.has(page.id)}
-                      onCheckedChange={() => togglePageId(page.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate">{page.name}</p>
-                      {page.category && (
-                        <p className="text-xs text-muted-foreground">
-                          {page.category}
-                        </p>
+                {pages.map((page) => {
+                  const instagram = page.instagramBusinessAccount;
+                  const eligible = !isInstagram || !!instagram;
+
+                  return (
+                    <label
+                      key={page.id}
+                      className={cn(
+                        "flex items-start gap-3 p-3 rounded-lg border border-border transition-colors",
+                        eligible
+                          ? "hover:bg-inset cursor-pointer"
+                          : "opacity-60 cursor-not-allowed",
                       )}
-                    </div>
-                  </label>
-                ))}
+                    >
+                      <Checkbox
+                        checked={selectedPageIds.has(page.id)}
+                        onCheckedChange={() => togglePageId(page.id)}
+                        disabled={!eligible}
+                        className="mt-1"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">
+                          {isInstagram && instagram?.username
+                            ? `@${instagram.username}`
+                            : page.name}
+                        </p>
+                        {isInstagram ? (
+                          <p className="text-xs text-muted-foreground">
+                            {eligible
+                              ? `via ${page.name}`
+                              : `${page.name} — no Instagram professional account linked`}
+                          </p>
+                        ) : (
+                          page.category && (
+                            <p className="text-xs text-muted-foreground">
+                              {page.category}
+                            </p>
+                          )
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
+            )}
+            {isInstagram && pages.length > 0 && eligiblePageCount === 0 && (
+              <p className="text-xs text-muted-foreground">
+                None of your Pages have a linked Instagram professional account.
+                In Instagram, switch the account to Business or Creator, then
+                link it to a Facebook Page from Page settings.
+              </p>
             )}
           </div>
         )}

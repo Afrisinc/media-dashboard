@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { useTopics } from "@/hooks/useTopics";
 import { useGenerateAIPost } from "@/hooks/useAIPosts";
+import { AssetSelector } from "@/components/AssetSelector";
 import {
   Sparkles,
   Send,
@@ -47,6 +48,7 @@ const formSchema = z.object({
   link: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   platform: z.enum(["facebook", "instagram", "both"]),
   formMode: z.enum(["test", "production"]),
+  selectedAssets: z.array(z.string()).default([]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -63,6 +65,7 @@ const CreatePostForm = () => {
       link: "",
       platform: "both",
       formMode: "test",
+      selectedAssets: [],
     },
   });
 
@@ -73,8 +76,16 @@ const CreatePostForm = () => {
       link: data.link || undefined,
       platform: data.platform,
       formMode: data.formMode,
+      selectedAssets: data.selectedAssets,
     });
-    form.reset();
+    form.reset({
+      topic: "",
+      keywords: "",
+      link: "",
+      platform: "both",
+      formMode: "test",
+      selectedAssets: [],
+    });
   };
 
   const selectedPlatform = form.watch("platform");
@@ -307,6 +318,33 @@ const CreatePostForm = () => {
                       <span className="text-sm font-medium">Production</span>
                     </button>
                   </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Brand Assets Selection */}
+            <FormField
+              control={form.control}
+              name="selectedAssets"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="border-t border-border/30 pt-4">
+                    <FormLabel className="flex items-center gap-2 mb-3">
+                      <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                        Optional
+                      </span>
+                    </FormLabel>
+                    <AssetSelector
+                      selectedAssets={field.value}
+                      onChange={field.onChange}
+                      label="Brand Assets for Art Direction"
+                      maxSelection={5}
+                    />
+                  </div>
+                  <FormDescription className="text-xs mt-2">
+                    Select approved brand assets to guide the AI art direction
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

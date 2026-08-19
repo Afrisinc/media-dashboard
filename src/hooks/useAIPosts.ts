@@ -67,6 +67,7 @@ export const useGenerateAIPost = () => {
       link?: string;
       platform: "facebook" | "instagram" | "both";
       formMode?: "test" | "production";
+      selectedAssets?: string[];
     }) => {
       const token = getToken();
       if (!token) throw new Error("Not authenticated");

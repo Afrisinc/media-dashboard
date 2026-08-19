@@ -11,6 +11,8 @@ export interface SocialMediaPost {
   postUrl?: string | null;
   message?: string | null;
   link?: string | null;
+  description?: string | null;
+  caption?: string | null;
   tags: string[];
   status: string;
   aiGenerated: boolean;

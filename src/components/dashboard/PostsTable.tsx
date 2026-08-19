@@ -4,6 +4,7 @@ import {
   useUpdateSocialMediaPost,
   usePublishScheduledPost,
 } from "@/hooks/useSocialMediaPosting";
+import { EditPostDialog } from "./EditPostDialog";
 import {
   Card,
   CardContent,
@@ -31,6 +32,8 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import {
   Clock,
+  Film,
+  Newspaper,
   CheckCircle,
   XCircle,
   Loader2,
@@ -76,6 +79,44 @@ const statusConfig = {
   },
 };
 
+const FORMAT_BADGES: Record<
+  string,
+  { label: string; icon: typeof Clock; className: string }
+> = {
+  feed: {
+    label: "Feed",
+    icon: Newspaper,
+    className: "text-sky-600 border-sky-500/30 bg-sky-500/10",
+  },
+  story: {
+    label: "Story",
+    icon: Clock,
+    className: "text-violet-600 border-violet-500/30 bg-violet-500/10",
+  },
+  reel: {
+    label: "Reel",
+    icon: Film,
+    className: "text-pink-600 border-pink-500/30 bg-pink-500/10",
+  },
+};
+
+const PostFormatBadge = ({ postFormat }: { postFormat?: string | null }) => {
+  const entry = FORMAT_BADGES[postFormat ?? "feed"] ?? FORMAT_BADGES.feed;
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "flex items-center gap-1 w-fit font-medium border",
+        entry.className,
+      )}
+    >
+      <entry.icon className="w-3 h-3" />
+      {entry.label}
+    </Badge>
+  );
+};
+
 const PlatformIcon = ({ platform }: { platform: string }) => {
   switch (platform) {
     case "facebook":
@@ -103,7 +144,6 @@ const PostsTable = () => {
     null,
   );
   const [editingPost, setEditingPost] = useState<SocialMediaPost | null>(null);
-  const [editMessage, setEditMessage] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deleteConfirmPost, setDeleteConfirmPost] =
     useState<SocialMediaPost | null>(null);
@@ -173,6 +213,7 @@ const PostsTable = () => {
                 <TableRow className="bg-muted/30 hover:bg-muted/30">
                   <TableHead className="font-semibold">Message</TableHead>
                   <TableHead className="font-semibold">Platform</TableHead>
+                  <TableHead className="font-semibold">Format</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Created</TableHead>
                   <TableHead className="font-semibold">Published</TableHead>
@@ -233,6 +274,9 @@ const PostsTable = () => {
                         </div>
                       </TableCell>
                       <TableCell>
+                        <PostFormatBadge postFormat={post.postFormat} />
+                      </TableCell>
+                      <TableCell>
                         <Badge
                           variant="outline"
                           className={cn(
@@ -287,7 +331,6 @@ const PostsTable = () => {
                                 size="sm"
                                 onClick={() => {
                                   setEditingPost(post);
-                                  setEditMessage(post.message || "");
                                 }}
                                 title="Edit post"
                               >
@@ -391,9 +434,12 @@ const PostsTable = () => {
                     <label className="text-sm font-medium text-muted-foreground">
                       Platform
                     </label>
-                    <p className="text-sm font-medium capitalize mt-1">
-                      {selectedPost.platform}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm font-medium capitalize">
+                        {selectedPost.platform}
+                      </p>
+                      <PostFormatBadge postFormat={selectedPost.postFormat} />
+                    </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
@@ -602,7 +648,6 @@ const PostsTable = () => {
                     variant="outline"
                     onClick={() => {
                       setEditingPost(selectedPost);
-                      setEditMessage(selectedPost.message || "");
                       setSelectedPost(null);
                     }}
                   >
@@ -628,79 +673,7 @@ const PostsTable = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Post Modal */}
-      <Dialog
-        open={!!editingPost}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingPost(null);
-            setEditMessage("");
-          }
-        }}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Post</DialogTitle>
-            <DialogDescription>
-              Update your scheduled post before it's published.
-            </DialogDescription>
-          </DialogHeader>
-
-          {editingPost && (
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Message</label>
-                <textarea
-                  className="w-full mt-2 p-3 border border-border rounded-lg bg-background text-foreground resize-none"
-                  rows={4}
-                  value={editMessage}
-                  onChange={(e) => setEditMessage(e.target.value)}
-                  placeholder="Enter your post message..."
-                />
-              </div>
-
-              <div className="flex gap-2 justify-end pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setEditingPost(null);
-                    setEditMessage("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    updatePostMutation.mutate(
-                      {
-                        postId: editingPost.id,
-                        payload: {
-                          content: {
-                            message: editMessage,
-                            tags: editingPost.tags,
-                            link: editingPost.link,
-                            description: editingPost.description,
-                            caption: editingPost.caption,
-                          },
-                        },
-                      },
-                      {
-                        onSuccess: () => {
-                          setEditingPost(null);
-                          setEditMessage("");
-                        },
-                      },
-                    );
-                  }}
-                  disabled={updatePostMutation.isPending || !editMessage.trim()}
-                >
-                  {updatePostMutation.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <EditPostDialog post={editingPost} onClose={() => setEditingPost(null)} />
 
       {/* Delete Confirmation Dialog */}
       <Dialog

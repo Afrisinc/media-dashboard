@@ -18,6 +18,7 @@ import {
   Workflow,
   Bot,
   BarChart3,
+  Wand2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,8 @@ import { getRuntimeConfig } from "@/lib/config";
 
 const mainItems = [
   { title: "Media Studio", url: "/media", icon: Newspaper },
-  { title: "AI Content", url: "/ai-content", icon: Sparkles },
+  { title: "Post Studio", url: "/post-studio", icon: Sparkles },
+  { title: "AI Content", url: "/ai-content", icon: Wand2 },
   { title: "Automation", url: "/automation", icon: Workflow },
   { title: "AI Agents", url: "/agents", icon: Bot },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },

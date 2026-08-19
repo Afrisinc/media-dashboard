@@ -14,6 +14,7 @@ import {
   EditCredentialsDialog,
   type EditCredentialsPlatform,
 } from "@/components/dashboard/EditCredentialsDialog";
+import { BrandAssetsManager } from "@/components/dashboard/BrandAssetsManager";
 import {
   SOCIAL_PLATFORMS,
   PLATFORM_CATALOG,
@@ -208,13 +209,6 @@ function ExpandedPlatformView({ row }: ExpandedPlatformViewProps) {
   );
 }
 
-const brandSwatches = [
-  { label: "Primary", className: "bg-primary" },
-  { label: "Forest", className: "bg-forest" },
-  { label: "Terra", className: "bg-terra" },
-  { label: "Gold", className: "bg-gold" },
-];
-
 const DashboardSettings = () => {
   const { autopilot, setAutopilot } = useAutopilot();
   const { data: integrations, isLoading } = useSocialMediaIntegrations();
@@ -370,26 +364,7 @@ const DashboardSettings = () => {
         )}
       </Card>
 
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm font-bold">Brand</p>
-          <p className="mb-3.5 text-xs text-muted-foreground">
-            Applied automatically to every generated asset.
-          </p>
-          <div className="flex gap-2">
-            {brandSwatches.map((swatch) => (
-              <span
-                key={swatch.label}
-                title={swatch.label}
-                className={cn("h-9 w-9 rounded-lg", swatch.className)}
-              />
-            ))}
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-4 bg-card-hi-2 text-[10px] font-bold text-muted-foreground">
-              Aa
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      <BrandAssetsManager />
 
       <ConnectPlatformDialog
         platform={connectingPlatform}

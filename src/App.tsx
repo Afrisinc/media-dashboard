@@ -19,6 +19,7 @@ import DashboardMedia from "./pages/dashboard/Media";
 import DashboardSettings from "./pages/dashboard/Settings";
 import DashboardAutomation from "./pages/dashboard/Automation";
 import DashboardAgents from "./pages/dashboard/Agents";
+import PostStudio from "./pages/dashboard/PostStudio";
 import DashboardAnalytics from "./pages/dashboard/Analytics";
 import AIContent from "./pages/dashboard/AIContent";
 import SSOCallback from "./pages/SSOCallback";
@@ -96,6 +97,7 @@ const AppContent = () => {
       {/* Dashboard Routes - at root level */}
       <Route path="/" element={<DashboardLayout />}>
         <Route index element={<DashboardMedia />} />
+        <Route path="post-studio" element={<PostStudio />} />
         <Route path="ai-content" element={<AIContent />} />
         <Route path="media" element={<DashboardMedia />} />
         <Route path="automation" element={<DashboardAutomation />} />

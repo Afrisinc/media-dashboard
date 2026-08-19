@@ -13,6 +13,10 @@ export interface RuntimeConfig {
 let config: RuntimeConfig | null = null;
 let configLoaded = false;
 
+function isPlaceholder(value: string | undefined): boolean {
+  return !value || value.startsWith("__");
+}
+
 function validateConfig(cfg: Partial<RuntimeConfig>): RuntimeConfig {
   const errors: string[] = [];
 
@@ -44,13 +48,17 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
 
   try {
     // Check for runtime-injected environment variables first (via env-config.js)
+    // Skip placeholder values (e.g., __VITE_API_URL__) and fall back to import.meta.env
     const injectedEnv = window.__ENV__;
-    const apiUrl = injectedEnv?.VITE_API_URL || import.meta.env.VITE_API_URL;
-    const authUiUrl =
-      injectedEnv?.VITE_AUTH_UI_URL || import.meta.env.VITE_AUTH_UI_URL;
+    const apiUrl = !isPlaceholder(injectedEnv?.VITE_API_URL)
+      ? injectedEnv?.VITE_API_URL
+      : import.meta.env.VITE_API_URL;
+    const authUiUrl = !isPlaceholder(injectedEnv?.VITE_AUTH_UI_URL)
+      ? injectedEnv?.VITE_AUTH_UI_URL
+      : import.meta.env.VITE_AUTH_UI_URL;
 
     // Only load config.json if we don't have the required env vars
-    if (!apiUrl || !authUiUrl) {
+    if (isPlaceholder(apiUrl) || isPlaceholder(authUiUrl)) {
       const response = await fetch("/config.json", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -84,11 +92,17 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
       error,
     );
     const injectedEnv = window.__ENV__;
+    const apiUrl = !isPlaceholder(injectedEnv?.VITE_API_URL)
+      ? injectedEnv?.VITE_API_URL
+      : import.meta.env.VITE_API_URL;
+    const authUiUrl = !isPlaceholder(injectedEnv?.VITE_AUTH_UI_URL)
+      ? injectedEnv?.VITE_AUTH_UI_URL
+      : import.meta.env.VITE_AUTH_UI_URL;
+
     config = validateConfig({
-      serverUrl: injectedEnv?.VITE_API_URL || import.meta.env.VITE_API_URL,
-      apiUrl: injectedEnv?.VITE_API_URL || import.meta.env.VITE_API_URL,
-      authUiUrl:
-        injectedEnv?.VITE_AUTH_UI_URL || import.meta.env.VITE_AUTH_UI_URL,
+      serverUrl: apiUrl,
+      apiUrl: apiUrl,
+      authUiUrl: authUiUrl,
     });
     configLoaded = true;
     return config;

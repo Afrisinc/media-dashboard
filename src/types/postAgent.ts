@@ -74,11 +74,14 @@ export interface PostBrief {
   serviceLine?: string;
   offer?: string;
   audience?: string;
+  /** Publish to every live page in this brand. Omit for the workspace default. */
+  groupId?: string;
 }
 
 export interface SchedulePayload {
   platform?: string;
   pageId?: string;
+  groupId?: string;
   scheduledAt?: string;
 }
 

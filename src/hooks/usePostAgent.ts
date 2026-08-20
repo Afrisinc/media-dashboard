@@ -11,6 +11,7 @@ import {
   type ListParams,
 } from "@/services/postAgentService";
 import type { PostBrief, PostDraft, SchedulePayload } from "@/types/postAgent";
+import { watchForNewRun } from "@/hooks/useAutomation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const postDraftKeys = {
@@ -40,12 +41,14 @@ export function usePostDraft(id: string | undefined) {
 function useDraftMutation<TArgs>(
   run: (args: TArgs) => Promise<PostDraft>,
   successMessage: (draft: PostDraft) => string,
+  onStart?: (queryClient: ReturnType<typeof useQueryClient>) => void,
 ) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: run,
+    onMutate: () => onStart?.(queryClient),
     onSuccess: (draft) => {
       queryClient.invalidateQueries({ queryKey: postDraftKeys.all });
       toast({ title: successMessage(draft) });
@@ -63,6 +66,9 @@ export function useCreatePostDraft() {
       draft.auditPassed
         ? "Drafted and queued for review"
         : "Drafted, but the craft audit found something",
+    // Drafting takes about a minute. Start watching the run as the request goes
+    // out, so the pipeline animates while the agent works rather than after.
+    watchForNewRun,
   );
 }
 

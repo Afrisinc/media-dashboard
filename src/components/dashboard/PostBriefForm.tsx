@@ -9,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAutopilot } from "@/contexts/AutopilotContext";
+import { useAccountGroups } from "@/hooks/useAccountGroups";
 import { useCreatePostDraft } from "@/hooks/usePostAgent";
 import {
   FORMAT_LABELS,
@@ -16,6 +18,7 @@ import {
   type PostFormatName,
 } from "@/types/postAgent";
 import { Loader2, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useState, type FormEvent } from "react";
 
 const FORMATS: PostFormatName[] = ["post", "single", "story"];
@@ -35,12 +38,17 @@ const DEFAULT_FRAMES: Record<PostFormatName, string> = {
 
 export function PostBriefForm() {
   const create = useCreatePostDraft();
+  const { data: groups } = useAccountGroups();
+  const { autopilot } = useAutopilot();
+  const [groupId, setGroupId] = useState<string>("");
   const [format, setFormat] = useState<PostFormatName>("post");
   const [topic, setTopic] = useState("");
   const [offer, setOffer] = useState("");
   const [serviceLine, setServiceLine] = useState("");
   const [audience, setAudience] = useState("");
   const [slideCount, setSlideCount] = useState<string>("");
+
+  const selectedGroup = (groups ?? []).find((group) => group.id === groupId);
 
   const onFormatChange = (next: PostFormatName) => {
     setFormat(next);
@@ -52,6 +60,7 @@ export function PostBriefForm() {
     if (!topic.trim() || create.isPending) return;
 
     const brief: PostBrief = { topic: topic.trim(), format };
+    if (groupId) brief.groupId = groupId;
     if (slideCount) brief.slideCount = Number(slideCount);
     if (offer.trim()) brief.offer = offer.trim();
     if (serviceLine.trim()) brief.serviceLine = serviceLine.trim();
@@ -86,6 +95,42 @@ export function PostBriefForm() {
               maxLength={200}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="brand">Publish to</Label>
+            <Select
+              value={groupId || "default"}
+              onValueChange={(value) =>
+                setGroupId(value === "default" ? "" : value)
+              }
+            >
+              <SelectTrigger id="brand">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Default brand</SelectItem>
+                {(groups ?? []).map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name} · {group.activeMemberCount} live page
+                    {group.activeMemberCount === 1 ? "" : "s"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {selectedGroup
+                ? selectedGroup.activeMemberCount === 0
+                  ? "No page in this brand is switched on — nothing would publish."
+                  : `Goes out on ${selectedGroup.platforms.join(", ")}.`
+                : "Uses whichever brand is set as default."}{" "}
+              <Link
+                to="/brands"
+                className="font-semibold text-primary hover:underline"
+              >
+                Manage brands
+              </Link>
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -170,8 +215,10 @@ export function PostBriefForm() {
 
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs text-muted-foreground">
-              Everything but the topic is optional. The draft lands in review —
-              nothing publishes until you approve it.
+              Everything but the topic is optional.{" "}
+              {autopilot
+                ? "Autopilot is on — this one publishes on its own once it passes the craft audit."
+                : "The draft lands in review — nothing publishes until you approve it."}
             </p>
             <Button type="submit" disabled={!topic.trim() || create.isPending}>
               {create.isPending && (

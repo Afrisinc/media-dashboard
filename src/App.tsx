@@ -19,6 +19,7 @@ import DashboardMedia from "./pages/dashboard/Media";
 import DashboardSettings from "./pages/dashboard/Settings";
 import DashboardAutomation from "./pages/dashboard/Automation";
 import DashboardAgents from "./pages/dashboard/Agents";
+import DashboardBrands from "./pages/dashboard/Brands";
 import PostStudio from "./pages/dashboard/PostStudio";
 import DashboardAnalytics from "./pages/dashboard/Analytics";
 import AIContent from "./pages/dashboard/AIContent";
@@ -100,6 +101,7 @@ const AppContent = () => {
         <Route path="post-studio" element={<PostStudio />} />
         <Route path="ai-content" element={<AIContent />} />
         <Route path="media" element={<DashboardMedia />} />
+        <Route path="brands" element={<DashboardBrands />} />
         <Route path="automation" element={<DashboardAutomation />} />
         <Route path="agents" element={<DashboardAgents />} />
         <Route path="analytics" element={<DashboardAnalytics />} />

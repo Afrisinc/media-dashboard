@@ -89,6 +89,29 @@ export const useSocialMediaIntegrations = () => {
   });
 };
 
+/** One installed page or account, flattened out of the per-platform integrations. */
+export interface InstalledAccount extends SocialMediaAccountDTO {
+  platform: SocialPlatformKey;
+}
+
+/**
+ * Every connected page across every platform as one list — what the group
+ * screens assign from, rather than walking the platform tree at each call site.
+ */
+export const useInstalledAccounts = () => {
+  const query = useSocialMediaIntegrations();
+
+  const accounts: InstalledAccount[] = (query.data ?? []).flatMap(
+    (integration) =>
+      integration.accounts.map((account) => ({
+        ...account,
+        platform: integration.platform,
+      })),
+  );
+
+  return { ...query, accounts };
+};
+
 export const useSaveIntegrationCredentials = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();

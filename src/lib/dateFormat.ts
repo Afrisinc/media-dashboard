@@ -152,3 +152,23 @@ export const formatDateDuration = (startDate: Date, endDate: Date): string => {
   }
   return `${diffMins}m`;
 };
+
+/**
+ * Compact duration for a finished agent run.
+ * Examples: "820ms", "48s", "4m 07s"
+ */
+export const formatDurationMs = (ms: number | null): string => {
+  if (ms === null || !Number.isFinite(ms) || ms < 0) {
+    return "—";
+  }
+  if (ms < 1000) {
+    return `${Math.round(ms)}ms`;
+  }
+
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+
+  return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, "0")}s`;
+};

@@ -1,3 +1,4 @@
+import { AgentRunTimeline } from "@/components/dashboard/AgentRunTimeline";
 import { PostBriefForm } from "@/components/dashboard/PostBriefForm";
 import { PostDraftReview } from "@/components/dashboard/PostDraftReview";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +7,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLatestAgentRun } from "@/hooks/useAutomation";
 import { usePostDrafts } from "@/hooks/usePostAgent";
+import { isRunWorthWatching } from "@/types/accountGroup";
 import {
   FORMAT_LABELS,
   STATUS_LABELS,
@@ -59,6 +62,11 @@ function HistoryRow({ draft }: { draft: PostDraft }) {
 export default function PostStudio() {
   const review = usePostDrafts({ status: REVIEW_STATUS, limit: 20 });
   const recent = usePostDrafts({ limit: 20 });
+  const { run } = useLatestAgentRun();
+
+  // The agent takes a minute or so. Showing the pipeline while it works is the
+  // difference between a spinner and knowing what is happening.
+  const watching = run && isRunWorthWatching(run) ? run : undefined;
 
   const queue = review.data?.items ?? [];
   const history = (recent.data?.items ?? []).filter(
@@ -73,6 +81,14 @@ export default function PostStudio() {
       />
 
       <PostBriefForm />
+
+      {watching && (
+        <Card>
+          <CardContent className="pt-6">
+            <AgentRunTimeline run={watching} />
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="review">
         <TabsList>

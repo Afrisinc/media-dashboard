@@ -1,227 +1,284 @@
-import {
-  Workflow,
-  Video,
-  TrendingUp,
-  Mail,
-  ImageIcon,
-  FileBarChart,
-} from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { AgentRunRow } from "@/components/dashboard/AgentRunRow";
+import { AgentRunTimeline } from "@/components/dashboard/AgentRunTimeline";
+import { AutomationModeCard } from "@/components/dashboard/AutomationModeCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { IconBox } from "@/components/ui/icon-box";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { useAutopilot } from "@/contexts/AutopilotContext";
+import { useAccountGroups } from "@/hooks/useAccountGroups";
+import {
+  useActiveAgentRun,
+  useAgentRuns,
+  useAutomationSummary,
+} from "@/hooks/useAutomation";
+import { cn } from "@/lib/utils";
+import { describeCadence, groupTone } from "@/types/accountGroup";
+import {
+  AlertTriangle,
+  Bot,
+  Building2,
+  CheckCircle2,
+  Inbox,
+  Radio,
+  ServerCrash,
+  Workflow,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
-const workflows = [
-  {
-    name: "Article to Social",
-    icon: Workflow,
-    schedule: "Runs on every blog publish",
-    success: "100%",
-    lastRun: "2h ago",
-    active: true,
-  },
-  {
-    name: "Weekly video series",
-    icon: Video,
-    schedule: "Mon & Thu at 08:00",
-    success: "98.5%",
-    lastRun: "3h ago",
-    active: true,
-  },
-  {
-    name: "Trending topic response",
-    icon: TrendingUp,
-    schedule: "Monitors trends 24/7",
-    success: "96%",
-    lastRun: "41m ago",
-    active: true,
-  },
-  {
-    name: "Newsletter digest",
-    icon: Mail,
-    schedule: "Fridays at 07:00",
-    success: "100%",
-    lastRun: "Yesterday",
-    active: true,
-  },
-  {
-    name: "Story series generator",
-    icon: ImageIcon,
-    schedule: "Daily at 09:00",
-    success: "97.2%",
-    lastRun: "5h ago",
-    active: true,
-  },
-  {
-    name: "Performance report",
-    icon: FileBarChart,
-    schedule: "Sundays at 18:00",
-    success: "100%",
-    lastRun: "6d ago",
-    active: false,
-  },
-];
+const RUN_LIMIT = 12;
 
-const flowSteps = [
-  {
-    label: "Trigger",
-    detail: "Blog post published",
-    tone: "text-primary border-primary/40",
-  },
-  {
-    label: "AI Generate",
-    detail: "6 platform variations",
-    tone: "text-terra border-terra/40",
-  },
-  {
-    label: "Approval",
-    detail: "Human review",
-    tone: "text-gold border-gold/40",
-  },
-  {
-    label: "Report",
-    detail: "Analytics logged",
-    tone: "text-forest border-forest/45",
-  },
-];
+/** The pipeline as it actually runs. The approval step only exists in manual mode. */
+function pipelineSteps(autopilot: boolean) {
+  return [
+    {
+      label: "Trigger",
+      detail: autopilot ? "Cadence reached" : "You brief it",
+      tone: "text-primary border-primary/40",
+    },
+    {
+      label: "Write",
+      detail: "Copy agent drafts",
+      tone: "text-terra border-terra/40",
+    },
+    {
+      label: "Render",
+      detail: "Art direction + craft audit",
+      tone: "text-indigo border-indigo/40",
+    },
+    autopilot
+      ? {
+          label: "Publish",
+          detail: "Straight to the queue",
+          tone: "text-forest border-forest/45",
+        }
+      : {
+          label: "Approval",
+          detail: "Waits for you",
+          tone: "text-gold border-gold/40",
+        },
+    {
+      label: "Fan out",
+      detail: "Every live page",
+      tone: "text-emerald border-emerald/40",
+    },
+  ];
+}
 
-const recentRuns = [
-  {
-    trigger: "“Lagos fintech weekly roundup” published",
-    outputs: "7 outputs",
-    duration: "3m 48s",
-    when: "2h ago",
-  },
-  {
-    trigger: "“AI marketing in Africa” published",
-    outputs: "7 outputs",
-    duration: "4m 02s",
-    when: "Yesterday",
-  },
-  {
-    trigger: "“Case study: 3× engagement” published",
-    outputs: "6 outputs",
-    duration: "4m 31s",
-    when: "Mon",
-  },
-  {
-    trigger: "“Creator economy in Nairobi” published",
-    outputs: "7 outputs",
-    duration: "4m 27s",
-    when: "Fri",
-  },
-];
+const DashboardAutomation = () => {
+  const { autopilot } = useAutopilot();
+  const { data: groups, isLoading: groupsLoading } = useAccountGroups();
+  const {
+    data: runPage,
+    isLoading: runsLoading,
+    isError,
+  } = useAgentRuns({ limit: RUN_LIMIT });
+  const { data: summary } = useAutomationSummary();
+  const { data: activeRun } = useActiveAgentRun();
 
-const DashboardAutomation = () => (
-  <div className="space-y-6 animate-fade-up">
-    <div className="flex items-end justify-between gap-4 flex-wrap">
+  const runs = runPage?.items ?? [];
+  // The server is the authority on what is in flight — that is what makes the
+  // page resumable after leaving it, or opening it somewhere else.
+  const liveRun =
+    activeRun ?? runs.find((run) => run.status === "running") ?? runs[0];
+  const autopilotGroups = (groups ?? []).filter(
+    (group) => group.autopilotEnabled,
+  );
+  const steps = pipelineSteps(autopilot);
+
+  const succeeded = summary?.succeeded ?? 0;
+  const failed = summary?.failed ?? 0;
+  const skipped = summary?.skipped ?? 0;
+  const attempted = succeeded + failed;
+  const successRate =
+    attempted === 0 ? "—" : `${Math.round((succeeded / attempted) * 100)}%`;
+
+  return (
+    <div className="space-y-6 animate-fade-up">
+      <PageHeader
+        title="Automation"
+        subtitle="What the agents run, when they run it, and where it lands."
+        action={
+          <Button asChild variant="outline">
+            <Link to="/brands">
+              <Building2 className="mr-1.5 h-4 w-4" />
+              Manage brands
+            </Link>
+          </Button>
+        }
+      />
+
+      <AutomationModeCard />
+
+      <StatGrid>
+        <StatCard
+          label="Shipped today"
+          value={String(succeeded)}
+          icon={CheckCircle2}
+          iconTone="success"
+        />
+        <StatCard label="Success rate" value={successRate} icon={Radio} />
+        <StatCard
+          label="Needs a look"
+          value={String(failed)}
+          icon={AlertTriangle}
+          iconTone={failed > 0 ? "destructive" : "muted"}
+        />
+        <StatCard
+          label="Skipped"
+          value={String(skipped)}
+          icon={Inbox}
+          subtitle={skipped > 0 ? "Nothing to do, or capped" : undefined}
+        />
+      </StatGrid>
+
+      <Card className="p-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold">
+              {liveRun
+                ? "Latest run"
+                : autopilot
+                  ? "Agents drive — end to end"
+                  : "You drive — with one approval step"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {liveRun
+                ? "Every stage, with what it took. Updates live while a run is going."
+                : autopilot
+                  ? "Nothing stops for a human. A draft that fails the craft audit still waits, so bad artwork never ships."
+                  : "Every draft is held in review. Approve it and it releases to the publish queue."}
+            </p>
+          </div>
+          <Badge variant={autopilot ? "default" : "secondary"}>
+            {autopilot ? "Autopilot" : "Manual"}
+          </Badge>
+        </div>
+
+        {runsLoading && !liveRun && <Skeleton className="h-40 w-full" />}
+
+        {liveRun && <AgentRunTimeline run={liveRun} />}
+
+        {!liveRun && !runsLoading && (
+          <div className="flex items-center gap-3 overflow-x-auto pb-1.5">
+            {steps.map((step, index) => (
+              <div key={step.label} className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "w-[150px] flex-shrink-0 rounded-xl border bg-inset p-3.5",
+                    step.tone,
+                  )}
+                >
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider">
+                    {step.label}
+                  </p>
+                  <p className="mt-1.5 text-xs font-semibold text-foreground">
+                    {step.detail}
+                  </p>
+                </div>
+                {index < steps.length - 1 && (
+                  <div className="h-px w-8 flex-shrink-0 bg-border-6" />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       <div>
-        <p className="line-accent">Automation</p>
-        <h1 className="heading-section font-display italic mt-2">
-          Workflows that never sleep
-        </h1>
-        <p className="text-secondary mt-1">
-          Every pipeline runs end-to-end — trigger, generate, publish, report.
-        </p>
-      </div>
-      <Button>+ New Workflow</Button>
-    </div>
+        <h2 className="mb-3 text-sm font-bold">Brands on a schedule</h2>
 
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {workflows.map((workflow) => (
-        <Card key={workflow.name} className="p-5">
-          <div className="flex items-center justify-between">
-            <IconBox
-              icon={workflow.icon}
-              tone={workflow.active ? "primary" : "muted"}
-              size="sm"
-            />
-            <Badge variant={workflow.active ? "default" : "secondary"}>
-              {workflow.active ? "Active" : "Paused"}
-            </Badge>
-          </div>
-          <p className="mt-3 text-sm font-bold">{workflow.name}</p>
-          <p className="mt-1 text-xs text-dim-4">{workflow.schedule}</p>
-          <div className="mt-3.5 flex items-center justify-between border-t border-border/50 pt-3">
-            <span className="text-xs text-muted-foreground">
-              Success <b className="text-emerald">{workflow.success}</b>
-            </span>
-            <span className="text-xs text-dim-4">{workflow.lastRun}</span>
-          </div>
-        </Card>
-      ))}
-    </div>
+        {groupsLoading && <Skeleton className="h-24 w-full" />}
 
-    <Card className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-bold">Article to Social — end-to-end</p>
-          <p className="mt-1 text-xs text-dim-4">
-            Pauses once for human approval, then publishes everywhere.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            Test Run
-          </Button>
-          <Button size="sm" className="bg-forest hover:bg-forest/90">
-            Active
-          </Button>
-        </div>
-      </div>
+        {!groupsLoading && autopilotGroups.length === 0 && (
+          <EmptyState
+            icon={Bot}
+            title="No brand is running itself yet"
+            description="Switch the agents on for a brand — it needs topics and at least one live page."
+          />
+        )}
 
-      <div className="mt-6 flex items-center gap-3 overflow-x-auto pb-1.5">
-        {flowSteps.map((step, idx) => (
-          <div key={step.label} className="flex items-center gap-3">
-            <div
-              className={`w-[150px] flex-shrink-0 rounded-xl border bg-inset p-3.5 ${step.tone}`}
-            >
-              <p className="text-[10px] font-extrabold uppercase tracking-wider">
-                {step.label}
-              </p>
-              <p className="mt-1.5 text-xs font-semibold text-foreground">
-                {step.detail}
-              </p>
-            </div>
-            {idx < flowSteps.length - 1 && (
-              <div className="h-px w-8 flex-shrink-0 bg-border-6" />
-            )}
+        {autopilotGroups.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {autopilotGroups.map((group) => (
+              <Card key={group.id} className="p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-lg text-[11px] font-bold",
+                      groupTone(group.color),
+                    )}
+                  >
+                    {group.name
+                      .replace(/[^A-Za-z]/g, "")
+                      .slice(0, 2)
+                      .toUpperCase() || "BR"}
+                  </span>
+                  <Badge
+                    variant={
+                      group.activeMemberCount > 0 ? "default" : "secondary"
+                    }
+                  >
+                    {group.activeMemberCount > 0 ? "Active" : "No live pages"}
+                  </Badge>
+                </div>
+                <p className="mt-3 text-sm font-bold">{group.name}</p>
+                <p className="mt-1 text-xs text-dim-4">
+                  {describeCadence(group)}
+                </p>
+                <div className="mt-3.5 flex items-center justify-between border-t border-border/50 pt-3">
+                  <span className="text-xs text-muted-foreground">
+                    {group.topics.length} topic
+                    {group.topics.length === 1 ? "" : "s"}
+                  </span>
+                  <span className="text-xs text-dim-6">
+                    {group.activeMemberCount} live page
+                    {group.activeMemberCount === 1 ? "" : "s"}
+                  </span>
+                </div>
+              </Card>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
-      <div className="mt-6 border-t border-border/50 pt-4">
-        <div className="mb-2.5 flex items-center justify-between">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-dim-4">
-            Recent runs
+      <Card className="p-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold">Recent runs</h2>
+          <span className="text-xs text-dim-6">
+            {runPage?.total ?? 0} run{runPage?.total === 1 ? "" : "s"} logged
           </span>
-          <span className="text-xs text-dim-6">Avg. 4m 07s · 100% success</span>
         </div>
+
+        {isError && (
+          <EmptyState
+            icon={ServerCrash}
+            variant="compact"
+            title="Could not load the run log."
+          />
+        )}
+
+        {runsLoading && <Skeleton className="h-32 w-full" />}
+
+        {!runsLoading && !isError && runs.length === 0 && (
+          <EmptyState
+            icon={Workflow}
+            variant="compact"
+            title="No agent has run yet. Brief one from Post Studio, or hit “Run agents now”."
+          />
+        )}
+
         <div className="flex flex-col gap-1.5">
-          {recentRuns.map((run) => (
-            <div
-              key={run.trigger}
-              className="flex items-center gap-3 rounded-lg border border-border bg-sunk-2 px-3.5 py-2.5"
-            >
-              <span className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald" />
-              <span className="min-w-0 flex-1 truncate text-xs font-semibold">
-                {run.trigger}
-              </span>
-              <span className="flex-shrink-0 text-xs text-dim-4">
-                {run.outputs}
-              </span>
-              <span className="w-16 flex-shrink-0 text-right text-xs text-dim-6">
-                {run.duration}
-              </span>
-              <span className="w-16 flex-shrink-0 text-right text-xs text-dim-6">
-                {run.when}
-              </span>
-            </div>
+          {runs.map((run) => (
+            <AgentRunRow key={run.id} run={run} />
           ))}
         </div>
-      </div>
-    </Card>
-  </div>
-);
+      </Card>
+    </div>
+  );
+};
 
 export default DashboardAutomation;

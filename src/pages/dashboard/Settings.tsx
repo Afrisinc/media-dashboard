@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ChevronRight, KeyRound, Loader2, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { ConnectivityBadge } from "@/components/ui/connectivity-badge";
 import { cn } from "@/lib/utils";
 import { useAutopilot } from "@/contexts/AutopilotContext";
+import { useAccountGroups } from "@/hooks/useAccountGroups";
+import { groupTone, type AccountGroup } from "@/types/accountGroup";
 import {
   ConnectPlatformDialog,
   type ConnectPlatform,
@@ -45,9 +48,57 @@ type ExpandedPlatformViewProps = {
     connected: boolean;
     accounts: Array<{ id: string; name: string; meta?: string }>;
   };
+  groups: AccountGroup[];
 };
 
-function ExpandedPlatformView({ row }: ExpandedPlatformViewProps) {
+/** Which brands a page publishes under, so a page is never silently orphaned. */
+function BrandBadges({
+  accountId,
+  groups,
+}: {
+  accountId: string;
+  groups: AccountGroup[];
+}) {
+  const memberships = groups.flatMap((group) =>
+    group.members
+      .filter((member) => member.accountId === accountId)
+      .map((member) => ({ group, isActive: member.isActive })),
+  );
+
+  if (memberships.length === 0) {
+    return (
+      <Link
+        to="/brands"
+        className="rounded-full bg-gold/12 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-gold"
+      >
+        No brand
+      </Link>
+    );
+  }
+
+  return (
+    <span className="flex flex-wrap gap-1">
+      {memberships.map(({ group, isActive }) => (
+        <span
+          key={group.id}
+          title={
+            isActive
+              ? `Publishing under ${group.name}`
+              : `Paused in ${group.name}`
+          }
+          className={cn(
+            "rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider",
+            isActive ? groupTone(group.color) : "bg-track text-dim-6",
+          )}
+        >
+          {group.name}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function ExpandedPlatformView({ row, groups }: ExpandedPlatformViewProps) {
   const { data: pages, isLoading } = useAvailablePages(row.key);
   const deleteAccount = useDeleteAccount();
   const addAccount = useAddAccountFromFacebookPage();
@@ -99,6 +150,7 @@ function ExpandedPlatformView({ row }: ExpandedPlatformViewProps) {
                   </p>
                 )}
               </div>
+              <BrandBadges accountId={account.id} groups={groups} />
               <Button
                 variant="ghost"
                 size="sm"
@@ -210,8 +262,9 @@ function ExpandedPlatformView({ row }: ExpandedPlatformViewProps) {
 }
 
 const DashboardSettings = () => {
-  const { autopilot, setAutopilot } = useAutopilot();
+  const { autopilot, setAutopilot, isSaving: autopilotSaving } = useAutopilot();
   const { data: integrations, isLoading } = useSocialMediaIntegrations();
+  const { data: groups } = useAccountGroups();
   const [connectingKey, setConnectingKey] = useState<SocialPlatformKey | null>(
     null,
   );
@@ -266,15 +319,27 @@ const DashboardSettings = () => {
       </div>
 
       <Card>
-        <CardContent className="flex items-center justify-between gap-4 pt-6">
-          <div>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6">
+          <div className="min-w-[200px] flex-1">
             <p className="text-sm font-bold">Fully automated publishing</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              When on, media is generated, scheduled and published with no human
-              approval step.
+              When on, the agents generate, schedule and publish to every live
+              page with no approval step. Pick which brands they run in{" "}
+              <Link
+                to="/brands"
+                className="font-semibold text-primary hover:underline"
+              >
+                Brands &amp; Accounts
+              </Link>
+              .
             </p>
           </div>
-          <Switch checked={autopilot} onCheckedChange={setAutopilot} />
+          <Switch
+            checked={autopilot}
+            onCheckedChange={setAutopilot}
+            disabled={autopilotSaving}
+            aria-label="Fully automated publishing"
+          />
         </CardContent>
       </Card>
 
@@ -356,7 +421,9 @@ const DashboardSettings = () => {
                       {row.connected ? "Add account" : "Connect"}
                     </Button>
                   </div>
-                  {expanded && <ExpandedPlatformView row={row} />}
+                  {expanded && (
+                    <ExpandedPlatformView row={row} groups={groups ?? []} />
+                  )}
                 </div>
               );
             })}

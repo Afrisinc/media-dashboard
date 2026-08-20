@@ -19,6 +19,7 @@ import {
   Bot,
   BarChart3,
   Wand2,
+  Building2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ const mainItems = [
   { title: "Media Studio", url: "/media", icon: Newspaper },
   { title: "Post Studio", url: "/post-studio", icon: Sparkles },
   { title: "AI Content", url: "/ai-content", icon: Wand2 },
+  { title: "Brands", url: "/brands", icon: Building2 },
   { title: "Automation", url: "/automation", icon: Workflow },
   { title: "AI Agents", url: "/agents", icon: Bot },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },

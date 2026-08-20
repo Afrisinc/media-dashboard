@@ -48,6 +48,8 @@ import {
   Edit2,
   Trash2,
   Send,
+  ZoomIn,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -148,6 +150,7 @@ const PostsTable = () => {
   const [deleteConfirmPost, setDeleteConfirmPost] =
     useState<SocialMediaPost | null>(null);
   const [publishingPostId, setPublishingPostId] = useState<string | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   const posts = data?.posts || [];
   const total = data?.total || 0;
@@ -494,15 +497,29 @@ const PostsTable = () => {
                       </label>
 
                       {/* Image Display */}
-                      <div className="relative bg-muted rounded-lg overflow-hidden">
-                        <img
-                          src={selectedPost.mediaUrls[currentImageIndex]}
-                          alt={
-                            selectedPost.altText ||
-                            `Media ${currentImageIndex + 1}`
+                      <div className="relative bg-muted rounded-lg overflow-hidden group">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setZoomedImage(
+                              selectedPost.mediaUrls[currentImageIndex],
+                            )
                           }
-                          className="w-full h-80 object-cover"
-                        />
+                          className="w-full block relative"
+                          aria-label="Zoom image"
+                        >
+                          <img
+                            src={selectedPost.mediaUrls[currentImageIndex]}
+                            alt={
+                              selectedPost.altText ||
+                              `Media ${currentImageIndex + 1}`
+                            }
+                            className="w-full max-h-96 object-contain cursor-zoom-in"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ZoomIn className="w-8 h-8 text-white" />
+                          </div>
+                        </button>
 
                         {/* Navigation Arrows */}
                         {selectedPost.mediaUrls.length > 1 && (
@@ -674,6 +691,27 @@ const PostsTable = () => {
       </Dialog>
 
       <EditPostDialog post={editingPost} onClose={() => setEditingPost(null)} />
+
+      {/* Image Zoom Modal */}
+      {zoomedImage && (
+        <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0 border-0 bg-black/80">
+            <button
+              type="button"
+              onClick={() => setZoomedImage(null)}
+              className="absolute top-4 right-4 z-10 rounded-lg bg-white/10 hover:bg-white/20 text-white p-2 transition-colors"
+              aria-label="Close zoom"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={zoomedImage}
+              alt="Zoomed preview"
+              className="w-full h-full object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog

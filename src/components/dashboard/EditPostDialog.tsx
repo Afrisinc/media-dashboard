@@ -10,7 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Clock, Film, Newspaper, Plus, Trash2 } from "lucide-react";
+import {
+  Clock,
+  Film,
+  Newspaper,
+  Plus,
+  Trash2,
+  ZoomIn,
+  Check,
+  X,
+} from "lucide-react";
 import type { SocialMediaPost } from "@/hooks/useSocialMediaPosts";
 import {
   useUpdateSocialMediaPost,
@@ -21,10 +30,11 @@ const FORMATS: {
   value: SocialPostFormat;
   label: string;
   icon: typeof Clock;
+  aspectRatio: string;
 }[] = [
-  { value: "feed", label: "Feed", icon: Newspaper },
-  { value: "story", label: "Story", icon: Clock },
-  { value: "reel", label: "Reel", icon: Film },
+  { value: "feed", label: "Feed", icon: Newspaper, aspectRatio: "1/1" },
+  { value: "story", label: "Story", icon: Clock, aspectRatio: "9/16" },
+  { value: "reel", label: "Reel", icon: Film, aspectRatio: "9/16" },
 ];
 
 const VIDEO_PATTERN = /\.(mp4|mov|m4v|webm)(\?|#|$)/i;
@@ -55,6 +65,7 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [newMediaUrl, setNewMediaUrl] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!post) return;
@@ -87,6 +98,16 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
   const missingReelVideo = format === "reel" && !videoUrl;
   const missingMessage = format === "feed" && !message.trim();
   const blocked = missingMedia || missingReelVideo || missingMessage;
+
+  const checks = {
+    hasMedia: effectiveUrls.length > 0,
+    hasMessage: format !== "feed" || message.trim().length > 0,
+    hasVideo: format !== "reel" || videoUrl.length > 0,
+    isScheduled: scheduleTime.length > 0,
+  };
+
+  const isVideo = !!videoUrl;
+  const currentMedia = effectiveUrls[0];
 
   const addMediaUrl = () => {
     const url = newMediaUrl.trim();
@@ -136,230 +157,388 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
   };
 
   return (
-    <Dialog open={!!post} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Post</DialogTitle>
-          <DialogDescription>
-            Update this post before it is published. Published posts cannot be
-            edited.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={!!post} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Post</DialogTitle>
+            <DialogDescription>
+              Update this post before it is published. Published posts cannot be
+              edited.
+            </DialogDescription>
+          </DialogHeader>
 
-        {post && (
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Post Format</label>
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                {FORMATS.map((entry) => (
-                  <button
-                    key={entry.value}
-                    type="button"
-                    onClick={() => setFormat(entry.value)}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all",
-                      format === entry.value
-                        ? "border-primary bg-primary/5"
-                        : "border-border/50 hover:border-border bg-muted/20",
-                    )}
-                  >
-                    <entry.icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{entry.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">
-                Message {format === "feed" ? "*" : "(optional)"}
-              </label>
-              <Textarea
-                className="mt-2 min-h-24 resize-none"
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                placeholder="Enter your post message..."
-              />
-            </div>
-
-            {format === "feed" && (
-              <>
+          {post && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">Link</label>
-                  <Input
-                    className="mt-2"
-                    type="url"
-                    value={link}
-                    onChange={(event) => setLink(event.target.value)}
-                    placeholder="https://example.com"
+                  <label className="text-sm font-medium">Post Format</label>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {FORMATS.map((entry) => (
+                      <button
+                        key={entry.value}
+                        type="button"
+                        onClick={() => setFormat(entry.value)}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all",
+                          format === entry.value
+                            ? "border-primary bg-primary/5"
+                            : "border-border/50 hover:border-border bg-muted/20",
+                        )}
+                      >
+                        <entry.icon className="w-4 h-4" />
+                        <span className="text-sm font-medium">
+                          {entry.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">
+                    Message {format === "feed" ? "*" : "(optional)"}
+                  </label>
+                  <Textarea
+                    className="mt-2 min-h-24 resize-none"
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    placeholder="Enter your post message..."
                   />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-medium">Description</label>
-                    <Input
-                      className="mt-2"
-                      value={description}
-                      onChange={(event) => setDescription(event.target.value)}
-                      placeholder="Link description"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Caption</label>
-                    <Input
-                      className="mt-2"
-                      value={caption}
-                      onChange={(event) => setCaption(event.target.value)}
-                      placeholder="Caption"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
+                {format === "feed" && (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium">Link</label>
+                      <Input
+                        className="mt-2"
+                        type="url"
+                        value={link}
+                        onChange={(event) => setLink(event.target.value)}
+                        placeholder="https://example.com"
+                      />
+                    </div>
 
-            <div>
-              <label className="text-sm font-medium">Tags / Hashtags</label>
-              <Input
-                className="mt-2"
-                value={tags}
-                onChange={(event) => setTags(event.target.value)}
-                placeholder="tag1, tag2, tag3"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Comma-separated
-              </p>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">
-                Video URL {format === "reel" ? "*" : ""}
-              </label>
-              <Input
-                className="mt-2"
-                type="url"
-                value={videoUrl}
-                onChange={(event) => setVideoUrl(event.target.value)}
-                placeholder="https://cdn.example.com/clip.mp4"
-              />
-              {format === "reel" && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  9:16, 3–90 seconds, public https URL
-                </p>
-              )}
-            </div>
-
-            {!videoUrl && (
-              <div>
-                <label className="text-sm font-medium">
-                  {singleMedia ? "Image" : "Images"}
-                </label>
-
-                {mediaUrls.length > 0 && (
-                  <div className="space-y-2 mt-2">
-                    {mediaUrls.map((url, idx) => (
-                      <div
-                        key={`${idx}-${url.slice(0, 24)}`}
-                        className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50"
-                      >
-                        <img
-                          src={url}
-                          alt={`Media ${idx + 1}`}
-                          className="w-12 h-12 rounded object-cover shrink-0"
-                        />
-                        <span className="text-xs text-muted-foreground truncate flex-1">
-                          {url}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label={`Remove image ${idx + 1}`}
-                          onClick={() =>
-                            setMediaUrls(
-                              mediaUrls.filter((_, index) => index !== idx),
-                            )
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="text-sm font-medium">
+                          Description
+                        </label>
+                        <Input
+                          className="mt-2"
+                          value={description}
+                          onChange={(event) =>
+                            setDescription(event.target.value)
                           }
-                          className="text-destructive hover:text-destructive/80 shrink-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          placeholder="Link description"
+                        />
                       </div>
-                    ))}
-                  </div>
+                      <div>
+                        <label className="text-sm font-medium">Caption</label>
+                        <Input
+                          className="mt-2"
+                          value={caption}
+                          onChange={(event) => setCaption(event.target.value)}
+                          placeholder="Caption"
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
 
-                {(!singleMedia || mediaUrls.length === 0) && (
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      value={newMediaUrl}
-                      onChange={(event) => setNewMediaUrl(event.target.value)}
-                      placeholder="https://cdn.example.com/image.jpg"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={addMediaUrl}
-                      aria-label="Add image URL"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-
-                {singleMedia && (
+                <div>
+                  <label className="text-sm font-medium">Tags / Hashtags</label>
+                  <Input
+                    className="mt-2"
+                    value={tags}
+                    onChange={(event) => setTags(event.target.value)}
+                    placeholder="tag1, tag2, tag3"
+                  />
                   <p className="text-xs text-muted-foreground mt-1">
-                    A {format} takes a single piece of media.
+                    Comma-separated
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">
+                    Video URL {format === "reel" ? "*" : ""}
+                  </label>
+                  <Input
+                    className="mt-2"
+                    type="url"
+                    value={videoUrl}
+                    onChange={(event) => setVideoUrl(event.target.value)}
+                    placeholder="https://cdn.example.com/clip.mp4"
+                  />
+                  {format === "reel" && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      9:16, 3–90 seconds, public https URL
+                    </p>
+                  )}
+                </div>
+
+                {!videoUrl && (
+                  <div>
+                    <label className="text-sm font-medium">
+                      {singleMedia ? "Image" : "Images"}
+                    </label>
+
+                    {mediaUrls.length > 0 && (
+                      <div className="space-y-2 mt-2">
+                        {mediaUrls.map((url, idx) => (
+                          <div
+                            key={`${idx}-${url.slice(0, 24)}`}
+                            className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50 hover:border-border transition-colors"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setZoomedImage(url)}
+                              className="shrink-0 hover:opacity-80 transition-opacity"
+                              aria-label="Zoom image"
+                            >
+                              <img
+                                src={url}
+                                alt={`Media ${idx + 1}`}
+                                className="w-12 h-12 rounded object-cover cursor-zoom-in"
+                              />
+                            </button>
+                            <span className="text-xs text-muted-foreground truncate flex-1">
+                              {url}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label={`Remove image ${idx + 1}`}
+                              onClick={() =>
+                                setMediaUrls(
+                                  mediaUrls.filter((_, index) => index !== idx),
+                                )
+                              }
+                              className="text-destructive hover:text-destructive/80 shrink-0"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {(!singleMedia || mediaUrls.length === 0) && (
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          value={newMediaUrl}
+                          onChange={(event) =>
+                            setNewMediaUrl(event.target.value)
+                          }
+                          placeholder="https://cdn.example.com/image.jpg"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={addMediaUrl}
+                          aria-label="Add image URL"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+
+                    {singleMedia && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        A {format} takes a single piece of media.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {effectiveUrls.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium">Alt Text</label>
+                    <Input
+                      className="mt-2"
+                      value={altText}
+                      onChange={(event) => setAltText(event.target.value)}
+                      placeholder="Describe the media for accessibility"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-sm font-medium">Schedule</label>
+                  <Input
+                    className="mt-2"
+                    type="datetime-local"
+                    value={scheduleTime}
+                    onChange={(event) => setScheduleTime(event.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Clear to publish on the next run.
+                  </p>
+                </div>
+
+                {blocked && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    {missingMessage
+                      ? "A feed post needs a message."
+                      : missingReelVideo
+                        ? "A reel needs a video."
+                        : `A ${format} needs an image or a video.`}
                   </p>
                 )}
+
+                <div className="flex gap-2 justify-end pt-4 border-t">
+                  <Button variant="outline" onClick={onClose}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={save}
+                    disabled={updatePost.isPending || blocked}
+                  >
+                    {updatePost.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
               </div>
-            )}
 
-            {effectiveUrls.length > 0 && (
-              <div>
-                <label className="text-sm font-medium">Alt Text</label>
-                <Input
-                  className="mt-2"
-                  value={altText}
-                  onChange={(event) => setAltText(event.target.value)}
-                  placeholder="Describe the media for accessibility"
-                />
+              <div className="hidden lg:flex flex-col gap-4 sticky top-0">
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">Preview & Checklist</h3>
+
+                  <div
+                    className="rounded-lg bg-muted/20 border border-border/50 overflow-hidden flex items-center justify-center relative"
+                    style={{
+                      aspectRatio: format === "feed" ? "1/1" : "9/16",
+                    }}
+                  >
+                    {isVideo ? (
+                      <video
+                        src={videoUrl}
+                        className="w-full h-full object-cover"
+                        controls
+                      />
+                    ) : currentMedia ? (
+                      <button
+                        type="button"
+                        onClick={() => setZoomedImage(currentMedia)}
+                        className="w-full h-full hover:opacity-90 transition-opacity relative"
+                      >
+                        <img
+                          src={currentMedia}
+                          alt="Preview"
+                          className="w-full h-full object-cover cursor-zoom-in"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
+                          <ZoomIn className="w-6 h-6 text-white" />
+                        </div>
+                      </button>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">
+                        No media yet
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t">
+                    <div className="text-xs font-medium">Checklist</div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs">
+                        {checks.hasMedia ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <X className="w-4 h-4 text-red-600" />
+                        )}
+                        <span
+                          className={
+                            checks.hasMedia
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          Media {checks.hasMedia ? "added" : "required"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        {checks.hasMessage ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <X className="w-4 h-4 text-red-600" />
+                        )}
+                        <span
+                          className={
+                            checks.hasMessage
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          Message{" "}
+                          {checks.hasMessage
+                            ? "added"
+                            : `required for ${format}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        {checks.hasVideo ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <X className="w-4 h-4 text-red-600" />
+                        )}
+                        <span
+                          className={
+                            checks.hasVideo
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          Video{" "}
+                          {checks.hasVideo ? "added" : `required for ${format}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        {checks.isScheduled ? (
+                          <Check className="w-4 h-4 text-blue-600" />
+                        ) : (
+                          <span className="w-4 h-4 rounded-full border border-muted-foreground/50" />
+                        )}
+                        <span
+                          className={
+                            checks.isScheduled
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {checks.isScheduled
+                            ? "Scheduled"
+                            : "Will post immediately"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-
-            <div>
-              <label className="text-sm font-medium">Schedule</label>
-              <Input
-                className="mt-2"
-                type="datetime-local"
-                value={scheduleTime}
-                onChange={(event) => setScheduleTime(event.target.value)}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Clear to publish on the next run.
-              </p>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
-            {blocked && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                {missingMessage
-                  ? "A feed post needs a message."
-                  : missingReelVideo
-                    ? "A reel needs a video."
-                    : `A ${format} needs an image or a video.`}
-              </p>
-            )}
-
-            <div className="flex gap-2 justify-end pt-4 border-t">
-              <Button variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button onClick={save} disabled={updatePost.isPending || blocked}>
-                {updatePost.isPending ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+      {zoomedImage && (
+        <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0 border-0">
+            <button
+              type="button"
+              onClick={() => setZoomedImage(null)}
+              className="absolute top-4 right-4 z-10 rounded-lg bg-black/50 text-white hover:bg-black/70 p-2 transition-colors"
+              aria-label="Close zoom"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={zoomedImage}
+              alt="Zoomed preview"
+              className="w-full h-full object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 };

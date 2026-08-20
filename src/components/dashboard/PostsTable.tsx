@@ -695,11 +695,11 @@ const PostsTable = () => {
       {/* Image Zoom Modal */}
       {zoomedImage && (
         <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0 border-0 bg-black/80">
+          <DialogContent className="w-full max-w-5xl h-screen max-h-screen p-0 border-0 bg-black/95 flex items-center justify-center">
             <button
               type="button"
               onClick={() => setZoomedImage(null)}
-              className="absolute top-4 right-4 z-10 rounded-lg bg-white/10 hover:bg-white/20 text-white p-2 transition-colors"
+              className="absolute top-4 right-4 z-10 rounded-lg bg-white/20 hover:bg-white/30 text-white p-2 transition-colors"
               aria-label="Close zoom"
             >
               <X className="w-6 h-6" />
@@ -707,7 +707,7 @@ const PostsTable = () => {
             <img
               src={zoomedImage}
               alt="Zoomed preview"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain p-4"
             />
           </DialogContent>
         </Dialog>

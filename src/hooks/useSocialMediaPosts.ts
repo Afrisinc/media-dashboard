@@ -1,6 +1,5 @@
+import { authorizedFetch } from "@/lib/apiFetch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getRuntimeConfig } from "@/lib/config";
-import { getToken } from "@/lib/authUtils";
 
 export interface SocialMediaPost {
   id: string;
@@ -44,33 +43,6 @@ export interface SocialMediaPostsResponse {
   offset: number;
 }
 
-async function authorizedFetch(path: string, init?: RequestInit) {
-  const config = getRuntimeConfig();
-  const token = getToken();
-  if (!token) throw new Error("Not authenticated");
-
-  const response = await fetch(`${config.serverUrl}/media${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(
-      body?.resp_msg ||
-        body?.error ||
-        body?.message ||
-        `Request failed: ${response.status}`,
-    );
-  }
-
-  return response.json();
-}
-
 export const useSocialMediaPosts = (filters?: {
   platform?: string;
   status?: string;
@@ -89,9 +61,11 @@ export const useSocialMediaPosts = (filters?: {
       if (filters?.offset) params.append("offset", filters.offset.toString());
 
       const query = params.toString() ? `?${params.toString()}` : "";
-      const data = await authorizedFetch(`/social-media/posts${query}`);
+      const data = await authorizedFetch<{ data: SocialMediaPostsResponse }>(
+        `/social-media/posts${query}`,
+      );
 
-      return data.data as SocialMediaPostsResponse;
+      return data.data;
     },
     staleTime: 1000 * 30, // 30 seconds
   });

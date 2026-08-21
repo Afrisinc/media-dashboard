@@ -18,7 +18,6 @@ import {
   Workflow,
   Bot,
   BarChart3,
-  Wand2,
   Building2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,8 +26,7 @@ import { getRuntimeConfig } from "@/lib/config";
 
 const mainItems = [
   { title: "Media Studio", url: "/media", icon: Newspaper },
-  { title: "Post Studio", url: "/post-studio", icon: Sparkles },
-  { title: "AI Content", url: "/ai-content", icon: Wand2 },
+  { title: "Post Studio", url: "/studio", icon: Sparkles },
   { title: "Brands", url: "/brands", icon: Building2 },
   { title: "Automation", url: "/automation", icon: Workflow },
   { title: "AI Agents", url: "/agents", icon: Bot },

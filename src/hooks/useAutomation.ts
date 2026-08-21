@@ -14,6 +14,7 @@ import {
 } from "@/services/automationService";
 import { accountGroupKeys } from "@/hooks/useAccountGroups";
 import type {
+  AgentRunPage,
   AutomationPolicy,
   UpdateAutomationPolicyPayload,
 } from "@/types/accountGroup";
@@ -162,7 +163,8 @@ export function useRunAutomationNow() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: runAutomationNow,
+    // Omit the brand to run every switched-on one; name it to run just that.
+    mutationFn: (groupId?: string) => runAutomationNow(groupId),
     onSuccess: (outcome) => {
       queryClient.invalidateQueries({ queryKey: automationKeys.all });
       queryClient.invalidateQueries({ queryKey: ["post-drafts"] });
@@ -170,7 +172,9 @@ export function useRunAutomationNow() {
       if (outcome.accepted) {
         watchForNewRun(queryClient);
         toast({
-          title: "Agents are running",
+          title: `Drafting ${outcome.plannedPosts} post${
+            outcome.plannedPosts === 1 ? "" : "s"
+          }`,
           description:
             "This keeps going if you leave — come back any time to see where it got to.",
         });

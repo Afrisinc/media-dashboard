@@ -1,3 +1,4 @@
+import { BrandAssetPicker } from "@/components/dashboard/BrandAssetPicker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +29,8 @@ import {
   WEEKDAY_LABELS,
   type AccountGroup,
   type GroupColor,
+  FRAME_CHOICES,
+  HOUSE_FRAMES,
 } from "@/types/accountGroup";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
@@ -48,6 +51,8 @@ interface BrandGroupDialogProps {
 }
 
 interface FormState {
+  assetIds: string[];
+  slideCount: string;
   name: string;
   description: string;
   color: GroupColor;
@@ -62,6 +67,8 @@ interface FormState {
 }
 
 const BLANK: FormState = {
+  assetIds: [],
+  slideCount: "",
   name: "",
   description: "",
   color: "primary",
@@ -84,6 +91,10 @@ function parseWeekdays(raw: string): number[] {
 
 function toFormState(group: AccountGroup): FormState {
   return {
+    // Editing an existing brand manages photographs on its own card, so the
+    // picker starts empty rather than pretending to know the current library.
+    assetIds: [],
+    slideCount: group.slideCount ? String(group.slideCount) : "",
     name: group.name,
     description: group.description ?? "",
     color: (group.color as GroupColor) ?? "primary",
@@ -143,6 +154,8 @@ export function BrandGroupDialog({
       serviceLine: form.serviceLine.trim(),
       audience: form.audience.trim(),
       defaultFormat: form.defaultFormat,
+      // Empty means the house length, which the copy agent already falls back to.
+      slideCount: form.slideCount ? Number(form.slideCount) : null,
       autopilotEnabled: form.autopilotEnabled,
       slotWeekdays: form.weekdays.join(","),
       slotHour: form.slotHour,
@@ -153,7 +166,10 @@ export function BrandGroupDialog({
       update.mutate({ id: group.id, payload }, { onSuccess: onClose });
       return;
     }
-    create.mutate(payload, { onSuccess: onClose });
+    create.mutate(
+      { ...payload, assetIds: form.assetIds },
+      { onSuccess: onClose },
+    );
   };
 
   return (
@@ -300,10 +316,43 @@ export function BrandGroupDialog({
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="group-frames">Frames</Label>
+                <Select
+                  value={form.slideCount || "house"}
+                  onValueChange={(value) =>
+                    set("slideCount", value === "house" ? "" : value)
+                  }
+                  disabled={form.defaultFormat === "single"}
+                >
+                  <SelectTrigger id="group-frames">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="house">
+                      House length ({HOUSE_FRAMES[form.defaultFormat] ?? 5})
+                    </SelectItem>
+                    {(FRAME_CHOICES[form.defaultFormat] ?? []).map((count) => (
+                      <SelectItem key={count} value={String(count)}>
+                        {count} {count === 1 ? "frame" : "frames"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="group-format">Format</Label>
                 <Select
                   value={form.defaultFormat}
-                  onValueChange={(value) => set("defaultFormat", value)}
+                  onValueChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      defaultFormat: value,
+                      // Ten frames means nothing to a story, so reset to the
+                      // house length rather than carrying an illegal count over.
+                      slideCount: "",
+                    }))
+                  }
                 >
                   <SelectTrigger id="group-format">
                     <SelectValue />
@@ -319,6 +368,16 @@ export function BrandGroupDialog({
               </div>
             </div>
           </div>
+
+          {!group && (
+            <div className="space-y-2">
+              <Label>Photographs</Label>
+              <BrandAssetPicker
+                selected={form.assetIds}
+                onChange={(assetIds) => set("assetIds", assetIds)}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="group-topics">Topics the agents write about</Label>

@@ -25,6 +25,7 @@ import {
   useUpdateSocialMediaPost,
   type SocialPostFormat,
 } from "@/hooks/useSocialMediaPosting";
+import { MediaLightbox } from "./MediaLightbox";
 
 const FORMATS: {
   value: SocialPostFormat;
@@ -43,6 +44,45 @@ interface EditPostDialogProps {
   post: SocialMediaPost | null;
   onClose: () => void;
 }
+
+interface ChecklistRowProps {
+  label: string;
+  done: boolean;
+  /** Optional requirements read as neutral guidance, not as an error. */
+  optional?: boolean;
+}
+
+const ChecklistRow = ({ label, done, optional }: ChecklistRowProps) => {
+  let marker = <X className="w-4 h-4 shrink-0 text-destructive" aria-hidden />;
+
+  if (done) {
+    marker = (
+      <Check
+        className={cn(
+          "w-4 h-4 shrink-0",
+          optional ? "text-primary" : "text-emerald",
+        )}
+        aria-hidden
+      />
+    );
+  } else if (optional) {
+    marker = (
+      <span
+        className="w-4 h-4 shrink-0 rounded-full border border-muted-foreground/50"
+        aria-hidden
+      />
+    );
+  }
+
+  return (
+    <li className="flex items-center gap-2 text-xs">
+      {marker}
+      <span className={done ? "text-foreground" : "text-muted-foreground"}>
+        {label}
+      </span>
+    </li>
+  );
+};
 
 function toLocalInput(iso?: string | null) {
   if (!iso) return "";
@@ -65,7 +105,7 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [newMediaUrl, setNewMediaUrl] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   useEffect(() => {
     if (!post) return;
@@ -99,12 +139,27 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
   const missingMessage = format === "feed" && !message.trim();
   const blocked = missingMedia || missingReelVideo || missingMessage;
 
-  const checks = {
-    hasMedia: effectiveUrls.length > 0,
-    hasMessage: format !== "feed" || message.trim().length > 0,
-    hasVideo: format !== "reel" || videoUrl.length > 0,
-    isScheduled: scheduleTime.length > 0,
-  };
+  const checklist: ChecklistRowProps[] = [
+    {
+      label: effectiveUrls.length > 0 ? "Media added" : "Media required",
+      done: effectiveUrls.length > 0,
+    },
+    {
+      label: missingMessage
+        ? `Message required for ${format}`
+        : "Message added",
+      done: !missingMessage,
+    },
+    {
+      label: missingReelVideo ? `Video required for ${format}` : "Video added",
+      done: !missingReelVideo,
+    },
+    {
+      label: scheduleTime ? "Scheduled" : "Will post immediately",
+      done: !!scheduleTime,
+      optional: true,
+    },
+  ];
 
   const isVideo = !!videoUrl;
   const currentMedia = effectiveUrls[0];
@@ -293,9 +348,9 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
                           >
                             <button
                               type="button"
-                              onClick={() => setZoomedImage(url)}
-                              className="shrink-0 hover:opacity-80 transition-opacity"
-                              aria-label="Zoom image"
+                              onClick={() => setLightboxIndex(idx)}
+                              className="shrink-0 rounded hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              aria-label={`Open image ${idx + 1} full size`}
                             >
                               <img
                                 src={url}
@@ -378,7 +433,7 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
                 </div>
 
                 {blocked && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                  <p className="text-xs text-amber">
                     {missingMessage
                       ? "A feed post needs a message."
                       : missingReelVideo
@@ -419,17 +474,18 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
                     ) : currentMedia ? (
                       <button
                         type="button"
-                        onClick={() => setZoomedImage(currentMedia)}
-                        className="w-full h-full hover:opacity-90 transition-opacity relative"
+                        onClick={() => setLightboxIndex(0)}
+                        className="group w-full h-full relative cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label="Open preview full size"
                       >
                         <img
                           src={currentMedia}
                           alt="Preview"
-                          className="w-full h-full object-cover cursor-zoom-in"
+                          className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
-                          <ZoomIn className="w-6 h-6 text-white" />
-                        </div>
+                        <span className="absolute inset-0 flex items-center justify-center bg-overlay/40 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
+                          <ZoomIn className="w-6 h-6 text-background" />
+                        </span>
                       </button>
                     ) : (
                       <div className="text-xs text-muted-foreground">
@@ -440,78 +496,11 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
 
                   <div className="space-y-2 pt-2 border-t">
                     <div className="text-xs font-medium">Checklist</div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-xs">
-                        {checks.hasMedia ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <X className="w-4 h-4 text-red-600" />
-                        )}
-                        <span
-                          className={
-                            checks.hasMedia
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          Media {checks.hasMedia ? "added" : "required"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        {checks.hasMessage ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <X className="w-4 h-4 text-red-600" />
-                        )}
-                        <span
-                          className={
-                            checks.hasMessage
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          Message{" "}
-                          {checks.hasMessage
-                            ? "added"
-                            : `required for ${format}`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        {checks.hasVideo ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <X className="w-4 h-4 text-red-600" />
-                        )}
-                        <span
-                          className={
-                            checks.hasVideo
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          Video{" "}
-                          {checks.hasVideo ? "added" : `required for ${format}`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        {checks.isScheduled ? (
-                          <Check className="w-4 h-4 text-blue-600" />
-                        ) : (
-                          <span className="w-4 h-4 rounded-full border border-muted-foreground/50" />
-                        )}
-                        <span
-                          className={
-                            checks.isScheduled
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          {checks.isScheduled
-                            ? "Scheduled"
-                            : "Will post immediately"}
-                        </span>
-                      </div>
-                    </div>
+                    <ul className="space-y-1.5">
+                      {checklist.map((item) => (
+                        <ChecklistRow key={item.label} {...item} />
+                      ))}
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -520,25 +509,13 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
         </DialogContent>
       </Dialog>
 
-      {zoomedImage && (
-        <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
-          <DialogContent className="w-full max-w-5xl h-screen max-h-screen p-0 border-0 bg-black/95 flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => setZoomedImage(null)}
-              className="absolute top-4 right-4 z-10 rounded-lg bg-white/20 hover:bg-white/30 text-white p-2 transition-colors"
-              aria-label="Close zoom"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <img
-              src={zoomedImage}
-              alt="Zoomed preview"
-              className="w-full h-full object-contain p-4"
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      <MediaLightbox
+        images={mediaUrls}
+        index={lightboxIndex}
+        open={lightboxIndex >= 0}
+        onOpenChange={(open) => !open && setLightboxIndex(-1)}
+        onIndexChange={setLightboxIndex}
+      />
     </>
   );
 };

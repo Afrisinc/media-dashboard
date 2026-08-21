@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { StatStrip, type StripStat } from "@/components/dashboard/StatStrip";
 import { useAccountGroups } from "@/hooks/useAccountGroups";
 import { useInstalledAccounts } from "@/hooks/useSocialMediaIntegrations";
 import type { AccountGroup } from "@/types/accountGroup";
@@ -35,8 +35,26 @@ const DashboardBrands = () => {
     (account) => !grouped.has(account.id),
   ).length;
 
+  const stats: StripStat[] = [
+    { label: "Brands", value: String(brands.length), icon: Building2 },
+    {
+      label: "Live pages",
+      value: String(livePages),
+      icon: Radio,
+      tone: livePages > 0 ? "success" : "default",
+    },
+    { label: "On autopilot", value: String(onAutopilot), icon: Bot },
+    {
+      label: "Ungrouped",
+      value: String(ungrouped),
+      icon: Users,
+      // A page in no brand publishes nowhere, which is worth noticing.
+      tone: ungrouped > 0 ? "attention" : "default",
+    },
+  ];
+
   return (
-    <div className="space-y-6 animate-fade-up">
+    <div className="space-y-4 animate-fade-up">
       <PageHeader
         title="Brands & Accounts"
         subtitle="Group the pages you publish to, then decide who drives — you or the agents."
@@ -60,34 +78,7 @@ const DashboardBrands = () => {
 
       {!isError && (
         <>
-          <StatGrid>
-            <StatCard
-              label="Brands"
-              value={String(brands.length)}
-              icon={Building2}
-            />
-            <StatCard
-              label="Live pages"
-              value={String(livePages)}
-              icon={Radio}
-              iconTone="success"
-            />
-            <StatCard
-              label="On autopilot"
-              value={String(onAutopilot)}
-              icon={Bot}
-              iconTone="terra"
-            />
-            <StatCard
-              label="Ungrouped"
-              value={String(ungrouped)}
-              icon={Users}
-              iconTone={ungrouped > 0 ? "gold" : "muted"}
-              subtitle={
-                ungrouped > 0 ? "Not publishing anywhere yet" : undefined
-              }
-            />
-          </StatGrid>
+          <StatStrip stats={stats} />
 
           {isLoading && (
             <div className="grid gap-4 lg:grid-cols-2">

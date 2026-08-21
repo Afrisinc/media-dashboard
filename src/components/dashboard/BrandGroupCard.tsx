@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { PLATFORM_CATALOG } from "@/config/socialPlatforms";
+import { useActiveAgentRun, useRunAutomationNow } from "@/hooks/useAutomation";
 import {
   useDeleteAccountGroup,
   useRemoveAccountFromGroup,
@@ -23,12 +24,15 @@ import { cn } from "@/lib/utils";
 import {
   describeCadence,
   groupTone,
+  HOUSE_FRAMES,
   type AccountGroup,
 } from "@/types/accountGroup";
 import {
   Bot,
   CalendarClock,
+  Loader2,
   Pencil,
+  Play,
   Plus,
   Star,
   Trash2,
@@ -51,6 +55,8 @@ export function BrandGroupCard({
   const setActive = useSetGroupAccountActive();
   const removeAccount = useRemoveAccountFromGroup();
   const deleteGroup = useDeleteAccountGroup();
+  const runNow = useRunAutomationNow();
+  const { data: activeRun } = useActiveAgentRun();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const initials =
@@ -123,7 +129,8 @@ export function BrandGroupCard({
           {describeCadence(group)}
         </span>
         <span className="text-dim-5">
-          {group.postsPerRun} post{group.postsPerRun === 1 ? "" : "s"} per run
+          {group.postsPerRun} post{group.postsPerRun === 1 ? "" : "s"} per run ·{" "}
+          {group.slideCount ?? HOUSE_FRAMES[group.defaultFormat] ?? 5} frames
         </span>
         <span className="ml-auto font-bold text-emerald">
           {group.activeMemberCount}/{group.members.length} live
@@ -205,6 +212,27 @@ export function BrandGroupCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border/50 px-5 py-3.5">
+        {/* One brand on demand, rather than every switched-on brand at once. */}
+        <Button
+          size="sm"
+          disabled={!canAutopilot || Boolean(activeRun) || runNow.isPending}
+          onClick={() => runNow.mutate(group.id)}
+          title={
+            activeRun
+              ? "A run is already going"
+              : canAutopilot
+                ? `Draft ${group.postsPerRun} post${group.postsPerRun === 1 ? "" : "s"} for ${group.name} now`
+                : "Add topics and switch a page on first"
+          }
+        >
+          {runNow.isPending ? (
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Play className="mr-1 h-3.5 w-3.5" />
+          )}
+          Run now
+        </Button>
+
         <Button variant="outline" size="sm" onClick={onAddPages}>
           <Plus className="mr-1 h-3.5 w-3.5" />
           Add pages
@@ -225,7 +253,7 @@ export function BrandGroupCard({
 
         <div className="ml-auto flex items-center gap-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-dim-5">
-            Agents
+            {group.autopilotEnabled ? "Live" : "Paused"}
           </span>
           <Switch
             checked={group.autopilotEnabled}

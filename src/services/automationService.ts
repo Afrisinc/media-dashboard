@@ -75,10 +75,12 @@ export async function getAutomationSummary(): Promise<Record<string, number>> {
  * itself keeps going server-side, so leaving the page does not stop it — follow
  * it through the run log instead.
  */
-export async function runAutomationNow(): Promise<RunRequestOutcome> {
+export async function runAutomationNow(
+  groupId?: string,
+): Promise<RunRequestOutcome> {
   const { data } = await getApiClient().post<Envelope<RunRequestOutcome>>(
     `${BASE}/run`,
-    {},
+    groupId ? { groupId } : {},
   );
   return unwrap(data);
 }

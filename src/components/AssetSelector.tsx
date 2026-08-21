@@ -101,22 +101,31 @@ export const AssetSelector = ({
               onClick={() => handleAssetToggle(asset.id)}
             >
               <div className="asset-selector-image">
-                <img src={asset.url} alt={asset.reference} />
+                <img src={asset.images[0]?.url} alt={asset.name} />
                 {selected.has(asset.id) && (
                   <div className="asset-selector-checkmark">✓</div>
                 )}
               </div>
               <div className="asset-selector-info">
-                <p className="asset-selector-reference">{asset.reference}</p>
-                {asset.subjects && asset.subjects.length > 0 && (
-                  <div className="asset-selector-subjects">
-                    {asset.subjects.slice(0, 2).map((s) => (
-                      <span key={s} className="subject-chip">
-                        {s}
+                <p className="asset-selector-reference">{asset.name}</p>
+                <div className="asset-selector-subjects">
+                  <span className="subject-chip">
+                    {asset.images.length} photo
+                    {asset.images.length === 1 ? "" : "s"}
+                  </span>
+                  {/* Subjects live on the photographs now, so show the set's spread. */}
+                  {[
+                    ...new Set(
+                      asset.images.flatMap((image) => image.subjects ?? []),
+                    ),
+                  ]
+                    .slice(0, 2)
+                    .map((subject) => (
+                      <span key={subject} className="subject-chip">
+                        {subject}
                       </span>
                     ))}
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           ))}

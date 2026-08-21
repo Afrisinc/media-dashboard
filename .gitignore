@@ -26,3 +26,6 @@ dist-server
 .env
 .claude
 docs/
+
+# tsc -b writes incremental build info; it is machine-local.
+*.tsbuildinfo

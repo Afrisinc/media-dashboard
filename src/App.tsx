@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -20,9 +20,8 @@ import DashboardSettings from "./pages/dashboard/Settings";
 import DashboardAutomation from "./pages/dashboard/Automation";
 import DashboardAgents from "./pages/dashboard/Agents";
 import DashboardBrands from "./pages/dashboard/Brands";
-import PostStudio from "./pages/dashboard/PostStudio";
+import Studio from "./pages/dashboard/Studio";
 import DashboardAnalytics from "./pages/dashboard/Analytics";
-import AIContent from "./pages/dashboard/AIContent";
 import SSOCallback from "./pages/SSOCallback";
 import OAuthCallback from "./pages/oauth/callback";
 
@@ -98,8 +97,10 @@ const AppContent = () => {
       {/* Dashboard Routes - at root level */}
       <Route path="/" element={<DashboardLayout />}>
         <Route index element={<DashboardMedia />} />
-        <Route path="post-studio" element={<PostStudio />} />
-        <Route path="ai-content" element={<AIContent />} />
+        <Route path="studio" element={<Studio />} />
+        {/* Both used to be their own page; keep the links working. */}
+        <Route path="post-studio" element={<Navigate to="/studio" replace />} />
+        <Route path="ai-content" element={<Navigate to="/studio" replace />} />
         <Route path="media" element={<DashboardMedia />} />
         <Route path="brands" element={<DashboardBrands />} />
         <Route path="automation" element={<DashboardAutomation />} />

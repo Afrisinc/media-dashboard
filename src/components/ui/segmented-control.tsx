@@ -4,7 +4,10 @@ import { cn } from "@/lib/utils";
 interface SegmentedControlProps<T extends string> {
   options: { label: string; value: T }[];
   value: T;
-  onChange: (value: T) => void;
+  // NoInfer keeps a `Dispatch<SetStateAction<T>>` handler from widening T to
+  // string: SetStateAction includes an updater function, which is not a string,
+  // so inferring from this position falls back to the constraint.
+  onChange: (value: NoInfer<T>) => void;
   className?: string;
 }
 

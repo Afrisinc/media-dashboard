@@ -1,3 +1,4 @@
+import type { BrandAsset } from "@/services/brandAssetService";
 import getApiClient from "@/services/apiClient";
 import type {
   AccountGroup,
@@ -98,6 +99,27 @@ export async function getGroupTargets(id: string): Promise<GroupTarget[]> {
     Envelope<{ targets: GroupTarget[] }>
   >(`${BASE}/${id}/targets`);
   return unwrap(data)?.targets ?? [];
+}
+
+export async function listGroupAssets(id: string) {
+  const { data } = await getApiClient().get<Envelope<{ assets: BrandAsset[] }>>(
+    `${BASE}/${id}/assets`,
+  );
+  return unwrap(data)?.assets ?? [];
+}
+
+export async function assignGroupAssets(id: string, assetIds: string[]) {
+  const { data } = await getApiClient().post<
+    Envelope<{ assets: BrandAsset[] }>
+  >(`${BASE}/${id}/assets`, { assetIds });
+  return unwrap(data)?.assets ?? [];
+}
+
+export async function unassignGroupAsset(id: string, assetId: string) {
+  const { data } = await getApiClient().delete<
+    Envelope<{ assets: BrandAsset[] }>
+  >(`${BASE}/${id}/assets/${assetId}`);
+  return unwrap(data)?.assets ?? [];
 }
 
 /** The API returns its own message; surface that rather than a generic failure. */

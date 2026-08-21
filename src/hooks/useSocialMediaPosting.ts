@@ -1,7 +1,6 @@
+import { authorizedFetch } from "@/lib/apiFetch";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { getRuntimeConfig } from "@/lib/config";
-import { getToken } from "@/lib/authUtils";
 import type { SocialPlatformKey } from "@/config/socialPlatforms";
 
 export interface SocialMediaContent {
@@ -66,33 +65,6 @@ export interface PostResponse {
     publishedAt?: string;
   };
   error?: string;
-}
-
-async function authorizedFetch(path: string, init?: RequestInit) {
-  const config = getRuntimeConfig();
-  const token = getToken();
-  if (!token) throw new Error("Not authenticated");
-
-  const response = await fetch(`${config.serverUrl}/media${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(
-      body?.resp_msg ||
-        body?.error ||
-        body?.message ||
-        `Request failed: ${response.status}`,
-    );
-  }
-
-  return response.json();
 }
 
 export const usePostToSocialMedia = () => {

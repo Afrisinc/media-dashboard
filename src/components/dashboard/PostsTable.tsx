@@ -55,19 +55,19 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import type { SocialMediaPost } from "@/hooks/useSocialMediaPosts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PlatformIcon } from "@/components/ui/platform-icon";
+import { MediaLightbox } from "./MediaLightbox";
 
 const statusConfig = {
   pending: {
     label: "Pending",
     icon: Clock,
-    className:
-      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
+    className: "bg-amber/10 text-amber border-amber/30",
   },
   published: {
     label: "Published",
     icon: CheckCircle,
-    className:
-      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+    className: "bg-emerald/10 text-emerald border-emerald/30",
   },
   failed: {
     label: "Failed",
@@ -88,17 +88,17 @@ const FORMAT_BADGES: Record<
   feed: {
     label: "Feed",
     icon: Newspaper,
-    className: "text-sky-600 border-sky-500/30 bg-sky-500/10",
+    className: "text-primary border-primary/30 bg-primary/10",
   },
   story: {
     label: "Story",
     icon: Clock,
-    className: "text-violet-600 border-violet-500/30 bg-violet-500/10",
+    className: "text-indigo border-indigo/30 bg-indigo/10",
   },
   reel: {
     label: "Reel",
     icon: Film,
-    className: "text-pink-600 border-pink-500/30 bg-pink-500/10",
+    className: "text-forest border-forest/30 bg-forest/10",
   },
 };
 
@@ -119,20 +119,18 @@ const PostFormatBadge = ({ postFormat }: { postFormat?: string | null }) => {
   );
 };
 
-const PlatformIcon = ({ platform }: { platform: string }) => {
-  switch (platform) {
-    case "facebook":
-      return <Facebook className="w-4 h-4 text-blue-600" />;
-    case "instagram":
-      return <Instagram className="w-4 h-4 text-pink-500" />;
-    case "twitter":
-      return <Twitter className="w-4 h-4 text-blue-400" />;
-    case "linkedin":
-      return <Linkedin className="w-4 h-4 text-blue-700" />;
-    default:
-      return <LayoutList className="w-4 h-4 text-muted-foreground" />;
-  }
-};
+interface DetailFieldProps {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const DetailField = ({ label, children, className }: DetailFieldProps) => (
+  <div className={className}>
+    <p className="text-sm font-medium text-muted-foreground">{label}</p>
+    <div className="mt-1">{children}</div>
+  </div>
+);
 
 const PostsTable = () => {
   const { data, isLoading, error } = useSocialMediaPosts({
@@ -150,7 +148,7 @@ const PostsTable = () => {
   const [deleteConfirmPost, setDeleteConfirmPost] =
     useState<SocialMediaPost | null>(null);
   const [publishingPostId, setPublishingPostId] = useState<string | null>(null);
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const posts = data?.posts || [];
   const total = data?.total || 0;
@@ -342,7 +340,7 @@ const PostsTable = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-emerald-600 hover:text-emerald-700"
+                                className="text-emerald hover:text-emerald/80"
                                 onClick={() => {
                                   setPublishingPostId(post.id);
                                   publishPostMutation.mutate(post.id);
@@ -366,7 +364,7 @@ const PostsTable = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-orange-600 hover:text-orange-700"
+                              className="text-amber hover:text-amber/80"
                               onClick={() => {
                                 setPublishingPostId(post.id);
                                 publishPostMutation.mutate(post.id);
@@ -432,61 +430,45 @@ const PostsTable = () => {
 
               <div className="space-y-6">
                 {/* Platform & Status */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Platform
-                    </label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm font-medium capitalize">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <DetailField label="Platform">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium capitalize">
                         {selectedPost.platform}
-                      </p>
+                      </span>
                       <PostFormatBadge postFormat={selectedPost.postFormat} />
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Status
-                    </label>
-                    <Badge className="mt-1" variant="outline">
-                      {selectedPost.status}
-                    </Badge>
-                  </div>
+                  </DetailField>
+                  <DetailField label="Status">
+                    <Badge variant="outline">{selectedPost.status}</Badge>
+                  </DetailField>
                 </div>
 
-                {/* Message */}
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Message
-                  </label>
-                  <p className="text-sm mt-2 whitespace-pre-wrap">
+                <DetailField label="Message">
+                  <p className="text-sm whitespace-pre-wrap break-words">
                     {selectedPost.message || "—"}
                   </p>
-                </div>
+                </DetailField>
 
-                {/* Link */}
                 {selectedPost.link && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Link
-                    </label>
+                  <DetailField label="Link">
                     <a
                       href={selectedPost.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-2"
+                      className="text-sm text-primary hover:underline inline-flex items-center gap-1 break-all"
                     >
                       {selectedPost.link}
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3 h-3 shrink-0" />
                     </a>
-                  </div>
+                  </DetailField>
                 )}
 
                 {/* Media Carousel */}
                 {selectedPost.mediaUrls &&
                   selectedPost.mediaUrls.length > 0 && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground block mb-2">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">
                         Media
                         {selectedPost.mediaUrls.length > 1 && (
                           <span className="text-xs text-muted-foreground/70 ml-2">
@@ -494,19 +476,15 @@ const PostsTable = () => {
                             {selectedPost.mediaUrls.length})
                           </span>
                         )}
-                      </label>
+                      </p>
 
                       {/* Image Display */}
                       <div className="relative bg-muted rounded-lg overflow-hidden group">
                         <button
                           type="button"
-                          onClick={() =>
-                            setZoomedImage(
-                              selectedPost.mediaUrls[currentImageIndex],
-                            )
-                          }
-                          className="w-full block relative"
-                          aria-label="Zoom image"
+                          onClick={() => setLightboxOpen(true)}
+                          className="w-full block relative cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+                          aria-label={`Open image ${currentImageIndex + 1} full size`}
                         >
                           <img
                             src={selectedPost.mediaUrls[currentImageIndex]}
@@ -514,11 +492,11 @@ const PostsTable = () => {
                               selectedPost.altText ||
                               `Media ${currentImageIndex + 1}`
                             }
-                            className="w-full max-h-96 object-contain cursor-zoom-in"
+                            className="w-full max-h-[60vh] object-contain"
                           />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <ZoomIn className="w-8 h-8 text-white" />
-                          </div>
+                          <span className="absolute inset-0 flex items-center justify-center bg-overlay/40 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
+                            <ZoomIn className="w-8 h-8 text-background" />
+                          </span>
                         </button>
 
                         {/* Navigation Arrows */}
@@ -570,78 +548,55 @@ const PostsTable = () => {
                     </div>
                   )}
 
-                {/* Scheduled */}
                 {selectedPost.scheduledAt && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Scheduled For
-                    </label>
-                    <p className="text-sm font-medium mt-1">
+                  <DetailField label="Scheduled For">
+                    <p className="text-sm font-medium">
                       {format(
                         new Date(selectedPost.scheduledAt),
                         "MMM d, yyyy 'at' HH:mm",
                       )}
                     </p>
-                  </div>
+                  </DetailField>
                 )}
 
-                {/* Hashtags */}
                 {selectedPost.tags && selectedPost.tags.length > 0 && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Hashtags
-                    </label>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                  <DetailField label="Hashtags">
+                    <div className="flex flex-wrap gap-2">
                       {selectedPost.tags.map((tag) => (
                         <Badge key={tag} variant="secondary">
                           {tag.startsWith("#") ? tag : `#${tag}`}
                         </Badge>
                       ))}
                     </div>
-                  </div>
+                  </DetailField>
                 )}
 
-                {/* Engagement */}
                 {selectedPost.status === "published" && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-3 block">
-                      Engagement
-                    </label>
-                    <div className="grid grid-cols-4 gap-3">
-                      <div className="bg-muted p-3 rounded-lg">
-                        <p className="text-xs text-muted-foreground">Likes</p>
-                        <p className="text-lg font-semibold">
-                          {selectedPost.likes}
-                        </p>
-                      </div>
-                      <div className="bg-muted p-3 rounded-lg">
-                        <p className="text-xs text-muted-foreground">
-                          Comments
-                        </p>
-                        <p className="text-lg font-semibold">
-                          {selectedPost.comments}
-                        </p>
-                      </div>
-                      <div className="bg-muted p-3 rounded-lg">
-                        <p className="text-xs text-muted-foreground">Shares</p>
-                        <p className="text-lg font-semibold">
-                          {selectedPost.shares}
-                        </p>
-                      </div>
-                      <div className="bg-muted p-3 rounded-lg">
-                        <p className="text-xs text-muted-foreground">Views</p>
-                        <p className="text-lg font-semibold">
-                          {selectedPost.views}
-                        </p>
-                      </div>
+                  <DetailField label="Engagement">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {(
+                        [
+                          ["Likes", selectedPost.likes],
+                          ["Comments", selectedPost.comments],
+                          ["Shares", selectedPost.shares],
+                          ["Views", selectedPost.views],
+                        ] as const
+                      ).map(([label, value]) => (
+                        <div key={label} className="bg-muted p-3 rounded-lg">
+                          <p className="text-xs text-muted-foreground">
+                            {label}
+                          </p>
+                          <p className="text-lg font-semibold">{value}</p>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  </DetailField>
                 )}
 
                 {/* AI Generated */}
                 {selectedPost.aiGenerated && (
-                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                    <p className="text-sm text-amber-600 dark:text-amber-400">
+                  <div className="bg-amber/10 border border-amber/30 rounded-lg p-3">
+                    <p className="text-sm text-amber">
                       Generated by {selectedPost.aiProvider || "AI"}
                     </p>
                   </div>
@@ -692,26 +647,13 @@ const PostsTable = () => {
 
       <EditPostDialog post={editingPost} onClose={() => setEditingPost(null)} />
 
-      {/* Image Zoom Modal */}
-      {zoomedImage && (
-        <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
-          <DialogContent className="w-full max-w-5xl h-screen max-h-screen p-0 border-0 bg-black/95 flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => setZoomedImage(null)}
-              className="absolute top-4 right-4 z-10 rounded-lg bg-white/20 hover:bg-white/30 text-white p-2 transition-colors"
-              aria-label="Close zoom"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <img
-              src={zoomedImage}
-              alt="Zoomed preview"
-              className="w-full h-full object-contain p-4"
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      <MediaLightbox
+        images={selectedPost?.mediaUrls ?? []}
+        index={currentImageIndex}
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        onIndexChange={setCurrentImageIndex}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog

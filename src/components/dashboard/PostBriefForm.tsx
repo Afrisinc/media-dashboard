@@ -25,7 +25,7 @@ const FORMATS: PostFormatName[] = ["post", "single", "story"];
 
 /** The house length. Ask for more only when the topic genuinely needs it. */
 const FRAME_CHOICES: Record<PostFormatName, number[]> = {
-  post: [4, 5, 6, 7, 8, 9, 10],
+  post: [2, 3, 4, 5, 6, 7, 8, 9, 10],
   single: [1],
   story: [1, 2, 3],
 };

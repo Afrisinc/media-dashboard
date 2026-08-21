@@ -6,13 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Form,
   FormControl,
   FormDescription,
@@ -355,26 +348,15 @@ const SocialMediaPostForm = () => {
   };
 
   return (
-    <Card className="border-border/50 overflow-hidden shadow-lg">
-      <div className="h-1 bg-primary" />
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Send className="w-4 h-4 text-primary" />
-          </div>
-          Post to Social Media
-        </CardTitle>
-        <CardDescription>
-          Post content manually or in batch to any platform
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,78fr)_minmax(0,22fr)]">
+    <div>
+      {/* The Studio tab already names this form; a second title is noise. */}
+      <div>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,72fr)_minmax(0,28fr)]">
           <div>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
+                className="space-y-4"
               >
                 {/* Mode Selection */}
                 <FormField
@@ -386,7 +368,7 @@ const SocialMediaPostForm = () => {
                         <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
                         Posting Mode
                       </FormLabel>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
                         {[
                           { value: "manual", label: "Single Post", icon: Send },
                           { value: "batch", label: "Batch Posts", icon: Copy },
@@ -399,16 +381,14 @@ const SocialMediaPostForm = () => {
                               setSelectedMode(mode.value as "manual" | "batch");
                             }}
                             className={cn(
-                              "flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all duration-200",
+                              "flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition-colors",
                               selectedMode === mode.value
                                 ? "border-primary bg-primary/5"
                                 : "border-border/50 hover:border-border bg-muted/20",
                             )}
                           >
-                            <mode.icon className="w-4 h-4" />
-                            <span className="text-sm font-medium">
-                              {mode.label}
-                            </span>
+                            <mode.icon className="h-3.5 w-3.5" />
+                            {mode.label}
                           </button>
                         ))}
                       </div>
@@ -466,23 +446,21 @@ const SocialMediaPostForm = () => {
                         <Film className="w-3.5 h-3.5 text-muted-foreground" />
                         Post Format
                       </FormLabel>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
                         {POST_FORMATS.map((format) => (
                           <button
                             key={format.value}
                             type="button"
                             onClick={() => field.onChange(format.value)}
                             className={cn(
-                              "flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all duration-200",
+                              "flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition-colors",
                               field.value === format.value
-                                ? "border-primary bg-primary/5"
-                                : "border-border/50 hover:border-border bg-muted/20",
+                                ? "bg-card text-foreground shadow-card"
+                                : "text-muted-foreground hover:text-foreground",
                             )}
                           >
-                            <format.icon className="w-4 h-4" />
-                            <span className="text-sm font-medium">
-                              {format.label}
-                            </span>
+                            <format.icon className="h-3.5 w-3.5" />
+                            {format.label}
                           </button>
                         ))}
                       </div>
@@ -1069,7 +1047,7 @@ const SocialMediaPostForm = () => {
             </div>
           </aside>
         </div>
-      </CardContent>
+      </div>
 
       <MediaLightbox
         images={previewImages}
@@ -1078,7 +1056,7 @@ const SocialMediaPostForm = () => {
         onOpenChange={setLightboxOpen}
         onIndexChange={setCurrentImageIdx}
       />
-    </Card>
+    </div>
   );
 };
 

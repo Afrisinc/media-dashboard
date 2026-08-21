@@ -11,7 +11,9 @@ import { CopyableText } from "@/components/ui/copyable-text";
 import { toast } from "sonner";
 
 // Mock data for testing
-interface TestUser {
+// A type alias (not an interface) gets an implicit index signature, which is
+// what makes it assignable to DataTable's `T extends Record<string, unknown>`.
+type TestUser = {
   id: string;
   name: string;
   email: string;
@@ -19,7 +21,7 @@ interface TestUser {
   status: "active" | "inactive" | "pending";
   createdAt: string;
   lastLogin: string | null;
-}
+};
 
 const mockData: TestUser[] = Array.from({ length: 50 }, (_, i) => ({
   id: `user-${i + 1}`,
@@ -124,7 +126,7 @@ export default function TestComponent() {
       label: "ID",
       sortable: true,
       width: "120px",
-      render: (value) => <CopyableText text={value} truncateAt={8} />,
+      render: (value) => <CopyableText text={String(value)} truncateAt={8} />,
     },
     {
       key: "name",
@@ -149,7 +151,7 @@ export default function TestComponent() {
       ],
       render: (value) => (
         <Badge variant="outline" className="capitalize">
-          {value}
+          {String(value)}
         </Badge>
       ),
     },
@@ -165,8 +167,8 @@ export default function TestComponent() {
         { label: "Pending", value: "pending" },
       ],
       render: (value) => (
-        <Badge variant={statusVariant(value)} className="capitalize">
-          {value}
+        <Badge variant={statusVariant(String(value))} className="capitalize">
+          {String(value)}
         </Badge>
       ),
     },
@@ -174,13 +176,14 @@ export default function TestComponent() {
       key: "createdAt",
       label: "Created",
       sortable: true,
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (_, user) => new Date(user.createdAt).toLocaleDateString(),
     },
     {
       key: "lastLogin",
       label: "Last Login",
       sortable: true,
-      render: (value) => (value ? new Date(value).toLocaleString() : "Never"),
+      render: (_, user) =>
+        user.lastLogin ? new Date(user.lastLogin).toLocaleString() : "Never",
     },
     {
       key: "actions",

@@ -18,7 +18,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import type { FilterBarProps, DateRangePreset } from "./types";
 
-export function FilterBar({
+export function FilterBar<T>({
   search = "",
   onSearchChange,
   enableDateRange = false,
@@ -29,7 +29,7 @@ export function FilterBar({
   filterableColumns = [],
   enableSearch = true,
   searchPlaceholder = "Search...",
-}: FilterBarProps) {
+}: FilterBarProps<T>) {
   const [searchValue, setSearchValue] = useState(search);
   const [datePreset, setDatePreset] = useState<DateRangePreset | "">("");
   const [customDateRange, setCustomDateRange] = useState<{

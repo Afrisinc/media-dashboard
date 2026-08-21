@@ -1,7 +1,6 @@
+import { authorizedFetch } from "@/lib/apiFetch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { getRuntimeConfig } from "@/lib/config";
-import { getToken } from "@/lib/authUtils";
 import type { SocialPlatformKey } from "@/config/socialPlatforms";
 
 export interface SocialMediaAccountDTO {
@@ -10,6 +9,16 @@ export interface SocialMediaAccountDTO {
   meta: string | null;
   scopes: string[];
   createdAt: string;
+}
+
+/**
+ * What creating an account returns. It carries the OAuth state the caller has to
+ * hand to the provider, which a plain account row does not.
+ */
+export interface CreatedSocialMediaAccountDTO extends SocialMediaAccountDTO {
+  oauthState?: string;
+  /** Older responses named it `state`; both are read at the call site. */
+  state?: string;
 }
 
 export interface SocialMediaIntegrationDTO {
@@ -54,36 +63,14 @@ export interface OAuthCallbackResponse {
 
 const QUERY_KEY = ["social-media-integrations"];
 
-async function authorizedFetch(path: string, init?: RequestInit) {
-  const config = getRuntimeConfig();
-  const token = getToken();
-  if (!token) throw new Error("Not authenticated");
-
-  const response = await fetch(`${config.serverUrl}/media${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(
-      body?.resp_msg || body?.message || `Request failed: ${response.status}`,
-    );
-  }
-
-  return response.json();
-}
-
 export const useSocialMediaIntegrations = () => {
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: async () => {
-      const data = await authorizedFetch("/social-media/integrations");
-      return (data.data?.platforms ?? []) as SocialMediaIntegrationDTO[];
+      const data = await authorizedFetch<{
+        data?: { platforms?: SocialMediaIntegrationDTO[] };
+      }>("/social-media/integrations");
+      return data.data?.platforms ?? [];
     },
     staleTime: 1000 * 30,
   });
@@ -121,7 +108,9 @@ export const useSaveIntegrationCredentials = () => {
       platform: SocialPlatformKey;
       appId: string;
       appSecret: string;
-      callbackUrl: string;
+      // Optional per the content-service schema (required: appId, appSecret).
+      // Omitting it leaves any stored callback URL untouched.
+      callbackUrl?: string;
     }) => {
       return authorizedFetch(
         `/social-media/integrations/${params.platform}/credentials`,
@@ -130,7 +119,7 @@ export const useSaveIntegrationCredentials = () => {
           body: JSON.stringify({
             appId: params.appId,
             appSecret: params.appSecret,
-            callbackUrl: params.callbackUrl,
+            callbackUrl: params.callbackUrl || undefined,
           }),
         },
       );
@@ -194,17 +183,16 @@ export const useAddSocialMediaAccount = () => {
       meta?: string;
       scopes: string[];
     }) => {
-      const response = await authorizedFetch(
-        `/social-media/integrations/${params.platform}/accounts`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            name: params.name,
-            meta: params.meta,
-            scopes: params.scopes,
-          }),
-        },
-      );
+      const response = await authorizedFetch<{
+        data: CreatedSocialMediaAccountDTO;
+      }>(`/social-media/integrations/${params.platform}/accounts`, {
+        method: "POST",
+        body: JSON.stringify({
+          name: params.name,
+          meta: params.meta,
+          scopes: params.scopes,
+        }),
+      });
       return response.data;
     },
     onError: (error: Error) => {
@@ -261,13 +249,10 @@ export const useAvailablePages = (platform?: SocialPlatformKey) => {
     queryKey: [...QUERY_KEY, "available-pages", platform],
     queryFn: async () => {
       if (!platform) return { available: [], connected: [] };
-      const data = await authorizedFetch(
-        `/social-media/integrations/${platform}/pages`,
-      );
-      return data.data as {
-        available: FacebookPage[];
-        connected: FacebookPage[];
-      };
+      const data = await authorizedFetch<{
+        data: { available: FacebookPage[]; connected: FacebookPage[] };
+      }>(`/social-media/integrations/${platform}/pages`);
+      return data.data;
     },
     enabled: !!platform,
     staleTime: 1000 * 60,

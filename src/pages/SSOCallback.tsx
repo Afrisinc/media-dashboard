@@ -13,7 +13,7 @@ const SSOCallback = () => {
 
     if (token) {
       handleSSO(token);
-      navigate("/ai-content", { replace: true });
+      navigate("/studio", { replace: true });
     } else {
       navigate("/", { replace: true });
     }

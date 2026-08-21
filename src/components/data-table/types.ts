@@ -57,7 +57,7 @@ export interface DataTableProps<T> {
   pageSize?: number;
 }
 
-export interface FilterBarProps {
+export interface FilterBarProps<T = Record<string, unknown>> {
   search?: string;
   onSearchChange: (value: string) => void;
   enableDateRange?: boolean;
@@ -65,7 +65,7 @@ export interface FilterBarProps {
   onDateRangeChange?: (range: { start: string; end: string }) => void;
   columnFilters?: Record<string, string>;
   onColumnFiltersChange?: (filters: Record<string, string>) => void;
-  filterableColumns?: ColumnConfig<Record<string, unknown>>[];
+  filterableColumns?: ColumnConfig<T>[];
   enableSearch?: boolean;
   searchPlaceholder?: string;
 }

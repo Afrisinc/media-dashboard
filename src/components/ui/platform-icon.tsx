@@ -1,15 +1,28 @@
-import { Facebook, Instagram } from "lucide-react";
+import {
+  Facebook,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Youtube,
+  LayoutList,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const platformConfig = {
-  facebook: { Icon: Facebook, className: "text-platform-facebook" },
-  instagram: { Icon: Instagram, className: "text-platform-instagram" },
-} as const;
+const platformConfig: Record<string, { Icon: LucideIcon; className: string }> =
+  {
+    facebook: { Icon: Facebook, className: "text-platform-facebook" },
+    instagram: { Icon: Instagram, className: "text-platform-instagram" },
+    linkedin: { Icon: Linkedin, className: "text-platform-linkedin" },
+    youtube: { Icon: Youtube, className: "text-platform-youtube" },
+    // X has no brand hue of its own — it reads as ink, so it must follow the theme.
+    twitter: { Icon: Twitter, className: "text-foreground" },
+  };
 
-type Platform = keyof typeof platformConfig | "both";
+const fallback = { Icon: LayoutList, className: "text-muted-foreground" };
 
 interface PlatformIconProps {
-  platform: Platform;
+  platform: string;
   className?: string;
 }
 
@@ -22,6 +35,7 @@ export function PlatformIcon({ platform, className }: PlatformIconProps) {
       </span>
     );
   }
-  const { Icon, className: toneClass } = platformConfig[platform];
+
+  const { Icon, className: toneClass } = platformConfig[platform] ?? fallback;
   return <Icon className={cn("h-4 w-4", toneClass, className)} />;
 }

@@ -35,6 +35,7 @@ export interface AccountGroup {
   serviceLine: string | null;
   audience: string | null;
   defaultFormat: string;
+  slideCount: number | null;
   members: AccountGroupMember[];
   activeMemberCount: number;
   platforms: SocialPlatformKey[];
@@ -48,10 +49,14 @@ export interface CreateAccountGroupPayload {
   color?: string;
   isDefault?: boolean;
   accountIds?: string[];
+  /** Photographs this brand publishes with. Empty means the shared library. */
+  assetIds?: string[];
   topics?: string[];
   serviceLine?: string;
   audience?: string;
   defaultFormat?: string;
+  /** Frames per post. Null takes the house length for the format. */
+  slideCount?: number | null;
   autopilotEnabled?: boolean;
   slotWeekdays?: string;
   slotHour?: number;
@@ -152,6 +157,8 @@ export interface RunRequestOutcome {
   alreadyRunning: boolean;
   activeRunId: string | null;
   reason: string | null;
+  /** One click is not one post — a brand with postsPerRun: 3 produces three. */
+  plannedPosts: number;
 }
 
 export interface AutopilotRunSummary {
@@ -310,3 +317,27 @@ export function runningStep(
 ): AgentRunStep | undefined {
   return run.steps.find((step) => step.status === "running");
 }
+
+/**
+ * A finished run needs a line, not a nine-stage breakdown. One that is going, or
+ * that broke, is exactly when the detail earns its space.
+ */
+export function deservesDetail(run: Pick<AgentRun, "status">): boolean {
+  return run.status === "running" || run.status === "failed";
+}
+
+/**
+ * Frames a format can carry, mirroring SLIDE_COUNTS in the brand rules. The
+ * house length is what a brand gets when it does not choose.
+ */
+export const FRAME_CHOICES: Record<string, number[]> = {
+  post: [2, 3, 4, 5, 6, 7, 8, 9, 10],
+  story: [1, 2, 3],
+  single: [1],
+};
+
+export const HOUSE_FRAMES: Record<string, number> = {
+  post: 5,
+  story: 3,
+  single: 1,
+};

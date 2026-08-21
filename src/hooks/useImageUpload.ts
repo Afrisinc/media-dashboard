@@ -1,32 +1,24 @@
+import { describeApiError } from "@/lib/apiFetch";
+import getApiClient from "@/services/apiClient";
 import { useMutation } from "@tanstack/react-query";
-import { getRuntimeConfig } from "@/lib/config";
-import { getToken } from "@/lib/authUtils";
 
 export const useImageUpload = () => {
   return useMutation({
-    mutationFn: async (file: File) => {
-      const config = getRuntimeConfig();
-      const token = getToken();
-      if (!token) throw new Error("Not authenticated");
-
+    mutationFn: async (file: File): Promise<string> => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch(`${config.serverUrl}/media/upload/image`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.resp_msg || "Upload failed");
+      try {
+        // The boundary is set by the browser; naming a Content-Type here would
+        // omit it and the upload would arrive unparseable.
+        const { data } = await getApiClient().post<{ data: { url: string } }>(
+          "/media/upload/image",
+          formData,
+        );
+        return data.data.url;
+      } catch (error) {
+        throw new Error(describeApiError(error));
       }
-
-      const result = await response.json();
-      return result.data.url;
     },
   });
 };

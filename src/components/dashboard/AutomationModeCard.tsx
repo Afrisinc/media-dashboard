@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { IconBox } from "@/components/ui/icon-box";
 import {
   Select,
   SelectContent,
@@ -9,6 +8,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAutopilot } from "@/contexts/AutopilotContext";
 import { useAccountGroups } from "@/hooks/useAccountGroups";
 import {
@@ -16,9 +20,9 @@ import {
   useRunAutomationNow,
   useUpdateAutomationPolicy,
 } from "@/hooks/useAutomation";
-import { cn } from "@/lib/utils";
 import { useElapsed } from "@/hooks/useElapsed";
 import { formatDateShort, formatDurationMs } from "@/lib/dateFormat";
+import { cn } from "@/lib/utils";
 import { Bot, Hand, Loader2, Play } from "lucide-react";
 
 const MODES = [
@@ -38,18 +42,17 @@ const MODES = [
   },
 ];
 
+/** One compact control bar: who drives, the limits, and the trigger. */
 export function AutomationModeCard() {
   const { mode, policy, isLoading, isSaving, setAutopilot } = useAutopilot();
   const { data: groups } = useAccountGroups();
   const updatePolicy = useUpdateAutomationPolicy();
   const runNow = useRunAutomationNow();
-  // Global, not local: the pass lives on the server, so the button reads the
-  // same state whether you started it here, in another tab, or an hour ago.
   const { data: activeRun } = useActiveAgentRun();
   const elapsed = useElapsed(activeRun?.startedAt ?? null, Boolean(activeRun));
 
   if (isLoading) {
-    return <Skeleton className="h-56 w-full" />;
+    return <Skeleton className="h-24 w-full" />;
   }
 
   const autopilotGroups = policy?.autopilotGroupCount ?? 0;
@@ -57,80 +60,68 @@ export function AutomationModeCard() {
   const cap = policy?.maxPostsPerDay ?? 3;
   const usedToday = policy?.postsUsedToday ?? 0;
   const budgetLeft = Math.max(cap - usedToday, 0);
-  // A spent budget skips every brand, so the trigger would report success and do
-  // nothing at all. Say so up front instead.
   const ready = autopilotGroups > 0 && activeAccounts > 0 && budgetLeft > 0;
+
+  // One click is not one post. A brand with postsPerRun: 3 produces three runs,
+  // which looked like the system starting work on its own until it was named.
+  const plannedPosts = (groups ?? [])
+    .filter((group) => group.autopilotEnabled)
+    .reduce((total, group) => total + Math.min(group.postsPerRun, cap), 0);
+  const willDraft = Math.min(plannedPosts, budgetLeft);
+  const current = MODES.find((option) => option.value === mode) ?? MODES[0];
+
+  const blocker =
+    budgetLeft === 0
+      ? `Today’s limit of ${cap} is used — raise the cap or wait until tomorrow.`
+      : autopilotGroups === 0
+        ? "No brand has its agents switched on."
+        : activeAccounts === 0
+          ? "No live page to publish to."
+          : null;
 
   return (
     <Card className="overflow-hidden">
-      <div className="grid gap-3 p-5 sm:grid-cols-2">
-        {MODES.map((option) => {
-          const selected = mode === option.value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={selected}
-              disabled={isSaving}
-              onClick={() => setAutopilot(option.value === "autopilot")}
-              className={cn(
-                "rounded-xl border p-4 text-left transition-colors",
-                selected
-                  ? "border-primary/45 bg-primary/5"
-                  : "border-border bg-inset hover:bg-inset-2",
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <IconBox
-                  icon={option.icon}
-                  size="sm"
-                  tone={selected ? "primary" : "muted"}
-                />
-                <span className="text-sm font-bold">{option.label}</span>
-                {selected && (
-                  <span className="ml-auto flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald" />
-                    On
-                  </span>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 p-4">
+        {/* The mode is a binary choice; a segmented switch says that in one line. */}
+        <div className="flex flex-shrink-0 rounded-lg bg-muted p-1">
+          {MODES.map((option) => {
+            const selected = mode === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={selected}
+                disabled={isSaving}
+                onClick={() => setAutopilot(option.value === "autopilot")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition-colors",
+                  selected
+                    ? "bg-card text-foreground shadow-card"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
-              </div>
-              <p className="mt-2.5 text-xs text-muted-foreground">
-                {option.blurb}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-border/50 px-5 py-4">
-        <div className="min-w-[180px] flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-dim-5">
-            {mode === "autopilot" ? "Running on" : "Ready to run"}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {autopilotGroups} brand{autopilotGroups === 1 ? "" : "s"} ·{" "}
-            {activeAccounts} live page
-            {activeAccounts === 1 ? "" : "s"}
-            {policy?.lastRunAt
-              ? ` · last run ${formatDateShort(policy.lastRunAt)}`
-              : ""}
-          </p>
+              >
+                <option.icon className="h-3.5 w-3.5" />
+                {option.label}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="flex items-center gap-2">
-          <label
-            htmlFor="max-per-day"
-            className="text-[11px] font-bold uppercase tracking-wider text-dim-5"
-          >
-            Cap
-          </label>
+        <p className="min-w-[220px] flex-1 text-xs text-muted-foreground">
+          {current.blurb}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <Select
-            value={String(policy?.maxPostsPerDay ?? 3)}
+            value={String(cap)}
             onValueChange={(value) =>
               updatePolicy.mutate({ maxPostsPerDay: Number(value) })
             }
           >
-            <SelectTrigger id="max-per-day" className="h-8 w-[132px]">
+            <SelectTrigger
+              aria-label="Posts per day"
+              className="h-8 w-[124px] text-xs"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -141,23 +132,7 @@ export function AutomationModeCard() {
               ))}
             </SelectContent>
           </Select>
-          <span
-            className={cn(
-              "text-[11px] font-bold tabular-nums",
-              budgetLeft === 0 ? "text-gold" : "text-dim-5",
-            )}
-          >
-            {usedToday}/{cap} used
-          </span>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <label
-            htmlFor="default-brand"
-            className="text-[11px] font-bold uppercase tracking-wider text-dim-5"
-          >
-            Default brand
-          </label>
           <Select
             value={policy?.defaultGroupId ?? "none"}
             onValueChange={(value) =>
@@ -166,8 +141,11 @@ export function AutomationModeCard() {
               })
             }
           >
-            <SelectTrigger id="default-brand" className="h-8 w-[160px]">
-              <SelectValue placeholder="None" />
+            <SelectTrigger
+              aria-label="Brand a hand-written brief lands on"
+              className="h-8 w-[150px] text-xs"
+            >
+              <SelectValue placeholder="First brand" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">First brand</SelectItem>
@@ -178,60 +156,71 @@ export function AutomationModeCard() {
               ))}
             </SelectContent>
           </Select>
-        </div>
 
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!ready || runNow.isPending || Boolean(activeRun)}
-          onClick={() => runNow.mutate()}
-          title={
-            activeRun
-              ? "A run is already going"
-              : ready
-                ? undefined
-                : "Switch the agents on for at least one brand first"
-          }
-        >
-          {runNow.isPending || activeRun ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Play className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          {activeRun ? "Agents running…" : "Run agents now"}
-        </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  size="sm"
+                  disabled={!ready || runNow.isPending || Boolean(activeRun)}
+                  onClick={() => runNow.mutate(undefined)}
+                >
+                  {runNow.isPending || activeRun ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Play className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  {activeRun
+                    ? "Running…"
+                    : ready && willDraft > 1
+                      ? `Run agents (${willDraft} posts)`
+                      : "Run agents now"}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {activeRun
+                ? "A run is already going"
+                : (blocker ??
+                  `Drafts ${willDraft} post${willDraft === 1 ? "" : "s"} across ${autopilotGroups} switched-on brand${autopilotGroups === 1 ? "" : "s"}`)}
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
-      {activeRun && (
-        <div className="flex flex-wrap items-center gap-3 border-t border-border/50 bg-primary/5 px-5 py-2.5">
-          <span className="h-1.5 w-1.5 flex-shrink-0 animate-pulse rounded-full bg-primary" />
-          <span className="min-w-[140px] flex-1 truncate text-xs font-semibold text-primary">
+      {/* One quiet line of state, rather than a block of stat cards. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/50 px-4 py-2 text-[11px]">
+        <span className="text-dim-5">
+          {autopilotGroups} brand{autopilotGroups === 1 ? "" : "s"} ·{" "}
+          {activeAccounts} live page{activeAccounts === 1 ? "" : "s"}
+        </span>
+        <span
+          className={cn(
+            "font-bold tabular-nums",
+            budgetLeft === 0 ? "text-gold" : "text-dim-5",
+          )}
+        >
+          {usedToday}/{cap} used today
+        </span>
+        {policy?.lastRunAt && (
+          <span className="text-dim-6">
+            last run {formatDateShort(policy.lastRunAt)}
+          </span>
+        )}
+        {activeRun && (
+          <span className="ml-auto flex items-center gap-2 font-semibold text-primary">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
             {activeRun.steps.find((step) => step.status === "running")?.label ??
               "Starting"}
-            {activeRun.topic ? ` · ${activeRun.topic}` : ""}
+            <span className="tabular-nums opacity-80">
+              {formatDurationMs(elapsed)}
+            </span>
           </span>
-          <span className="text-xs tabular-nums text-primary/80">
-            {formatDurationMs(elapsed)}
-          </span>
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-dim-5">
-            keeps going if you leave
-          </span>
-        </div>
-      )}
-
-      {budgetLeft === 0 && (
-        <p className="border-t border-border/50 bg-gold/5 px-5 py-2.5 text-[11px] text-gold">
-          Today’s limit of {cap} post{cap === 1 ? "" : "s"} is already used, so
-          a run would skip every brand. Raise the cap, or wait until tomorrow.
-        </p>
-      )}
-
-      {mode === "autopilot" && budgetLeft > 0 && !ready && (
-        <p className="border-t border-border/50 bg-gold/5 px-5 py-2.5 text-[11px] text-gold">
-          Autopilot is on, but no brand is set up to run. Switch the agents on
-          for a brand that has topics and at least one live page.
-        </p>
-      )}
+        )}
+        {!activeRun && blocker && (
+          <span className="ml-auto text-gold">{blocker}</span>
+        )}
+      </div>
     </Card>
   );
 }

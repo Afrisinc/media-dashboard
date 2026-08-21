@@ -1,13 +1,17 @@
 import { useState } from "react";
+import {
+  AgentCard,
+  type AgentSummaryStat,
+} from "@/components/dashboard/AgentCard";
+import { MediaLightbox } from "@/components/dashboard/MediaLightbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { IconBox } from "@/components/ui/icon-box";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { useAgentRuns } from "@/hooks/useAutomation";
 import { usePostDrafts } from "@/hooks/usePostAgent";
+import { formatDateShort } from "@/lib/dateFormat";
 import {
   FORMAT_LABELS,
   STATUS_LABELS,
@@ -15,15 +19,7 @@ import {
   type PostDraft,
   type PostDraftStatus,
 } from "@/types/postAgent";
-import { MediaLightbox } from "@/components/dashboard/MediaLightbox";
-import {
-  AlertTriangle,
-  Bot,
-  CalendarClock,
-  CheckCircle2,
-  ServerCrash,
-  Inbox,
-} from "lucide-react";
+import { Bot, Inbox, Mail, ServerCrash } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const RECENT_LIMIT = 8;
@@ -32,28 +28,88 @@ function countBy(drafts: PostDraft[], status: PostDraftStatus): number {
   return drafts.filter((draft) => draft.status === status).length;
 }
 
-function relativeTime(value: string): string {
-  const minutes = Math.round((Date.now() - new Date(value).getTime()) / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  return `${Math.round(hours / 24)} d ago`;
+function DraftRow({
+  draft,
+  onOpen,
+}: {
+  draft: PostDraft;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-4 border-b border-border/50 py-3 last:border-0">
+      {draft.slideUrls.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => onOpen(draft.id)}
+          aria-label={`Open the frames for ${draft.topic}`}
+          className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-muted transition-opacity hover:opacity-80"
+        >
+          <img
+            src={draft.slideUrls[0]}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        </button>
+      ) : (
+        <span className="h-12 w-12 flex-shrink-0 rounded-md border border-border bg-inset" />
+      )}
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{draft.topic}</p>
+        <p className="text-xs text-muted-foreground">
+          {FORMAT_LABELS[draft.format]} · {draft.slideUrls.length}{" "}
+          {draft.slideUrls.length === 1 ? "frame" : "frames"} ·{" "}
+          {formatDateShort(draft.createdAt)}
+        </p>
+      </div>
+
+      <Badge variant={STATUS_VARIANT[draft.status]}>
+        {STATUS_LABELS[draft.status]}
+      </Badge>
+    </div>
+  );
 }
 
 const DashboardAgents = () => {
   const { data, isLoading, isError } = usePostDrafts({ limit: 50 });
+  const { data: runPage } = useAgentRuns({ limit: 1 });
+
   const drafts = data?.items ?? [];
+  const [openAgent, setOpenAgent] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
 
   const inReview = countBy(drafts, "awaiting_approval");
   const scheduled = countBy(drafts, "scheduled");
-  const failed = countBy(drafts, "failed") + countBy(drafts, "rendered");
+  const needsFix = countBy(drafts, "failed") + countBy(drafts, "rendered");
   const lastRun = drafts[0]?.createdAt;
+  const running = runPage?.items[0]?.status === "running";
+
+  const toggle = (id: string) =>
+    setOpenAgent((current) => (current === id ? null : id));
+
+  const postAgentStats: AgentSummaryStat[] = [
+    {
+      label: "In review",
+      value: String(inReview),
+      tone: inReview > 0 ? "attention" : "default",
+    },
+    { label: "Scheduled", value: String(scheduled) },
+    {
+      label: "Needs a fix",
+      value: String(needsFix),
+      tone: needsFix > 0 ? "danger" : "default",
+    },
+    { label: "Last run", value: lastRun ? formatDateShort(lastRun) : "never" },
+  ];
+
+  const openFrames = (id: string) => {
+    setSelectedDraftId(id);
+    setLightboxOpen(true);
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 animate-fade-up">
       <PageHeader
         title="AI Agents"
         subtitle="What the agents have been doing and what is waiting on you."
@@ -63,119 +119,72 @@ const DashboardAgents = () => {
         <EmptyState
           icon={ServerCrash}
           title="Could not reach content-service"
-          description="The agent is running inside content-service. Check that it and the render service are up."
+          description="The agents run inside content-service. Check that it and the render service are up."
         />
       )}
 
       {!isError && (
-        <Card>
-          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0">
-            <div className="flex items-center gap-3">
-              <IconBox icon={Bot} />
-              <div>
-                <CardTitle>Post agent</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Writes the copy, art-directs the frames, renders and queues
-                  them for review.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant={inReview > 0 ? "default" : "secondary"}>
-                {inReview > 0 ? "Waiting on you" : "Idle"}
-              </Badge>
+        <>
+          <AgentCard
+            name="Post agent"
+            description="Writes the copy, art-directs the frames, renders and queues them."
+            icon={Bot}
+            status={
+              running ? "Running" : inReview > 0 ? "Waiting on you" : "Idle"
+            }
+            statusTone={running || inReview > 0 ? "default" : "secondary"}
+            stats={postAgentStats}
+            open={openAgent === "post"}
+            onToggle={() => toggle("post")}
+            action={
               <Button asChild size="sm">
-                <Link to="/post-studio">Open Post Studio</Link>
+                <Link to="/studio">Open Post Studio</Link>
               </Button>
-            </div>
-          </CardHeader>
+            }
+          >
+            {isLoading && <Skeleton className="h-32 w-full" />}
 
-          <CardContent className="space-y-6">
-            {isLoading ? (
-              <Skeleton className="h-24 w-full" />
-            ) : (
-              <StatGrid>
-                <StatCard
-                  label="In review"
-                  value={String(inReview)}
-                  icon={Inbox}
-                />
-                <StatCard
-                  label="Scheduled"
-                  value={String(scheduled)}
-                  icon={CalendarClock}
-                />
-                <StatCard
-                  label="Needs a fix"
-                  value={String(failed)}
-                  icon={AlertTriangle}
-                />
-                <StatCard
-                  label="Last run"
-                  value={lastRun ? relativeTime(lastRun) : "never"}
-                  icon={CheckCircle2}
-                />
-              </StatGrid>
+            {!isLoading && drafts.length === 0 && (
+              <EmptyState
+                icon={Inbox}
+                variant="compact"
+                title="Nothing drafted yet. Brief the agent from Post Studio."
+              />
             )}
 
-            <div>
-              <h2 className="mb-3 text-sm font-semibold">Recent work</h2>
+            {drafts.slice(0, RECENT_LIMIT).map((draft) => (
+              <DraftRow key={draft.id} draft={draft} onOpen={openFrames} />
+            ))}
 
-              {isLoading && <Skeleton className="h-32 w-full" />}
+            {drafts.length > RECENT_LIMIT && (
+              <Button asChild variant="ghost" size="sm" className="mt-3 w-full">
+                <Link to="/studio">See all {drafts.length} in Post Studio</Link>
+              </Button>
+            )}
+          </AgentCard>
 
-              {!isLoading && drafts.length === 0 && (
-                <EmptyState
-                  icon={Inbox}
-                  variant="compact"
-                  description="Nothing drafted yet. Brief the agent from Post Studio."
-                />
-              )}
-
-              {drafts.slice(0, RECENT_LIMIT).map((draft) => (
-                <div
-                  key={draft.id}
-                  className="flex items-center justify-between gap-4 border-b py-3 last:border-0"
-                >
-                  {draft.slideUrls.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDraftId(draft.id);
-                        setLightboxOpen(true);
-                      }}
-                      className="w-16 h-16 flex-shrink-0 rounded-md overflow-hidden bg-muted hover:opacity-80 transition-opacity cursor-pointer"
-                    >
-                      <img
-                        src={draft.slideUrls[0]}
-                        alt={draft.topic}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {draft.topic}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {FORMAT_LABELS[draft.format]} · {draft.slideUrls.length}{" "}
-                      {draft.slideUrls.length === 1 ? "frame" : "frames"} ·{" "}
-                      {relativeTime(draft.createdAt)}
-                    </p>
-                  </div>
-                  <Badge variant={STATUS_VARIANT[draft.status]}>
-                    {STATUS_LABELS[draft.status]}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          <AgentCard
+            name="Newsletter digest"
+            description="Gathers the week's articles and drafts the digest."
+            icon={Mail}
+            iconTone="muted"
+            status="Scheduled"
+            stats={[{ label: "Runs", value: "On a cron" }]}
+            open={openAgent === "digest"}
+            onToggle={() => toggle("digest")}
+          >
+            <EmptyState
+              icon={Mail}
+              variant="compact"
+              title="This agent runs on a schedule and does not report here yet."
+            />
+          </AgentCard>
+        </>
       )}
 
-      {/* Lightbox for viewing slides */}
       {selectedDraftId && (
         <MediaLightbox
-          images={drafts.find((d) => d.id === selectedDraftId)?.slideUrls || []}
+          images={drafts.find((d) => d.id === selectedDraftId)?.slideUrls ?? []}
           index={0}
           open={lightboxOpen}
           onOpenChange={setLightboxOpen}

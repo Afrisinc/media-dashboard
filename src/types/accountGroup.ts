@@ -223,9 +223,39 @@ export function groupTone(color: string | null): string {
 }
 
 /** "Tue & Fri at 09:00" — how a group's cadence reads in the UI. */
+/** The zones offered when choosing a brand's posting hour. */
+export function supportedTimeZones(): string[] {
+  const supported = (
+    Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[] }
+  ).supportedValuesOf;
+
+  // Widely available, but not everywhere — fall back to the browser's own zone.
+  const zones = supported ? supported("timeZone") : [];
+  return zones.length ? zones : [browserTimeZone(), "UTC"];
+}
+
+export function browserTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+}
+
+/** "GMT+2" and the like, so a zone name is not the only thing to go on. */
+export function offsetLabel(timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      timeZoneName: "shortOffset",
+    }).formatToParts(new Date());
+
+    return parts.find((part) => part.type === "timeZoneName")?.value ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export function describeCadence(group: {
   slotWeekdays: string;
   slotHour: number;
+  timezone?: string;
 }): string {
   const days = group.slotWeekdays
     .split(",")
@@ -233,7 +263,13 @@ export function describeCadence(group: {
     .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6)
     .map((value) => WEEKDAY_LABELS[value]);
 
-  const when = `${String(group.slotHour).padStart(2, "0")}:00`;
+  // The hour resolves in the brand's own zone, so naming it removes the
+  // ambiguity of a bare "09:00".
+  const zone = group.timezone
+    ? ` ${offsetLabel(group.timezone) || group.timezone}`
+    : "";
+  const when = `${String(group.slotHour).padStart(2, "0")}:00${zone}`;
+
   if (days.length === 0) return `at ${when}`;
   if (days.length === 7) return `Daily at ${when}`;
   if (days.length === 1) return `${days[0]} at ${when}`;

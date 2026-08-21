@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { parseUrls } from "@/lib/imageUrls";
 import { cn } from "@/lib/utils";
 import {
   addImagesToAsset,
@@ -20,21 +21,6 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Images, Loader2, Upload, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
-/** One url per line, blanks and duplicates dropped. */
-export function parseUrls(raw: string): string[] {
-  const seen = new Set<string>();
-
-  return raw
-    .split(/[\n,\s]+/)
-    .map((line) => line.trim())
-    .filter((line) => /^https?:\/\/\S+$/i.test(line))
-    .filter((url) => {
-      if (seen.has(url)) return false;
-      seen.add(url);
-      return true;
-    });
-}
 
 interface BulkAddAssetsDialogProps {
   open: boolean;

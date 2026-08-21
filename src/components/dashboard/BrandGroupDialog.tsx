@@ -31,6 +31,9 @@ import {
   type GroupColor,
   FRAME_CHOICES,
   HOUSE_FRAMES,
+  browserTimeZone,
+  offsetLabel,
+  supportedTimeZones,
 } from "@/types/accountGroup";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
@@ -43,6 +46,9 @@ const FORMATS = [
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 
+/** Resolved once: the list is long and does not change while the app runs. */
+const TIME_ZONES = supportedTimeZones();
+
 interface BrandGroupDialogProps {
   open: boolean;
   /** Omit to create a new brand; pass a group to edit it in place. */
@@ -52,6 +58,7 @@ interface BrandGroupDialogProps {
 
 interface FormState {
   assetIds: string[];
+  timezone: string;
   slideCount: string;
   name: string;
   description: string;
@@ -68,6 +75,8 @@ interface FormState {
 
 const BLANK: FormState = {
   assetIds: [],
+  // The person setting this up is almost always in the brand's own timezone.
+  timezone: browserTimeZone(),
   slideCount: "",
   name: "",
   description: "",
@@ -94,6 +103,7 @@ function toFormState(group: AccountGroup): FormState {
     // Editing an existing brand manages photographs on its own card, so the
     // picker starts empty rather than pretending to know the current library.
     assetIds: [],
+    timezone: group.timezone || browserTimeZone(),
     slideCount: group.slideCount ? String(group.slideCount) : "",
     name: group.name,
     description: group.description ?? "",
@@ -156,6 +166,7 @@ export function BrandGroupDialog({
       defaultFormat: form.defaultFormat,
       // Empty means the house length, which the copy agent already falls back to.
       slideCount: form.slideCount ? Number(form.slideCount) : null,
+      timezone: form.timezone,
       autopilotEnabled: form.autopilotEnabled,
       slotWeekdays: form.weekdays.join(","),
       slotHour: form.slotHour,
@@ -276,7 +287,7 @@ export function BrandGroupDialog({
               )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="group-hour">Time</Label>
                 <Select
@@ -309,6 +320,25 @@ export function BrandGroupDialog({
                     {[1, 2, 3, 4, 5].map((count) => (
                       <SelectItem key={count} value={String(count)}>
                         {count}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="group-timezone">Timezone</Label>
+                <Select
+                  value={form.timezone}
+                  onValueChange={(value) => set("timezone", value)}
+                >
+                  <SelectTrigger id="group-timezone">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {TIME_ZONES.map((zone) => (
+                      <SelectItem key={zone} value={zone}>
+                        {zone} {offsetLabel(zone)}
                       </SelectItem>
                     ))}
                   </SelectContent>

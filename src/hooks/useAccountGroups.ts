@@ -1,6 +1,9 @@
 import { useToast } from "@/hooks/use-toast";
 import {
   addAccountsToGroup,
+  assignGroupAssets,
+  listGroupAssets,
+  unassignGroupAsset,
   createAccountGroup,
   deleteAccountGroup,
   describeError,
@@ -24,6 +27,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 export const accountGroupKeys = {
   all: ["account-groups"] as const,
   targets: (id: string) => ["account-groups", "targets", id] as const,
+  assets: (id: string) => ["account-groups", "assets", id] as const,
 };
 
 export function useAccountGroups() {
@@ -182,4 +186,48 @@ export function useAddPagesToBrand() {
       toast({ variant: "destructive", title: error.message });
     },
   });
+}
+
+/** The photograph sets a brand publishes with. */
+export function useGroupAssets(groupId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: accountGroupKeys.assets(groupId ?? ""),
+    queryFn: () => listGroupAssets(groupId as string),
+    enabled: Boolean(groupId) && enabled,
+  });
+}
+
+function useGroupAssetMutation<TArgs>(
+  run: (args: TArgs) => Promise<unknown>,
+  successMessage: string,
+) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: run,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: accountGroupKeys.all });
+      toast({ title: successMessage });
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: describeError(error) });
+    },
+  });
+}
+
+export function useAssignGroupAssets() {
+  return useGroupAssetMutation(
+    ({ id, assetIds }: { id: string; assetIds: string[] }) =>
+      assignGroupAssets(id, assetIds),
+    "Photographs added to this brand",
+  );
+}
+
+export function useUnassignGroupAsset() {
+  return useGroupAssetMutation(
+    ({ id, assetId }: { id: string; assetId: string }) =>
+      unassignGroupAsset(id, assetId),
+    "Photographs removed from this brand",
+  );
 }

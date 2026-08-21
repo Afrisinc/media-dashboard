@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { BrandPhotoSets } from "@/components/dashboard/BrandPhotoSets";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -210,6 +211,8 @@ export function BrandGroupCard({
           })
         )}
       </div>
+
+      <BrandPhotoSets group={group} />
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border/50 px-5 py-3.5">
         {/* One brand on demand, rather than every switched-on brand at once. */}

@@ -25,7 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   GROUP_COLORS,
-  GROUP_COLOR_TONE,
+  GROUP_COLOR_SWATCH,
   WEEKDAY_LABELS,
   type AccountGroup,
   type GroupColor,
@@ -80,7 +80,7 @@ const BLANK: FormState = {
   slideCount: "",
   name: "",
   description: "",
-  color: "primary",
+  color: "azure",
   topics: "",
   serviceLine: "",
   audience: "",
@@ -107,7 +107,7 @@ function toFormState(group: AccountGroup): FormState {
     slideCount: group.slideCount ? String(group.slideCount) : "",
     name: group.name,
     description: group.description ?? "",
-    color: (group.color as GroupColor) ?? "primary",
+    color: (group.color as GroupColor) ?? "azure",
     topics: group.topics.join("\n"),
     serviceLine: group.serviceLine ?? "",
     audience: group.audience ?? "",
@@ -232,7 +232,7 @@ export function BrandGroupDialog({
                   onClick={() => set("color", color)}
                   className={cn(
                     "h-8 w-8 rounded-lg border-2 transition-colors",
-                    GROUP_COLOR_TONE[color],
+                    GROUP_COLOR_SWATCH[color],
                     form.color === color
                       ? "border-foreground"
                       : "border-transparent",

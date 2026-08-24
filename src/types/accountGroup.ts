@@ -196,6 +196,8 @@ export const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /** The accent a group is drawn with. Tokens only — a hex breaks dark mode. */
 export const GROUP_COLORS = [
+  "azure",
+  "coral",
   "primary",
   "emerald",
   "terra",
@@ -207,6 +209,8 @@ export const GROUP_COLORS = [
 export type GroupColor = (typeof GROUP_COLORS)[number];
 
 export const GROUP_COLOR_TONE: Record<GroupColor, string> = {
+  azure: "bg-azure/10 text-azure",
+  coral: "bg-coral/10 text-coral",
   primary: "bg-primary/10 text-primary",
   emerald: "bg-emerald/10 text-emerald",
   terra: "bg-terra/10 text-terra",
@@ -215,10 +219,25 @@ export const GROUP_COLOR_TONE: Record<GroupColor, string> = {
   indigo: "bg-indigo/10 text-indigo",
 };
 
+/**
+ * Full-strength fill for the accent picker's own swatches — GROUP_COLOR_TONE
+ * is a 10%-opacity tint meant for badges sitting on a card, and washes every
+ * color out to the same pale blob when used as the swatch itself.
+ */
+export const GROUP_COLOR_SWATCH: Record<GroupColor, string> = {
+  azure: "bg-azure",
+  coral: "bg-coral",
+  primary: "bg-primary",
+  emerald: "bg-emerald",
+  terra: "bg-terra",
+  gold: "bg-gold",
+  forest: "bg-forest",
+  indigo: "bg-indigo",
+};
+
 export function groupTone(color: string | null): string {
   return (
-    GROUP_COLOR_TONE[(color ?? "primary") as GroupColor] ??
-    GROUP_COLOR_TONE.primary
+    GROUP_COLOR_TONE[(color ?? "azure") as GroupColor] ?? GROUP_COLOR_TONE.azure
   );
 }
 

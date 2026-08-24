@@ -51,6 +51,9 @@
     --indigo: 240 40% 30%;
     --cream: 40 30% 96%;
 
+    --azure: 201 98% 45%;
+    --coral: 356 100% 62%;
+
     /* Terracotta (used by service cards) */
     --terra: 20 74% 44%;
     --terra-light: 22 80% 62%;
@@ -194,6 +197,9 @@
     --charcoal: 220 18% 12%;
     --indigo: 240 35% 45%;
     --cream: 40 20% 15%;
+
+    --azure: 201 90% 58%;
+    --coral: 356 90% 66%;
 
     --terra: 22 82% 58%;
     --terra-light: 22 75% 65%;

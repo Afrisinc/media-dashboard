@@ -144,6 +144,8 @@ export default {
         charcoal: "hsl(var(--charcoal))",
         indigo: "hsl(var(--indigo))",
         cream: "hsl(var(--cream))",
+        azure: "hsl(var(--azure))",
+        coral: "hsl(var(--coral))",
       },
       fontFamily: {
         sans: ["Manrope", "system-ui", "sans-serif"],

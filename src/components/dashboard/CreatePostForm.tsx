@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useTopics } from "@/hooks/useTopics";
 import { useGenerateAIPost } from "@/hooks/useAIPosts";
-import { AssetSelector } from "@/components/AssetSelector";
+import { useSocialMediaIntegrations } from "@/hooks/useSocialMediaIntegrations";
 import {
   Sparkles,
   Send,
@@ -33,6 +33,7 @@ import {
   Facebook,
   Instagram,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
@@ -41,14 +42,35 @@ const formSchema = z.object({
   link: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   platform: z.enum(["facebook", "instagram", "both"]),
   formMode: z.enum(["test", "production"]),
-  selectedAssets: z.array(z.string()).default([]),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
+/** A platform counts as usable here only once a real page is linked to it — a
+ * configured app with nothing connected still can't publish anywhere. */
+function isConnected(
+  integrations: ReturnType<typeof useSocialMediaIntegrations>["data"],
+  platform: "facebook" | "instagram",
+): boolean {
+  return (
+    integrations?.some(
+      (integration) =>
+        integration.platform === platform &&
+        integration.connected &&
+        integration.accounts.length > 0,
+    ) ?? false
+  );
+}
+
 const CreatePostForm = () => {
   const { data: topics, isLoading: topicsLoading } = useTopics();
+  const { data: integrations, isLoading: integrationsLoading } =
+    useSocialMediaIntegrations();
   const generatePost = useGenerateAIPost();
+
+  const facebookConnected = isConnected(integrations, "facebook");
+  const instagramConnected = isConnected(integrations, "instagram");
+  const noneConnected = !facebookConnected && !instagramConnected;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -58,7 +80,6 @@ const CreatePostForm = () => {
       link: "",
       platform: "both",
       formMode: "test",
-      selectedAssets: [],
     },
   });
 
@@ -69,7 +90,6 @@ const CreatePostForm = () => {
       link: data.link || undefined,
       platform: data.platform,
       formMode: data.formMode,
-      selectedAssets: data.selectedAssets,
     });
     form.reset({
       topic: "",
@@ -77,18 +97,17 @@ const CreatePostForm = () => {
       link: "",
       platform: "both",
       formMode: "test",
-      selectedAssets: [],
     });
   };
 
   const selectedPlatform = form.watch("platform");
   const selectedMode = form.watch("formMode");
 
-  if (topicsLoading) {
+  if (topicsLoading || integrationsLoading) {
     return (
       <div className="flex items-center justify-center gap-3 py-16 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading topics…
+        Loading…
       </div>
     );
   }
@@ -186,7 +205,7 @@ const CreatePostForm = () => {
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     {
-                      value: "both",
+                      value: "both" as const,
                       label: "Both",
                       icon: () => (
                         <div className="flex -space-x-1">
@@ -194,26 +213,37 @@ const CreatePostForm = () => {
                           <Instagram className="w-4 h-4 text-pink-500" />
                         </div>
                       ),
+                      available: facebookConnected && instagramConnected,
                     },
                     {
-                      value: "facebook",
+                      value: "facebook" as const,
                       label: "Facebook",
                       icon: Facebook,
                       color: "text-blue-500",
+                      available: facebookConnected,
                     },
                     {
-                      value: "instagram",
+                      value: "instagram" as const,
                       label: "Instagram",
                       icon: Instagram,
                       color: "text-pink-500",
+                      available: instagramConnected,
                     },
                   ].map((platform) => (
                     <button
                       key={platform.value}
                       type="button"
+                      disabled={!platform.available}
+                      title={
+                        platform.available
+                          ? undefined
+                          : "No connected account for this platform"
+                      }
                       onClick={() => field.onChange(platform.value)}
                       className={cn(
                         "flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all duration-200",
+                        !platform.available &&
+                          "opacity-40 cursor-not-allowed hover:border-border/50",
                         selectedPlatform === platform.value
                           ? "border-primary bg-primary/5"
                           : "border-border/50 hover:border-border bg-muted/20",
@@ -228,6 +258,18 @@ const CreatePostForm = () => {
                     </button>
                   ))}
                 </div>
+                {noneConnected && (
+                  <FormDescription className="text-xs">
+                    No connected accounts yet.{" "}
+                    <Link
+                      to="/settings"
+                      className="font-semibold text-primary hover:underline"
+                    >
+                      Connect one
+                    </Link>{" "}
+                    to publish from here.
+                  </FormDescription>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -282,33 +324,6 @@ const CreatePostForm = () => {
                     <span className="text-sm font-medium">Production</span>
                   </button>
                 </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Brand Assets Selection */}
-          <FormField
-            control={form.control}
-            name="selectedAssets"
-            render={({ field }) => (
-              <FormItem>
-                <div className="border-t border-border/30 pt-4">
-                  <FormLabel className="flex items-center gap-2 mb-3">
-                    <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                      Optional
-                    </span>
-                  </FormLabel>
-                  <AssetSelector
-                    selectedAssets={field.value}
-                    onChange={field.onChange}
-                    label="Brand Assets for Art Direction"
-                    maxSelection={5}
-                  />
-                </div>
-                <FormDescription className="text-xs mt-2">
-                  Select approved brand assets to guide the AI art direction
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

@@ -74,8 +74,14 @@ export interface PostBrief {
   serviceLine?: string;
   offer?: string;
   audience?: string;
+  /** Free-text keywords or hashtags to weave into the copy. */
+  keywords?: string;
+  /** A reference link the copy or its CTA can point to. */
+  link?: string;
   /** Publish to every live page in this brand. Omit for the workspace default. */
   groupId?: string;
+  /** Brand asset sets picked by hand; overrides automatic subject matching. */
+  assetIds?: string[];
 }
 
 export interface SchedulePayload {

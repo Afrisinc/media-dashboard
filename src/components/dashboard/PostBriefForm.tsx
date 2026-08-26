@@ -1,3 +1,4 @@
+import { AssetSelector } from "@/components/AssetSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,9 @@ export function PostBriefForm() {
   const [serviceLine, setServiceLine] = useState("");
   const [audience, setAudience] = useState("");
   const [slideCount, setSlideCount] = useState<string>("");
+  const [keywords, setKeywords] = useState("");
+  const [link, setLink] = useState("");
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
 
   const selectedGroup = (groups ?? []).find((group) => group.id === groupId);
 
@@ -65,12 +69,18 @@ export function PostBriefForm() {
     if (offer.trim()) brief.offer = offer.trim();
     if (serviceLine.trim()) brief.serviceLine = serviceLine.trim();
     if (audience.trim()) brief.audience = audience.trim();
+    if (keywords.trim()) brief.keywords = keywords.trim();
+    if (link.trim()) brief.link = link.trim();
+    if (selectedAssets.length) brief.assetIds = selectedAssets;
 
     create.mutate(brief, {
       onSuccess: () => {
         setTopic("");
         setOffer("");
         setAudience("");
+        setKeywords("");
+        setLink("");
+        setSelectedAssets([]);
       },
     });
   };
@@ -211,6 +221,43 @@ export function PostBriefForm() {
               placeholder="School administrators and office IT managers"
               maxLength={120}
             />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="keywords">Keywords / hashtags</Label>
+              <Input
+                id="keywords"
+                value={keywords}
+                onChange={(event) => setKeywords(event.target.value)}
+                placeholder="#innovation #tech #africa"
+                maxLength={200}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="link">Link</Label>
+              <Input
+                id="link"
+                type="url"
+                value={link}
+                onChange={(event) => setLink(event.target.value)}
+                placeholder="https://example.com/article"
+                maxLength={500}
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-border/30 pt-4">
+            <AssetSelector
+              selectedAssets={selectedAssets}
+              onChange={setSelectedAssets}
+              label="Brand Assets for Art Direction"
+              maxSelection={5}
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Optional. Pick the sets the frames should draw their photographs
+              from — otherwise the agent matches one to the topic itself.
+            </p>
           </div>
 
           <div className="flex items-center justify-between gap-4">

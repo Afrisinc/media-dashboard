@@ -1,5 +1,4 @@
 import { AgentRunTimeline } from "@/components/dashboard/AgentRunTimeline";
-import CreatePostForm from "@/components/dashboard/CreatePostForm";
 import { PostBriefForm } from "@/components/dashboard/PostBriefForm";
 import { PostDraftReview } from "@/components/dashboard/PostDraftReview";
 import PostsTable from "@/components/dashboard/PostsTable";
@@ -32,14 +31,13 @@ import {
   ServerCrash,
   Plus,
   Sparkles,
-  Wand2,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const REVIEW_STATUS: PostDraftStatus = "awaiting_approval";
 
-/** The three ways to make a post, in descending order of how much the agents do. */
+/** The two ways to make a post, in descending order of how much the agents do. */
 const COMPOSERS = [
   {
     value: "agent",
@@ -47,13 +45,6 @@ const COMPOSERS = [
     icon: Sparkles,
     blurb:
       "Brief the agent. It writes the copy, art-directs the frames, renders and queues them for you.",
-  },
-  {
-    value: "quick",
-    label: "Quick post",
-    icon: Wand2,
-    blurb:
-      "Generate the caption with AI and send it, without the frame pipeline.",
   },
   {
     value: "manual",
@@ -216,10 +207,6 @@ const Studio = () => {
 
             <TabsContent value="agent" className="m-0 p-5">
               <PostBriefForm />
-            </TabsContent>
-
-            <TabsContent value="quick" className="m-0 p-5">
-              <CreatePostForm />
             </TabsContent>
 
             <TabsContent value="manual" className="m-0 p-5">

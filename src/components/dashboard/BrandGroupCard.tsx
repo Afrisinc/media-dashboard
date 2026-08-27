@@ -17,6 +17,7 @@ import { PLATFORM_CATALOG } from "@/config/socialPlatforms";
 import { useActiveAgentRun, useRunAutomationNow } from "@/hooks/useAutomation";
 import {
   useDeleteAccountGroup,
+  useDuplicateAccountGroup,
   useRemoveAccountFromGroup,
   useSetGroupAccountActive,
   useUpdateAccountGroup,
@@ -31,6 +32,7 @@ import {
 import {
   Bot,
   CalendarClock,
+  Copy,
   Loader2,
   Pencil,
   Play,
@@ -45,17 +47,21 @@ interface BrandGroupCardProps {
   group: AccountGroup;
   onEdit: () => void;
   onAddPages: () => void;
+  /** Fires once a duplicate lands, so the caller can open it straight into edit. */
+  onDuplicated: (duplicate: AccountGroup) => void;
 }
 
 export function BrandGroupCard({
   group,
   onEdit,
   onAddPages,
+  onDuplicated,
 }: BrandGroupCardProps) {
   const update = useUpdateAccountGroup();
   const setActive = useSetGroupAccountActive();
   const removeAccount = useRemoveAccountFromGroup();
   const deleteGroup = useDeleteAccountGroup();
+  const duplicateGroup = useDuplicateAccountGroup();
   const runNow = useRunAutomationNow();
   const { data: activeRun } = useActiveAgentRun();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -110,6 +116,24 @@ export function BrandGroupCard({
           >
             <Pencil className="h-3.5 w-3.5" />
             <span className="sr-only">Edit {group.name}</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={duplicateGroup.isPending}
+            onClick={() =>
+              duplicateGroup.mutate(group.id, {
+                onSuccess: onDuplicated,
+              })
+            }
+            title="Duplicate this brand"
+          >
+            {duplicateGroup.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+            <span className="sr-only">Duplicate {group.name}</span>
           </Button>
           <Button
             variant="ghost"

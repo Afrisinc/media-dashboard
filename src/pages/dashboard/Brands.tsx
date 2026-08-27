@@ -115,6 +115,7 @@ const DashboardBrands = () => {
                   group={group}
                   onEdit={() => setEditing(group)}
                   onAddPages={() => setAddingTo(group)}
+                  onDuplicated={setEditing}
                 />
               ))}
             </div>

@@ -59,6 +59,14 @@ export async function deleteAccountGroup(id: string): Promise<void> {
   await getApiClient().delete<Envelope<Record<string, never>>>(`${BASE}/${id}`);
 }
 
+/** Clones a brand's config and photo library. Connected pages are left out. */
+export async function duplicateAccountGroup(id: string): Promise<AccountGroup> {
+  const { data } = await getApiClient().post<Envelope<AccountGroup>>(
+    `${BASE}/${id}/duplicate`,
+  );
+  return unwrap(data);
+}
+
 export async function addAccountsToGroup(
   id: string,
   accountIds: string[],

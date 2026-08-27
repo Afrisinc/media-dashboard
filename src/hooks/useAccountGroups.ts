@@ -7,6 +7,7 @@ import {
   createAccountGroup,
   deleteAccountGroup,
   describeError,
+  duplicateAccountGroup,
   getGroupTargets,
   listAccountGroups,
   removeAccountFromGroup,
@@ -77,6 +78,14 @@ export function useUpdateAccountGroup() {
     ({ id, payload }: { id: string; payload: UpdateAccountGroupPayload }) =>
       updateAccountGroup(id, payload),
     (group) => `${group.name} updated`,
+  );
+}
+
+/** A quick start for a new brand: clone an existing one's config and photos. */
+export function useDuplicateAccountGroup() {
+  return useGroupMutation(
+    (id: string) => duplicateAccountGroup(id),
+    (group) => `${group.name} created`,
   );
 }
 

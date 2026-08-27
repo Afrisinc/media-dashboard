@@ -63,6 +63,7 @@ export async function deleteAccountGroup(id: string): Promise<void> {
 export async function duplicateAccountGroup(id: string): Promise<AccountGroup> {
   const { data } = await getApiClient().post<Envelope<AccountGroup>>(
     `${BASE}/${id}/duplicate`,
+    {},
   );
   return unwrap(data);
 }

@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import {
   Clock,
+  Hourglass,
   Film,
   Newspaper,
   CheckCircle,
@@ -63,6 +64,11 @@ const statusConfig = {
     label: "Pending",
     icon: Clock,
     className: "bg-amber/10 text-amber border-amber/30",
+  },
+  in_review: {
+    label: "Waiting for approval",
+    icon: Hourglass,
+    className: "bg-gold/12 text-gold border-gold/30",
   },
   published: {
     label: "Published",

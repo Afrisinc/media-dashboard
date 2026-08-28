@@ -195,6 +195,40 @@ export const useUpdateSocialMediaPost = () => {
   });
 };
 
+export const useRepostSocialMediaPost = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      postId,
+      scheduledAt,
+    }: {
+      postId: string;
+      scheduledAt?: number;
+    }) => {
+      return authorizedFetch(`/social-media/posts/${postId}/repost`, {
+        method: "POST",
+        body: JSON.stringify(scheduledAt ? { scheduledAt } : {}),
+      }) as Promise<PostResponse>;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["social-media-posts"] });
+      toast({
+        title: "Repost Scheduled",
+        description: data.message || "Post has been queued for reposting.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Repost Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const usePublishScheduledPost = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();

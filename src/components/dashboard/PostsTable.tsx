@@ -1,26 +1,13 @@
+import { useMemo, useState } from "react";
 import { useSocialMediaPosts } from "@/hooks/useSocialMediaPosts";
 import {
   useDeleteSocialMediaPost,
-  useUpdateSocialMediaPost,
   usePublishScheduledPost,
 } from "@/hooks/useSocialMediaPosting";
 import { EditPostDialog } from "./EditPostDialog";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { RepostDialog } from "./RepostDialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -38,26 +25,21 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
   ExternalLink,
   LayoutList,
-  Inbox,
   Eye,
   Edit2,
   Trash2,
   Send,
+  Repeat,
   ZoomIn,
-  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 import type { SocialMediaPost } from "@/hooks/useSocialMediaPosts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PlatformIcon } from "@/components/ui/platform-icon";
 import { MediaLightbox } from "./MediaLightbox";
+import { DataTable, type ColumnConfig } from "@/components/data-table";
 
 const statusConfig = {
   pending: {
@@ -86,6 +68,18 @@ const statusConfig = {
     className: "bg-muted text-muted-foreground border-muted",
   },
 };
+
+const PLATFORM_FILTER_OPTIONS = [
+  { label: "Facebook", value: "facebook" },
+  { label: "Instagram", value: "instagram" },
+  { label: "Twitter", value: "twitter" },
+  { label: "LinkedIn", value: "linkedin" },
+  { label: "TikTok", value: "tiktok" },
+];
+
+const STATUS_FILTER_OPTIONS = Object.entries(statusConfig).map(
+  ([value, entry]) => ({ label: entry.label, value }),
+);
 
 const FORMAT_BADGES: Record<
   string,
@@ -139,275 +133,278 @@ const DetailField = ({ label, children, className }: DetailFieldProps) => (
 );
 
 const PostsTable = () => {
-  const { data, isLoading, error } = useSocialMediaPosts({
-    limit: 10,
-    offset: 0,
-  });
-  const deletePostMutation = useDeleteSocialMediaPost();
-  const updatePostMutation = useUpdateSocialMediaPost();
-  const publishPostMutation = usePublishScheduledPost();
   const [selectedPost, setSelectedPost] = useState<SocialMediaPost | null>(
     null,
   );
   const [editingPost, setEditingPost] = useState<SocialMediaPost | null>(null);
+  const [repostingPost, setRepostingPost] = useState<SocialMediaPost | null>(
+    null,
+  );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deleteConfirmPost, setDeleteConfirmPost] =
     useState<SocialMediaPost | null>(null);
   const [publishingPostId, setPublishingPostId] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  const [query, setQuery] = useState({
+    page: 1,
+    limit: 10,
+    search: "",
+    filters: {} as Record<string, string>,
+  });
+
+  const { data, isLoading, error } = useSocialMediaPosts({
+    platform: query.filters.platform,
+    status: query.filters.status,
+    search: query.search || undefined,
+    limit: query.limit,
+    offset: (query.page - 1) * query.limit,
+  });
+  const deletePostMutation = useDeleteSocialMediaPost();
+  const publishPostMutation = usePublishScheduledPost();
+
   const posts = data?.posts || [];
   const total = data?.total || 0;
 
-  if (isLoading) {
-    return (
-      <Card className="border-border/50">
-        <CardContent className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading posts...</p>
+  const columns = useMemo<ColumnConfig<SocialMediaPost>[]>(
+    () => [
+      {
+        key: "message",
+        label: "Message",
+        render: (_value, post) => (
+          <div className="space-y-1 max-w-xs">
+            <p className="font-medium text-foreground line-clamp-2">
+              {post.message || "(No message)"}
+            </p>
+            {post.link && (
+              <a
+                href={post.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <ExternalLink className="w-3 h-3" />
+                {post.link.length > 30
+                  ? `${post.link.slice(0, 30)}...`
+                  : post.link}
+              </a>
+            )}
+            {post.aiGenerated && (
+              <Badge variant="secondary" className="w-fit text-xs">
+                AI Generated
+              </Badge>
+            )}
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
+        ),
+      },
+      {
+        key: "platform",
+        label: "Platform",
+        filterable: true,
+        filterType: "select",
+        filterOptions: PLATFORM_FILTER_OPTIONS,
+        render: (_value, post) => (
+          <div className="flex items-center gap-2">
+            <PlatformIcon platform={post.platform} />
+            <span className="text-sm capitalize">{post.platform}</span>
+          </div>
+        ),
+      },
+      {
+        key: "postFormat",
+        label: "Format",
+        render: (_value, post) => (
+          <PostFormatBadge postFormat={post.postFormat} />
+        ),
+      },
+      {
+        key: "status",
+        label: "Status",
+        filterable: true,
+        filterType: "select",
+        filterOptions: STATUS_FILTER_OPTIONS,
+        render: (_value, post) => {
+          const status = statusConfig[post.status as keyof typeof statusConfig];
+          const StatusIcon = status?.icon || Clock;
 
-  if (error) {
-    return (
-      <Card className="border-destructive/50">
-        <CardContent className="py-10 text-center">
-          <XCircle className="w-10 h-10 text-destructive mx-auto mb-3" />
-          <p className="text-destructive font-medium">Failed to load posts</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Please try again later
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+          return (
+            <Badge
+              variant="outline"
+              className={cn(
+                "flex items-center gap-1.5 w-fit font-medium border",
+                status?.className || "",
+              )}
+            >
+              <StatusIcon className="w-3 h-3" />
+              {status?.label || "Unknown"}
+            </Badge>
+          );
+        },
+      },
+      {
+        key: "createdAt",
+        label: "Created",
+        render: (_value, post) =>
+          post.createdAt ? (
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              {format(new Date(post.createdAt), "MMM d, yyyy")}
+              <br />
+              <span className="text-xs">
+                {format(new Date(post.createdAt), "HH:mm")}
+              </span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground/50">—</span>
+          ),
+      },
+      {
+        key: "publishedAt",
+        label: "Published",
+        render: (_value, post) =>
+          post.publishedAt ? (
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              {format(new Date(post.publishedAt), "MMM d, yyyy")}
+              <br />
+              <span className="text-xs">
+                {format(new Date(post.publishedAt), "HH:mm")}
+              </span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground/50">—</span>
+          ),
+      },
+      {
+        key: "actions",
+        label: "Actions",
+        align: "right",
+        render: (_value, post) => (
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedPost(post)}
+              title="View details"
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+            {post.status === "pending" && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingPost(post)}
+                  title="Edit post"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-emerald hover:text-emerald/80"
+                  onClick={() => {
+                    setPublishingPostId(post.id);
+                    publishPostMutation.mutate(post.id);
+                  }}
+                  disabled={
+                    publishingPostId === post.id &&
+                    publishPostMutation.isPending
+                  }
+                  title="Publish now"
+                >
+                  {publishingPostId === post.id &&
+                  publishPostMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </Button>
+              </>
+            )}
+            {post.status === "failed" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-amber hover:text-amber/80"
+                onClick={() => {
+                  setPublishingPostId(post.id);
+                  publishPostMutation.mutate(post.id);
+                }}
+                disabled={
+                  publishingPostId === post.id && publishPostMutation.isPending
+                }
+                title="Retry publish"
+              >
+                {publishingPostId === post.id &&
+                publishPostMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            )}
+            {post.status === "published" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary hover:text-primary/80"
+                onClick={() => setRepostingPost(post)}
+                title="Repost"
+              >
+                <Repeat className="w-4 h-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setDeleteConfirmPost(post)}
+              disabled={deletePostMutation.isPending}
+              title="Delete post"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [publishingPostId, publishPostMutation, deletePostMutation.isPending],
+  );
 
   return (
     <Card className="border-border/50">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-muted">
-              <LayoutList className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div>
-              <CardTitle>Recent Posts</CardTitle>
-              <CardDescription>{total} total posts</CardDescription>
-            </div>
+      <CardContent className="pt-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-muted">
+            <LayoutList className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Recent Posts</h3>
+            <p className="text-sm text-muted-foreground">{total} total posts</p>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        {posts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="p-4 rounded-full bg-muted/50 mb-4">
-              <Inbox className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold text-foreground mb-1">No posts yet</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Create your first post using the form above. Your posts will
-              appear here.
-            </p>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-border/50 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="font-semibold">Message</TableHead>
-                  <TableHead className="font-semibold">Platform</TableHead>
-                  <TableHead className="font-semibold">Format</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Created</TableHead>
-                  <TableHead className="font-semibold">Published</TableHead>
-                  <TableHead className="font-semibold text-right">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {posts.map((post, index) => {
-                  const status =
-                    statusConfig[post.status as keyof typeof statusConfig];
-                  const StatusIcon = status?.icon || Clock;
-                  const statusClass = status?.className || "";
 
-                  return (
-                    <TableRow
-                      key={post.id}
-                      className={cn(
-                        "transition-colors",
-                        index % 2 === 0 ? "bg-transparent" : "bg-muted/10",
-                      )}
-                    >
-                      <TableCell>
-                        <div className="space-y-1 max-w-xs">
-                          <p className="font-medium text-foreground line-clamp-2">
-                            {post.message || "(No message)"}
-                          </p>
-                          {post.link && (
-                            <a
-                              href={post.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                              {post.link.length > 30
-                                ? `${post.link.slice(0, 30)}...`
-                                : post.link}
-                            </a>
-                          )}
-                          {post.aiGenerated && (
-                            <Badge
-                              variant="secondary"
-                              className="w-fit text-xs"
-                            >
-                              AI Generated
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <PlatformIcon platform={post.platform} />
-                          <span className="text-sm capitalize">
-                            {post.platform}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <PostFormatBadge postFormat={post.postFormat} />
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "flex items-center gap-1.5 w-fit font-medium border",
-                            statusClass,
-                          )}
-                        >
-                          <StatusIcon className="w-3 h-3" />
-                          {status?.label || "Unknown"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {post.createdAt ? (
-                          <>
-                            {format(new Date(post.createdAt), "MMM d, yyyy")}
-                            <br />
-                            <span className="text-xs">
-                              {format(new Date(post.createdAt), "HH:mm")}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground/50">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {post.publishedAt ? (
-                          <>
-                            {format(new Date(post.publishedAt), "MMM d, yyyy")}
-                            <br />
-                            <span className="text-xs">
-                              {format(new Date(post.publishedAt), "HH:mm")}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground/50">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedPost(post)}
-                            title="View details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          {post.status === "pending" && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingPost(post);
-                                }}
-                                title="Edit post"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-emerald hover:text-emerald/80"
-                                onClick={() => {
-                                  setPublishingPostId(post.id);
-                                  publishPostMutation.mutate(post.id);
-                                }}
-                                disabled={
-                                  publishingPostId === post.id &&
-                                  publishPostMutation.isPending
-                                }
-                                title="Publish now"
-                              >
-                                {publishingPostId === post.id &&
-                                publishPostMutation.isPending ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Send className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </>
-                          )}
-                          {post.status === "failed" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-amber hover:text-amber/80"
-                              onClick={() => {
-                                setPublishingPostId(post.id);
-                                publishPostMutation.mutate(post.id);
-                              }}
-                              disabled={
-                                publishingPostId === post.id &&
-                                publishPostMutation.isPending
-                              }
-                              title="Retry publish"
-                            >
-                              {publishingPostId === post.id &&
-                              publishPostMutation.isPending ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Send className="w-4 h-4" />
-                              )}
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setDeleteConfirmPost(post)}
-                            disabled={deletePostMutation.isPending}
-                            title="Delete post"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        <DataTable<SocialMediaPost>
+          columns={columns}
+          data={posts}
+          total={total}
+          loading={isLoading}
+          error={error as Error | null}
+          onQueryChange={(next) =>
+            setQuery({
+              page: next.page,
+              limit: next.limit,
+              search: next.search || "",
+              filters: next.filters || {},
+            })
+          }
+          enableSearch
+          enableColumnFilters
+          rowKey="id"
+          searchPlaceholder="Search posts by message, caption or link..."
+          emptyMessage="No posts yet. Create your first post using the form above."
+          pageSize={10}
+        />
       </CardContent>
 
       {/* Post Details Modal */}
@@ -633,6 +630,18 @@ const PostsTable = () => {
                     Edit
                   </Button>
                 )}
+                {selectedPost.status === "published" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setRepostingPost(selectedPost);
+                      setSelectedPost(null);
+                    }}
+                  >
+                    <Repeat className="w-4 h-4 mr-2" />
+                    Repost
+                  </Button>
+                )}
                 <Button
                   variant="destructive"
                   size="sm"
@@ -652,6 +661,11 @@ const PostsTable = () => {
       </Dialog>
 
       <EditPostDialog post={editingPost} onClose={() => setEditingPost(null)} />
+
+      <RepostDialog
+        post={repostingPost}
+        onClose={() => setRepostingPost(null)}
+      />
 
       <MediaLightbox
         images={selectedPost?.mediaUrls ?? []}

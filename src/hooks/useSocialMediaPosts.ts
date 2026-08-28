@@ -1,7 +1,13 @@
 import { authorizedFetch } from "@/lib/apiFetch";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
-export interface SocialMediaPost {
+// A type alias (not an interface) gets an implicit index signature, which is
+// what makes it assignable to DataTable's `T extends Record<string, unknown>`.
+export type SocialMediaPost = {
   id: string;
   userId: string;
   platform: string;
@@ -34,7 +40,7 @@ export interface SocialMediaPost {
     email: string;
     name?: string | null;
   };
-}
+};
 
 export interface SocialMediaPostsResponse {
   posts: SocialMediaPost[];
@@ -46,6 +52,7 @@ export interface SocialMediaPostsResponse {
 export const useSocialMediaPosts = (filters?: {
   platform?: string;
   status?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }) => {
@@ -57,6 +64,7 @@ export const useSocialMediaPosts = (filters?: {
       const params = new URLSearchParams();
       if (filters?.platform) params.append("platform", filters.platform);
       if (filters?.status) params.append("status", filters.status);
+      if (filters?.search) params.append("search", filters.search);
       if (filters?.limit) params.append("limit", filters.limit.toString());
       if (filters?.offset) params.append("offset", filters.offset.toString());
 
@@ -68,6 +76,7 @@ export const useSocialMediaPosts = (filters?: {
       return data.data;
     },
     staleTime: 1000 * 30, // 30 seconds
+    placeholderData: keepPreviousData,
   });
 };
 

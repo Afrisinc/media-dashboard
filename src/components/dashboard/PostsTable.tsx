@@ -119,6 +119,26 @@ const PostFormatBadge = ({ postFormat }: { postFormat?: string | null }) => {
   );
 };
 
+interface DateTimeCellProps {
+  value?: string | null;
+}
+
+const DateTimeCell = ({ value }: DateTimeCellProps) => {
+  if (!value) {
+    return <span className="text-muted-foreground/50">—</span>;
+  }
+
+  const date = new Date(value);
+
+  return (
+    <span className="text-sm text-muted-foreground whitespace-nowrap">
+      {format(date, "MMM d, yyyy")}
+      <br />
+      <span className="text-xs">{format(date, "HH:mm")}</span>
+    </span>
+  );
+};
+
 interface DetailFieldProps {
   label: string;
   children: React.ReactNode;
@@ -245,34 +265,17 @@ const PostsTable = () => {
       {
         key: "createdAt",
         label: "Created",
-        render: (_value, post) =>
-          post.createdAt ? (
-            <span className="text-sm text-muted-foreground whitespace-nowrap">
-              {format(new Date(post.createdAt), "MMM d, yyyy")}
-              <br />
-              <span className="text-xs">
-                {format(new Date(post.createdAt), "HH:mm")}
-              </span>
-            </span>
-          ) : (
-            <span className="text-muted-foreground/50">—</span>
-          ),
+        render: (_value, post) => <DateTimeCell value={post.createdAt} />,
+      },
+      {
+        key: "scheduledAt",
+        label: "Scheduled",
+        render: (_value, post) => <DateTimeCell value={post.scheduledAt} />,
       },
       {
         key: "publishedAt",
         label: "Published",
-        render: (_value, post) =>
-          post.publishedAt ? (
-            <span className="text-sm text-muted-foreground whitespace-nowrap">
-              {format(new Date(post.publishedAt), "MMM d, yyyy")}
-              <br />
-              <span className="text-xs">
-                {format(new Date(post.publishedAt), "HH:mm")}
-              </span>
-            </span>
-          ) : (
-            <span className="text-muted-foreground/50">—</span>
-          ),
+        render: (_value, post) => <DateTimeCell value={post.publishedAt} />,
       },
       {
         key: "actions",

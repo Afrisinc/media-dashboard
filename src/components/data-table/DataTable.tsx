@@ -72,6 +72,7 @@ export function DataTable<T extends Record<string, unknown>>({
       ...prev,
       sort_by: newSortOrder ? columnKey : undefined,
       sort_order: newSortOrder || undefined,
+      page: 1,
     }));
   };
 

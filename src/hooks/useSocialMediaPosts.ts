@@ -55,6 +55,8 @@ export const useSocialMediaPosts = (filters?: {
   search?: string;
   limit?: number;
   offset?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) => {
   const queryKey = ["social-media-posts", filters];
 
@@ -67,6 +69,8 @@ export const useSocialMediaPosts = (filters?: {
       if (filters?.search) params.append("search", filters.search);
       if (filters?.limit) params.append("limit", filters.limit.toString());
       if (filters?.offset) params.append("offset", filters.offset.toString());
+      if (filters?.sortBy) params.append("sort_by", filters.sortBy);
+      if (filters?.sortOrder) params.append("sort_order", filters.sortOrder);
 
       const query = params.toString() ? `?${params.toString()}` : "";
       const data = await authorizedFetch<{ data: SocialMediaPostsResponse }>(

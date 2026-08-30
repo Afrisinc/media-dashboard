@@ -171,6 +171,8 @@ const PostsTable = () => {
     limit: 10,
     search: "",
     filters: {} as Record<string, string>,
+    sortBy: undefined as string | undefined,
+    sortOrder: undefined as "asc" | "desc" | undefined,
   });
 
   const { data, isLoading, error } = useSocialMediaPosts({
@@ -179,6 +181,8 @@ const PostsTable = () => {
     search: query.search || undefined,
     limit: query.limit,
     offset: (query.page - 1) * query.limit,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
   });
   const deletePostMutation = useDeleteSocialMediaPost();
   const publishPostMutation = usePublishScheduledPost();
@@ -265,16 +269,19 @@ const PostsTable = () => {
       {
         key: "createdAt",
         label: "Created",
+        sortable: true,
         render: (_value, post) => <DateTimeCell value={post.createdAt} />,
       },
       {
         key: "scheduledAt",
         label: "Scheduled",
+        sortable: true,
         render: (_value, post) => <DateTimeCell value={post.scheduledAt} />,
       },
       {
         key: "publishedAt",
         label: "Published",
+        sortable: true,
         render: (_value, post) => <DateTimeCell value={post.publishedAt} />,
       },
       {
@@ -399,6 +406,8 @@ const PostsTable = () => {
               limit: next.limit,
               search: next.search || "",
               filters: next.filters || {},
+              sortBy: next.sort_by,
+              sortOrder: next.sort_order,
             })
           }
           enableSearch

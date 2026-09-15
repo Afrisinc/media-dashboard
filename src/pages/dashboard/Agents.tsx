@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAgentRuns } from "@/hooks/useAutomation";
 import { usePostDrafts } from "@/hooks/usePostAgent";
+import { useStories } from "@/hooks/useStoryAgent";
 import { formatDateShort } from "@/lib/dateFormat";
 import {
   FORMAT_LABELS,
@@ -19,7 +20,8 @@ import {
   type PostDraft,
   type PostDraftStatus,
 } from "@/types/postAgent";
-import { Bot, Inbox, Mail, ServerCrash } from "lucide-react";
+import { STORY_STATUS_VARIANT, type Story } from "@/types/story";
+import { Bot, BookOpen, Inbox, Mail, ServerCrash } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const RECENT_LIMIT = 8;
@@ -70,11 +72,41 @@ function DraftRow({
   );
 }
 
+function StoryRow({ story }: { story: Story }) {
+  return (
+    <Link
+      to={`/stories/${story.id}`}
+      className="flex items-center gap-4 border-b border-border/50 py-3 last:border-0 hover:bg-muted/30 -mx-2 px-2 rounded-md transition-colors"
+    >
+      <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md border border-border bg-inset">
+        <BookOpen className="h-4 w-4 text-muted-foreground" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{story.title}</p>
+        <p className="text-xs text-muted-foreground">
+          {story.genre ?? "Story"} · {formatDateShort(story.updatedAt)}
+        </p>
+      </div>
+
+      <Badge variant={STORY_STATUS_VARIANT[story.status]}>{story.status}</Badge>
+    </Link>
+  );
+}
+
 const DashboardAgents = () => {
   const { data, isLoading, isError } = usePostDrafts({ limit: 50 });
   const { data: runPage } = useAgentRuns({ limit: 1 });
+  const {
+    data: storyData,
+    isLoading: isLoadingStories,
+    isError: isStoriesError,
+  } = useStories({
+    limit: 50,
+  });
 
   const drafts = data?.items ?? [];
+  const stories = storyData?.items ?? [];
   const [openAgent, setOpenAgent] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
@@ -101,6 +133,27 @@ const DashboardAgents = () => {
       tone: needsFix > 0 ? "danger" : "default",
     },
     { label: "Last run", value: lastRun ? formatDateShort(lastRun) : "never" },
+  ];
+
+  const activeStories = stories.filter(
+    (story) => story.status === "ACTIVE",
+  ).length;
+  const lastStoryRun = stories
+    .map((story) => story.updatedAt)
+    .sort()
+    .at(-1);
+
+  const storyAgentStats: AgentSummaryStat[] = [
+    { label: "Stories", value: String(stories.length) },
+    {
+      label: "Active",
+      value: String(activeStories),
+      tone: activeStories > 0 ? "attention" : "default",
+    },
+    {
+      label: "Last run",
+      value: lastStoryRun ? formatDateShort(lastStoryRun) : "never",
+    },
   ];
 
   const openFrames = (id: string) => {
@@ -162,6 +215,57 @@ const DashboardAgents = () => {
               </Button>
             )}
           </AgentCard>
+
+          {isStoriesError ? (
+            <EmptyState
+              icon={ServerCrash}
+              variant="compact"
+              title="Could not reach content-service for the story agent"
+            />
+          ) : (
+            <AgentCard
+              name="Story agent"
+              description="Writes episodic fiction — chatgpt writes, claude and ollama back it up."
+              icon={BookOpen}
+              status={activeStories > 0 ? "Writing" : "Idle"}
+              statusTone={activeStories > 0 ? "default" : "secondary"}
+              stats={storyAgentStats}
+              open={openAgent === "story"}
+              onToggle={() => toggle("story")}
+              action={
+                <Button asChild size="sm">
+                  <Link to="/stories">Open Story Studio</Link>
+                </Button>
+              }
+            >
+              {isLoadingStories && <Skeleton className="h-32 w-full" />}
+
+              {!isLoadingStories && stories.length === 0 && (
+                <EmptyState
+                  icon={BookOpen}
+                  variant="compact"
+                  title="No stories yet. Start one from Story Studio."
+                />
+              )}
+
+              {stories.slice(0, RECENT_LIMIT).map((story) => (
+                <StoryRow key={story.id} story={story} />
+              ))}
+
+              {stories.length > RECENT_LIMIT && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3 w-full"
+                >
+                  <Link to="/stories">
+                    See all {stories.length} in Story Studio
+                  </Link>
+                </Button>
+              )}
+            </AgentCard>
+          )}
 
           <AgentCard
             name="Newsletter digest"

@@ -21,6 +21,8 @@ import DashboardAutomation from "./pages/dashboard/Automation";
 import DashboardAgents from "./pages/dashboard/Agents";
 import DashboardBrands from "./pages/dashboard/Brands";
 import Studio from "./pages/dashboard/Studio";
+import Stories from "./pages/dashboard/Stories";
+import StoryDetail from "./pages/dashboard/StoryDetail";
 import DashboardAnalytics from "./pages/dashboard/Analytics";
 import SSOCallback from "./pages/SSOCallback";
 import OAuthCallback from "./pages/oauth/callback";
@@ -98,6 +100,8 @@ const AppContent = () => {
       <Route path="/" element={<DashboardLayout />}>
         <Route index element={<DashboardMedia />} />
         <Route path="studio" element={<Studio />} />
+        <Route path="stories" element={<Stories />} />
+        <Route path="stories/:id" element={<StoryDetail />} />
         {/* Both used to be their own page; keep the links working. */}
         <Route path="post-studio" element={<Navigate to="/studio" replace />} />
         <Route path="ai-content" element={<Navigate to="/studio" replace />} />

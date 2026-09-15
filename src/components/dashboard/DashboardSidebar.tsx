@@ -19,6 +19,7 @@ import {
   Bot,
   BarChart3,
   Building2,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import { getRuntimeConfig } from "@/lib/config";
 const mainItems = [
   { title: "Media Studio", url: "/media", icon: Newspaper },
   { title: "Post Studio", url: "/studio", icon: Sparkles },
+  { title: "Story Studio", url: "/stories", icon: BookOpen },
   { title: "Brands", url: "/brands", icon: Building2 },
   { title: "Automation", url: "/automation", icon: Workflow },
   { title: "AI Agents", url: "/agents", icon: Bot },

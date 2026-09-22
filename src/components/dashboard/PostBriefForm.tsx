@@ -143,7 +143,7 @@ export function PostBriefForm() {
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="format">Format</Label>
               <Select
@@ -189,7 +189,7 @@ export function PostBriefForm() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="offer">Offer</Label>
               <Input
@@ -223,7 +223,7 @@ export function PostBriefForm() {
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="keywords">Keywords / hashtags</Label>
               <Input
@@ -260,14 +260,18 @@ export function PostBriefForm() {
             </p>
           </div>
 
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <p className="text-xs text-muted-foreground">
               Everything but the topic is optional.{" "}
               {autopilot
                 ? "Autopilot is on — this one publishes on its own once it passes the craft audit."
                 : "The draft lands in review — nothing publishes until you approve it."}
             </p>
-            <Button type="submit" disabled={!topic.trim() || create.isPending}>
+            <Button
+              type="submit"
+              className="w-full sm:w-auto sm:shrink-0"
+              disabled={!topic.trim() || create.isPending}
+            >
               {create.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}

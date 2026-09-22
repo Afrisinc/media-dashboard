@@ -109,7 +109,7 @@ export function BrandAssetCard({ asset }: { asset: BrandAsset }) {
               title="Rename this set"
             >
               <span className="text-sm font-bold">{asset.name}</span>
-              <Pencil className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+              <Pencil className="h-3 w-3 text-muted-foreground transition-opacity reveal-on-hover" />
             </button>
           )}
 
@@ -190,8 +190,8 @@ export function BrandAssetCard({ asset }: { asset: BrandAsset }) {
                   removeImage.mutate({ id: asset.id, imageId: image.id })
                 }
                 className={cn(
-                  "absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full",
-                  "bg-overlay/90 text-foreground opacity-0 transition-opacity group-hover:opacity-100",
+                  "absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full",
+                  "bg-overlay/90 text-foreground transition-opacity reveal-on-hover after:absolute after:-inset-1 after:content-['']",
                 )}
               >
                 <X className="h-2.5 w-2.5" />

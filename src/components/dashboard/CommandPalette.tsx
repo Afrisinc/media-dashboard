@@ -109,7 +109,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         if (!next) reset();
       }}
     >
-      <DialogContent className="top-24 max-w-2xl translate-y-0 gap-0 overflow-hidden p-0 sm:rounded-2xl">
+      <DialogContent className="top-4 flex max-w-2xl translate-y-0 flex-col gap-0 overflow-hidden p-0 sm:top-24 sm:max-h-[calc(100dvh-7rem)] sm:rounded-2xl [&>button]:hidden">
         <div className="flex items-start gap-3 border-b border-border px-5 py-4">
           <IconBox icon={Sparkles} tone="primary" size="sm" />
           <textarea
@@ -120,14 +120,16 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             className="h-14 flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
           />
           <button
+            type="button"
             onClick={() => onOpenChange(false)}
-            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border border-border-3 bg-inset-2 text-muted-foreground"
+            aria-label="Close"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border-3 bg-inset-2 text-muted-foreground"
           >
             <X className="h-3 w-3" />
           </button>
         </div>
 
-        <div className="flex max-h-[60vh] flex-col gap-4 overflow-auto px-5 py-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-5 py-4">
           {!text && (
             <div>
               <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">

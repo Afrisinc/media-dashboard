@@ -18,13 +18,20 @@ export function SegmentedControl<T extends string>({
   className,
 }: SegmentedControlProps<T>) {
   return (
-    <div className={cn("flex gap-1 rounded-lg bg-muted p-1", className)}>
+    <div
+      className={cn(
+        "flex w-fit max-w-full gap-1 overflow-x-auto rounded-lg bg-muted p-1",
+        className,
+      )}
+    >
       {options.map((option) => (
         <Button
           key={option.value}
           type="button"
           variant={value === option.value ? "default" : "ghost"}
           size="sm"
+          className="shrink-0"
+          aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
         >
           {option.label}

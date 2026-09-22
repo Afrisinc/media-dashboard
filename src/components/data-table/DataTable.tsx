@@ -16,9 +16,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { FilterBar } from "./FilterBar";
 import { ExportDropdown } from "./ExportDropdown";
 import type { DataTableProps, DataTableQuery, SortOrder } from "./types";
+
+// Literal class names so Tailwind can see them.
+const CARD_BREAKPOINT = {
+  md: { cards: "md:hidden", table: "hidden md:block" },
+  lg: { cards: "lg:hidden", table: "hidden lg:block" },
+  xl: { cards: "xl:hidden", table: "hidden xl:block" },
+} as const;
+
+const HIDE_BELOW = {
+  lg: "hidden lg:table-cell",
+  xl: "hidden xl:table-cell",
+  "2xl": "hidden 2xl:table-cell",
+} as const;
 
 export function DataTable<T extends Record<string, unknown>>({
   columns,
@@ -36,6 +50,8 @@ export function DataTable<T extends Record<string, unknown>>({
   emptyMessage = "No data found",
   searchPlaceholder = "Search...",
   pageSize = 10,
+  mobileLayout = "table",
+  cardsBelow = "md",
 }: DataTableProps<T>) {
   const [query, setQuery] = useState<DataTableQuery>({
     page: 1,
@@ -115,13 +131,20 @@ export function DataTable<T extends Record<string, unknown>>({
     return value?.toString() || "—";
   };
 
+  const mobilePlacement = (column: (typeof columns)[0], index: number) =>
+    column.mobilePlacement ?? (index === 0 ? "title" : "field");
+  const mobileColumns = (placement: "title" | "field" | "footer") =>
+    columns.filter(
+      (column, index) => mobilePlacement(column, index) === placement,
+    );
+
   return (
     <div className="space-y-4">
       {/* Filter Bar */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row justify-between gap-3">
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <FilterBar
                 search={query.search}
                 onSearchChange={handleSearchChange}
@@ -153,12 +176,12 @@ export function DataTable<T extends Record<string, unknown>>({
 
       {/* Data Table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-base">
             Total: {total.toLocaleString()} {total === 1 ? "record" : "records"}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {error ? (
             <div className="text-center py-12">
               <p className="text-destructive">
@@ -177,7 +200,57 @@ export function DataTable<T extends Record<string, unknown>>({
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {mobileLayout === "cards" && (
+                <ul
+                  className={cn(
+                    "grid grid-cols-1 gap-3 md:grid-cols-2",
+                    CARD_BREAKPOINT[cardsBelow].cards,
+                  )}
+                >
+                  {data.map((row) => (
+                    <li
+                      key={String(row[rowKey as keyof T])}
+                      className={cn(
+                        "space-y-3 rounded-lg border border-border/60 p-4",
+                        onRowClick && "cursor-pointer hover:bg-muted/50",
+                      )}
+                      onClick={() => onRowClick?.(row)}
+                    >
+                      {mobileColumns("title").map((column) => (
+                        <div key={String(column.key)} className="min-w-0">
+                          {renderCellValue(column, row)}
+                        </div>
+                      ))}
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {mobileColumns("field").map((column) => (
+                          <div key={String(column.key)} className="min-w-0">
+                            <dt className="text-xs text-muted-foreground">
+                              {column.label}
+                            </dt>
+                            <dd className="mt-1">
+                              {renderCellValue(column, row)}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                      {mobileColumns("footer").map((column) => (
+                        <div
+                          key={String(column.key)}
+                          className="border-t border-border/50 pt-2"
+                        >
+                          {renderCellValue(column, row)}
+                        </div>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div
+                className={cn(
+                  mobileLayout === "cards" && CARD_BREAKPOINT[cardsBelow].table,
+                )}
+              >
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -185,11 +258,14 @@ export function DataTable<T extends Record<string, unknown>>({
                         <TableHead
                           key={String(column.key)}
                           style={{ width: column.width }}
-                          className={`${column.align === "center" ? "text-center" : column.align === "right" ? "text-right" : ""} ${
-                            column.sortable
-                              ? "cursor-pointer select-none hover:bg-muted/50"
-                              : ""
-                          }`}
+                          className={cn(
+                            "px-3",
+                            column.align === "center" && "text-center",
+                            column.align === "right" && "text-right",
+                            column.sortable &&
+                              "cursor-pointer select-none hover:bg-muted/50",
+                            column.hideBelow && HIDE_BELOW[column.hideBelow],
+                          )}
                           onClick={() =>
                             column.sortable && handleSort(String(column.key))
                           }
@@ -224,13 +300,12 @@ export function DataTable<T extends Record<string, unknown>>({
                         {columns.map((column) => (
                           <TableCell
                             key={String(column.key)}
-                            className={
-                              column.align === "center"
-                                ? "text-center"
-                                : column.align === "right"
-                                  ? "text-right"
-                                  : ""
-                            }
+                            className={cn(
+                              "px-3",
+                              column.align === "center" && "text-center",
+                              column.align === "right" && "text-right",
+                              column.hideBelow && HIDE_BELOW[column.hideBelow],
+                            )}
                           >
                             {renderCellValue(column, row)}
                           </TableCell>
@@ -242,7 +317,7 @@ export function DataTable<T extends Record<string, unknown>>({
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t">
                 <span className="text-sm text-muted-foreground">
                   Page {query.page} of {totalPages} ({total.toLocaleString()}{" "}
                   total)
@@ -253,6 +328,7 @@ export function DataTable<T extends Record<string, unknown>>({
                     size="sm"
                     disabled={query.page === 1}
                     onClick={() => handlePageChange(query.page - 1)}
+                    aria-label="Previous page"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -261,6 +337,7 @@ export function DataTable<T extends Record<string, unknown>>({
                     size="sm"
                     disabled={query.page >= totalPages}
                     onClick={() => handlePageChange(query.page + 1)}
+                    aria-label="Next page"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>

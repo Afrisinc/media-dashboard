@@ -188,7 +188,7 @@ export function BrandGroupCard({
                 >
                   {catalog?.short ?? "??"}
                 </span>
-                <div className="min-w-[100px] flex-1">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-bold">
                     {member.pageName ?? member.pageId}
                   </p>
@@ -215,7 +215,7 @@ export function BrandGroupCard({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 flex-shrink-0 p-0 text-muted-foreground hover:text-destructive"
+                  className="h-8 w-8 flex-shrink-0 p-0 text-muted-foreground hover:text-destructive"
                   disabled={removeAccount.isPending}
                   onClick={() =>
                     removeAccount.mutate({

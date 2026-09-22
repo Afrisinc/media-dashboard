@@ -87,7 +87,7 @@ export default function OAuthCallback() {
 
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center p-4">
         <div className="text-center">
           <p className="text-lg font-semibold text-destructive">{error}</p>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -99,7 +99,7 @@ export default function OAuthCallback() {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex min-h-dvh items-center justify-center p-4">
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">

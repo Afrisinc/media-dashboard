@@ -351,7 +351,7 @@ const SocialMediaPostForm = () => {
     <div>
       {/* The Studio tab already names this form; a second title is noise. */}
       <div>
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,72fr)_minmax(0,28fr)]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,72fr)_minmax(0,28fr)]">
           <div>
             <Form {...form}>
               <form
@@ -452,8 +452,9 @@ const SocialMediaPostForm = () => {
                             key={format.value}
                             type="button"
                             onClick={() => field.onChange(format.value)}
+                            aria-pressed={field.value === format.value}
                             className={cn(
-                              "flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition-colors",
+                              "flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold transition-colors sm:gap-2 sm:px-3",
                               field.value === format.value
                                 ? "bg-card text-foreground shadow-card"
                                 : "text-muted-foreground hover:text-foreground",
@@ -700,7 +701,7 @@ const SocialMediaPostForm = () => {
                       </MediaFrame>
 
                       {/* Images List with Reordering */}
-                      <div className="flex gap-2 overflow-x-auto pb-2">
+                      <div className="flex gap-2 overflow-x-auto pb-2 pr-2 pt-2">
                         {carouselImages.map((url, idx) => (
                           <div
                             key={`${idx}-${url.slice(0, 20)}`}
@@ -739,19 +740,20 @@ const SocialMediaPostForm = () => {
                               )}
                               onClick={() => setCurrentImageIdx(idx)}
                             />
-                            <div className="absolute inset-0 rounded-md bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <div className="pointer-events-none absolute inset-0 rounded-md bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                               <span className="text-white text-xs font-medium">
                                 {idx + 1}
                               </span>
                             </div>
                             <button
                               type="button"
+                              aria-label={`Remove slide ${idx + 1}`}
                               onClick={() =>
                                 setCarouselImages(
                                   carouselImages.filter((_, i) => i !== idx),
                                 )
                               }
-                              className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 hover:bg-destructive/90 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 hover:bg-destructive/90 transition-opacity reveal-on-hover"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -962,7 +964,7 @@ const SocialMediaPostForm = () => {
             {/* Batch Queue Display */}
             {selectedMode === "batch" && batchQueue.length > 0 && (
               <div className="mt-6 pt-6 border-t border-border/50 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-semibold text-sm">
                     Queue ({batchQueue.length} posts)
                   </h3>
@@ -1026,8 +1028,9 @@ const SocialMediaPostForm = () => {
             )}
           </div>
 
-          <aside className="hidden xl:block">
-            <div className="sticky top-6">
+          {/* Beside the form on wide screens; under it, at a readable width, below xl. */}
+          <aside className="mx-auto w-full max-w-sm xl:mx-0 xl:max-w-none">
+            <div className="xl:sticky xl:top-6">
               <PostLivePreview
                 platform={currentPlatform}
                 format={currentFormat}

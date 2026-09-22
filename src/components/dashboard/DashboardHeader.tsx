@@ -22,8 +22,8 @@ export const DashboardHeader = () => {
   return (
     <header className="h-16 border-b border-border bg-card flex items-center justify-between gap-3 px-3 sm:px-6">
       <div className="flex items-center gap-2 min-w-0 flex-1 sm:gap-4">
-        <SidebarTrigger className="md:hidden" />
-        <div className="relative hidden md:block w-full max-w-xs">
+        <SidebarTrigger className="h-10 w-10 md:hidden" />
+        <div className="relative hidden lg:block w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             placeholder="Search media, campaigns, agents…"
@@ -34,8 +34,9 @@ export const DashboardHeader = () => {
       <div className="flex items-center gap-1.5 flex-shrink-0 sm:gap-3">
         <Button
           size="sm"
-          className="gap-1.5 rounded-full"
+          className="h-10 min-w-10 gap-1.5 rounded-full sm:h-9"
           onClick={() => setOpen(true)}
+          aria-label="Create"
         >
           <Sparkles className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Create</span>
@@ -44,9 +45,12 @@ export const DashboardHeader = () => {
           </span>
         </Button>
         <button
+          type="button"
           onClick={() => setAutopilot(!autopilot)}
+          aria-pressed={autopilot}
+          aria-label="Autopilot"
           className={cn(
-            "flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs font-bold whitespace-nowrap sm:px-3.5",
+            "flex h-10 min-w-10 items-center justify-center gap-2 rounded-full border px-2.5 text-xs font-bold whitespace-nowrap sm:h-auto sm:px-3.5 sm:py-1.5",
             autopilot
               ? "border-emerald/35 bg-emerald/10 text-emerald"
               : "border-terra/35 bg-terra/10 text-terra",
@@ -67,6 +71,7 @@ export const DashboardHeader = () => {
           variant="ghost"
           size="icon"
           className="relative hidden sm:inline-flex"
+          aria-label="Notifications"
         >
           <Bell className="w-5 h-5" />
           <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-terra" />

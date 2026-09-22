@@ -28,7 +28,7 @@ export function MediaPreviewDialog({ item, onClose }: MediaPreviewDialogProps) {
         {item && (
           <>
             <DialogHeader>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="uppercase tracking-wide">
                   {item.kind}
                 </Badge>
@@ -74,7 +74,7 @@ export function MediaPreviewDialog({ item, onClose }: MediaPreviewDialogProps) {
               </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <Button className="flex-1" variant="outline" onClick={onClose}>
                 Close
               </Button>

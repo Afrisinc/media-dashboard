@@ -164,7 +164,7 @@ export function StoryEpisodeReview({ storyId, episode }: Props) {
         )}
 
         {(canApprove || canPublish) && (
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex flex-wrap justify-end gap-2 pt-2">
             {episode.status === "READY_FOR_REVIEW" && (
               <Button
                 variant="ghost"

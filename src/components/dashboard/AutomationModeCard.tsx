@@ -94,7 +94,7 @@ export function AutomationModeCard() {
                 disabled={isSaving}
                 onClick={() => setAutopilot(option.value === "autopilot")}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition-colors",
+                  "flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-bold transition-colors sm:py-1.5",
                   selected
                     ? "bg-card text-foreground shadow-card"
                     : "text-muted-foreground hover:text-foreground",

@@ -214,7 +214,7 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
   return (
     <>
       <Dialog open={!!post} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl">
           <DialogHeader>
             <DialogTitle>Edit Post</DialogTitle>
             <DialogDescription>
@@ -275,7 +275,7 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
                       />
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <label className="text-sm font-medium">
                           Description
@@ -442,7 +442,7 @@ export const EditPostDialog = ({ post, onClose }: EditPostDialogProps) => {
                   </p>
                 )}
 
-                <div className="flex gap-2 justify-end pt-4 border-t">
+                <div className="flex flex-wrap gap-2 justify-end pt-4 border-t">
                   <Button variant="outline" onClick={onClose}>
                     Cancel
                   </Button>

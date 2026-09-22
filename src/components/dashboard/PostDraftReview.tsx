@@ -70,7 +70,9 @@ export function PostDraftReview({ draft }: Props) {
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
         <div className="min-w-0">
-          <CardTitle className="truncate">{draft.topic}</CardTitle>
+          <CardTitle className="line-clamp-2 break-words sm:line-clamp-1">
+            {draft.topic}
+          </CardTitle>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span>{FORMAT_LABELS[draft.format]}</span>
             <span>·</span>
@@ -139,7 +141,7 @@ export function PostDraftReview({ draft }: Props) {
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">
               Caption
             </Label>
-            <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-3 text-sm">
+            <p className="whitespace-pre-wrap break-words rounded-md bg-muted/40 p-3 text-sm">
               {draft.caption}
             </p>
           </div>

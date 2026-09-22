@@ -8,6 +8,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Newspaper,
@@ -40,6 +41,9 @@ const bottomItems = [{ title: "Settings", url: "/settings", icon: Settings }];
 export const DashboardSidebar = () => {
   const location = useLocation();
   const { signOut } = useAuth();
+  const { setOpenMobile } = useSidebar();
+  // The mobile drawer overlays the page, so following a link must dismiss it.
+  const closeMobile = () => setOpenMobile(false);
 
   const isActive = (url: string) => location.pathname === url;
 
@@ -54,6 +58,7 @@ export const DashboardSidebar = () => {
       <div className="px-4 py-6 border-b border-border/50">
         <Link
           to="/"
+          onClick={closeMobile}
           className="group flex items-center gap-3 hover:opacity-80 transition-opacity duration-200"
         >
           <img
@@ -88,7 +93,11 @@ export const DashboardSidebar = () => {
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                     }`}
                   >
-                    <Link to={item.url} className="flex items-center gap-3">
+                    <Link
+                      to={item.url}
+                      onClick={closeMobile}
+                      className="flex items-center gap-3"
+                    >
                       <item.icon className="w-4 h-4 flex-shrink-0" />
                       <span className="text-sm">{item.title}</span>
                     </Link>
@@ -113,7 +122,11 @@ export const DashboardSidebar = () => {
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                     }`}
                   >
-                    <Link to={item.url} className="flex items-center gap-3">
+                    <Link
+                      to={item.url}
+                      onClick={closeMobile}
+                      className="flex items-center gap-3"
+                    >
                       <item.icon className="w-4 h-4 flex-shrink-0" />
                       <span className="text-sm">{item.title}</span>
                     </Link>
@@ -127,6 +140,7 @@ export const DashboardSidebar = () => {
       <div className="mt-auto px-4 py-5 border-t border-border/50 space-y-3">
         <Link
           to="/"
+          onClick={closeMobile}
           className="group flex items-center gap-2.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 px-2 py-2"
         >
           <Globe className="w-4 h-4 flex-shrink-0" />

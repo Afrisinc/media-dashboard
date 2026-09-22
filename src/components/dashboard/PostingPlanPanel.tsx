@@ -201,7 +201,7 @@ export function PostingPlanPanel({ days }: { days: number }) {
         )}
 
         {(data.topics.length > 0 || data.recommendations.length > 0) && (
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             {data.topics.length > 0 && (
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-dim-5">

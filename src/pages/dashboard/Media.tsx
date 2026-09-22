@@ -7,6 +7,7 @@ import { IconBox } from "@/components/ui/icon-box";
 import { LabeledProgress } from "@/components/ui/labeled-progress";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { ListRow } from "@/components/ui/list-row";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   MediaPreviewDialog,
   type PreviewItem,
@@ -140,27 +141,26 @@ const DashboardMedia = () => {
 
   return (
     <div className="space-y-6 animate-fade-up">
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <p className="line-accent">Media Studio</p>
-          <h1 className="heading-section font-display italic mt-2">
-            Your media, on autopilot
-          </h1>
-          <p className="text-secondary mt-1">
-            {autopilot
-              ? "Fully automated — content is generated, scheduled and published with no human input."
-              : "Human-in-loop — AI generates everything; items pause for your approval before publishing."}
-          </p>
-        </div>
-        <SegmentedControl
-          value={autopilot ? "auto" : "human"}
-          onChange={(value) => setAutopilot(value === "auto")}
-          options={[
-            { label: "Autopilot", value: "auto" },
-            { label: "Human-in-loop", value: "human" },
-          ]}
-        />
-      </div>
+      <PageHeader
+        eyebrow="Media Studio"
+        title="Your media, on autopilot"
+        titleClassName="font-display italic"
+        subtitle={
+          autopilot
+            ? "Fully automated — content is generated, scheduled and published with no human input."
+            : "Human-in-loop — AI generates everything; items pause for your approval before publishing."
+        }
+        action={
+          <SegmentedControl
+            value={autopilot ? "auto" : "human"}
+            onChange={(value) => setAutopilot(value === "auto")}
+            options={[
+              { label: "Autopilot", value: "auto" },
+              { label: "Human-in-loop", value: "human" },
+            ]}
+          />
+        }
+      />
 
       <button
         type="button"
@@ -168,11 +168,11 @@ const DashboardMedia = () => {
         className="flex w-full items-center gap-4 rounded-xl border border-border-3 bg-card p-4 text-left transition-colors hover:border-primary/55 hover:bg-card-hi"
       >
         <IconBox icon={FileText} tone="primary" />
-        <span className="flex-1 text-sm text-muted-foreground">
+        <span className="min-w-0 flex-1 text-sm text-muted-foreground">
           Tell your AI team what to make — “3 Reels on mobile money, post
           Thursday”
         </span>
-        <span className="rounded-md border border-border-3 bg-inset-3 px-2 py-1 text-[10.5px] font-bold text-dim-4">
+        <span className="hidden rounded-md border border-border-3 bg-inset-3 px-2 py-1 text-[10.5px] font-bold text-dim-4 sm:inline">
           ⌘K
         </span>
       </button>
@@ -204,7 +204,7 @@ const DashboardMedia = () => {
       </StatGrid>
 
       <Card className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border/60 px-5 py-4">
           <div className="flex items-center gap-2.5">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <span className="text-sm font-bold">In production now</span>
@@ -289,7 +289,7 @@ const DashboardMedia = () => {
                   <p className="min-h-[35px] text-sm font-semibold leading-snug">
                     {item.title}
                   </p>
-                  <div className="mt-2 flex items-center justify-between text-xs text-dim-4">
+                  <div className="mt-2 flex items-center justify-between gap-2 text-xs text-dim-4">
                     <span>{item.platforms}</span>
                     <span>{item.metric}</span>
                   </div>

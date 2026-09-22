@@ -131,8 +131,8 @@ export function EditCredentialsDialog({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 border-t border-border pt-3.5">
-          <span className="flex-1 text-xs text-dim-4">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-border pt-3.5">
+          <span className="w-full sm:w-auto sm:flex-1 text-xs text-dim-4">
             {ready ? "Credentials ready" : "App ID is required"}
           </span>
           <Button variant="outline" onClick={handleClose} disabled={submitting}>

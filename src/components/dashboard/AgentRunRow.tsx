@@ -70,17 +70,17 @@ export function AgentRunRow({ run }: { run: AgentRun }) {
           </p>
         </div>
 
-        <span className="flex-shrink-0 text-xs text-dim-4">
+        <span className="min-w-0 max-w-full truncate text-xs text-dim-4">
           {run.groupName ?? "—"}
         </span>
         <span className="flex-shrink-0 text-xs text-dim-5">
           {run.postIds.length} post{run.postIds.length === 1 ? "" : "s"} ·{" "}
           {run.accountsTargeted} page{run.accountsTargeted === 1 ? "" : "s"}
         </span>
-        <span className="w-16 flex-shrink-0 text-right text-xs text-dim-6">
+        <span className="flex-shrink-0 text-xs text-dim-6 sm:w-16 sm:text-right">
           <RunDuration run={run} />
         </span>
-        <span className="w-20 flex-shrink-0 text-right text-xs text-dim-6">
+        <span className="flex-shrink-0 text-xs text-dim-6 sm:w-20 sm:text-right">
           {formatDateShort(run.startedAt)}
         </span>
         <Badge

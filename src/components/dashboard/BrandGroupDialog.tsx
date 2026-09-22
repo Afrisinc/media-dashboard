@@ -185,7 +185,7 @@ export function BrandGroupDialog({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
             {group ? `Edit ${group.name}` : "New brand"}
@@ -287,7 +287,7 @@ export function BrandGroupDialog({
               )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="group-hour">Time</Label>
                 <Select
@@ -427,7 +427,7 @@ export function BrandGroupDialog({
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="group-service-line">Service line</Label>
               <Input

@@ -118,8 +118,8 @@ export function PageSelectionDialog({
             </p>
           )}
 
-        <div className="flex items-center gap-2.5 border-t border-border pt-4">
-          <span className="flex-1 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-border pt-4">
+          <span className="w-full sm:w-auto sm:flex-1 text-xs text-muted-foreground">
             {selectedPageIds.size === 0
               ? "Select at least one page"
               : `${selectedPageIds.size} page${selectedPageIds.size === 1 ? "" : "s"} selected`}

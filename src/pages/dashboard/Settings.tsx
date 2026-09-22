@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronRight, KeyRound, Loader2, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Switch } from "@/components/ui/switch";
 import { ConnectivityBadge } from "@/components/ui/connectivity-badge";
 import { cn } from "@/lib/utils";
@@ -120,7 +121,7 @@ function ExpandedPlatformView({ row, groups }: ExpandedPlatformViewProps) {
   };
 
   return (
-    <div className="flex flex-col gap-2.5 px-6 pb-4 pl-[70px]">
+    <div className="flex flex-col gap-2.5 px-4 pb-4 sm:px-6 sm:pl-[70px]">
       {row.connected && row.accounts.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -154,10 +155,11 @@ function ExpandedPlatformView({ row, groups }: ExpandedPlatformViewProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex-shrink-0 h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                className="flex-shrink-0 h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
                 onClick={() => deleteAccount.mutate(account.id)}
                 disabled={deleteAccount.isPending}
                 title="Delete this account"
+                aria-label={`Delete ${account.name}`}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -313,10 +315,7 @@ const DashboardSettings = () => {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 animate-fade-up">
-      <div>
-        <p className="line-accent">Settings</p>
-        <h1 className="heading-section mt-2">Workspace</h1>
-      </div>
+      <PageHeader eyebrow="Settings" title="Workspace" />
 
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6">
@@ -344,7 +343,7 @@ const DashboardSettings = () => {
       </Card>
 
       <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-4 py-4 sm:px-6">
           <div>
             <p className="text-sm font-bold">Connected platforms</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -374,11 +373,14 @@ const DashboardSettings = () => {
 
               return (
                 <div key={row.key}>
-                  <div className="flex flex-wrap items-center gap-3 px-6 py-3.5">
+                  <div className="flex flex-wrap items-center gap-3 px-4 py-3.5 sm:px-6">
                     <button
+                      type="button"
                       onClick={() => setExpandedKey(expanded ? null : row.key)}
+                      aria-expanded={expanded}
+                      aria-label={`${expanded ? "Hide" : "Show"} ${row.catalog.displayName} pages`}
                       className={cn(
-                        "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground transition-transform",
+                        "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground transition-transform",
                         expanded && "rotate-90",
                       )}
                     >
@@ -403,11 +405,13 @@ const DashboardSettings = () => {
                         {detail}
                       </p>
                     </div>
-                    <span className="w-28 flex-shrink-0 text-xs text-muted-foreground">
+                    <span className="flex-1 text-xs text-muted-foreground sm:w-28 sm:flex-none">
                       {row.connected ? row.catalog.scopeSummary : "—"}
                     </span>
                     <button
+                      type="button"
                       title="App credentials"
+                      aria-label={`${row.catalog.displayName} app credentials`}
                       onClick={() => setEditingKey(row.key)}
                       className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border-3 bg-inset text-muted-foreground"
                     >

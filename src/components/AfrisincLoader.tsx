@@ -14,7 +14,7 @@ export function AfrisincLoader({
   return (
     <div
       className={cn(
-        "min-h-screen flex items-center justify-center relative overflow-hidden",
+        "min-h-dvh flex items-center justify-center relative overflow-hidden",
         className,
       )}
     >

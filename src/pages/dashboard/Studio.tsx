@@ -60,10 +60,10 @@ function QueueSkeleton() {
       {[0, 1].map((key) => (
         <Card key={key}>
           <CardContent className="space-y-4 pt-6">
-            <Skeleton className="h-5 w-64" />
-            <div className="flex gap-3">
+            <Skeleton className="h-5 w-64 max-w-full" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[0, 1, 2, 3].map((frame) => (
-                <Skeleton key={frame} className="h-40 w-40 rounded-md" />
+                <Skeleton key={frame} className="aspect-square rounded-md" />
               ))}
             </div>
             <Skeleton className="h-20 w-full" />

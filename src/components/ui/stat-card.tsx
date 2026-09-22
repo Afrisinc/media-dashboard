@@ -35,7 +35,7 @@ export function StatCard({
   style,
 }: StatCardProps) {
   const body = (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-1">
       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </span>

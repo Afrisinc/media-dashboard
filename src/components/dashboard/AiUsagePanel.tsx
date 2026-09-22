@@ -29,8 +29,11 @@ function Breakdown({ title, rows }: { title: string; rows: UsageBreakdown[] }) {
       <div className="mt-2.5 space-y-1.5">
         {rows.map((row) => (
           <div key={row.key} className="flex items-center gap-3">
-            <span className="w-28 flex-shrink-0 truncate text-xs">
-              {row.key}
+            <span className="w-24 flex-shrink-0 sm:w-28">
+              <span className="block truncate text-xs">{row.key}</span>
+              <span className="block text-[11px] tabular-nums text-dim-5 sm:hidden">
+                {row.calls} calls
+              </span>
             </span>
             <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-track">
               <span
@@ -38,7 +41,7 @@ function Breakdown({ title, rows }: { title: string; rows: UsageBreakdown[] }) {
                 style={{ width: `${(row.costUsd / most) * 100}%` }}
               />
             </span>
-            <span className="w-14 flex-shrink-0 text-right text-[11px] tabular-nums text-dim-5">
+            <span className="hidden w-14 flex-shrink-0 text-right text-[11px] tabular-nums text-dim-5 sm:inline">
               {row.calls} calls
             </span>
             <span className="w-16 flex-shrink-0 text-right text-xs font-bold tabular-nums">
@@ -102,7 +105,7 @@ export function AiUsagePanel({ days }: { days: number }) {
             generation lands here as it runs.
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Breakdown title="By model" rows={data.byModel} />
             <Breakdown title="By agent" rows={data.byNode} />
           </div>

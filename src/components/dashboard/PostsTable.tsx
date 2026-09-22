@@ -237,6 +237,7 @@ const PostsTable = () => {
       },
       {
         key: "postFormat",
+        hideBelow: "2xl",
         label: "Format",
         render: (_value, post) => (
           <PostFormatBadge postFormat={post.postFormat} />
@@ -268,6 +269,7 @@ const PostsTable = () => {
       },
       {
         key: "createdAt",
+        hideBelow: "2xl",
         label: "Created",
         sortable: true,
         render: (_value, post) => <DateTimeCell value={post.createdAt} />,
@@ -288,13 +290,16 @@ const PostsTable = () => {
         key: "actions",
         label: "Actions",
         align: "right",
+        mobilePlacement: "footer",
         render: (_value, post) => (
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-1">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => setSelectedPost(post)}
               title="View details"
+              aria-label="View details"
             >
               <Eye className="w-4 h-4" />
             </Button>
@@ -302,16 +307,18 @@ const PostsTable = () => {
               <>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
+                  className="h-8 w-8"
                   onClick={() => setEditingPost(post)}
                   title="Edit post"
+                  aria-label="Edit post"
                 >
                   <Edit2 className="w-4 h-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="text-emerald hover:text-emerald/80"
+                  size="icon"
+                  className="h-8 w-8 text-emerald hover:text-emerald/80"
                   onClick={() => {
                     setPublishingPostId(post.id);
                     publishPostMutation.mutate(post.id);
@@ -321,6 +328,7 @@ const PostsTable = () => {
                     publishPostMutation.isPending
                   }
                   title="Publish now"
+                  aria-label="Publish now"
                 >
                   {publishingPostId === post.id &&
                   publishPostMutation.isPending ? (
@@ -334,8 +342,8 @@ const PostsTable = () => {
             {post.status === "failed" && (
               <Button
                 variant="ghost"
-                size="sm"
-                className="text-amber hover:text-amber/80"
+                size="icon"
+                className="h-8 w-8 text-amber hover:text-amber/80"
                 onClick={() => {
                   setPublishingPostId(post.id);
                   publishPostMutation.mutate(post.id);
@@ -344,6 +352,7 @@ const PostsTable = () => {
                   publishingPostId === post.id && publishPostMutation.isPending
                 }
                 title="Retry publish"
+                aria-label="Retry publish"
               >
                 {publishingPostId === post.id &&
                 publishPostMutation.isPending ? (
@@ -356,21 +365,23 @@ const PostsTable = () => {
             {post.status === "published" && (
               <Button
                 variant="ghost"
-                size="sm"
-                className="text-primary hover:text-primary/80"
+                size="icon"
+                className="h-8 w-8 text-primary hover:text-primary/80"
                 onClick={() => setRepostingPost(post)}
                 title="Repost"
+                aria-label="Repost"
               >
                 <Repeat className="w-4 h-4" />
               </Button>
             )}
             <Button
               variant="ghost"
-              size="sm"
-              className="text-destructive hover:text-destructive"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive"
               onClick={() => setDeleteConfirmPost(post)}
               disabled={deletePostMutation.isPending}
               title="Delete post"
+              aria-label="Delete post"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -383,7 +394,7 @@ const PostsTable = () => {
 
   return (
     <Card className="border-border/50">
-      <CardContent className="pt-6 space-y-4">
+      <CardContent className="space-y-4 p-4 sm:p-6">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-muted">
             <LayoutList className="w-4 h-4 text-muted-foreground" />
@@ -416,6 +427,8 @@ const PostsTable = () => {
           searchPlaceholder="Search posts by message, caption or link..."
           emptyMessage="No posts yet. Create your first post using the form above."
           pageSize={10}
+          mobileLayout="cards"
+          cardsBelow="xl"
         />
       </CardContent>
 
@@ -429,7 +442,7 @@ const PostsTable = () => {
           }
         }}
       >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           {selectedPost && (
             <>
               <DialogHeader>
@@ -629,7 +642,7 @@ const PostsTable = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 justify-end pt-4 border-t">
+              <div className="flex flex-wrap gap-2 justify-end pt-4 border-t">
                 {selectedPost.status === "pending" && (
                   <Button
                     variant="outline"
@@ -702,7 +715,7 @@ const PostsTable = () => {
               undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-2 justify-end pt-4">
+          <div className="flex flex-wrap gap-2 justify-end pt-4">
             <Button
               variant="outline"
               onClick={() => setDeleteConfirmPost(null)}

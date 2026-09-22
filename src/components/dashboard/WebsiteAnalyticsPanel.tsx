@@ -126,7 +126,7 @@ export function WebsiteAnalyticsPanel({ days }: { days: number }) {
       )}
 
       {measured && (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Card>
             <CardContent className="space-y-5 pt-6">
               <Breakdown

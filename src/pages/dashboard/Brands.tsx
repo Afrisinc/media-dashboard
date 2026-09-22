@@ -81,7 +81,7 @@ const DashboardBrands = () => {
           <StatStrip stats={stats} />
 
           {isLoading && (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <Skeleton className="h-72 w-full" />
               <Skeleton className="h-72 w-full" />
             </div>
@@ -108,7 +108,7 @@ const DashboardBrands = () => {
           )}
 
           {!isLoading && brands.length > 0 && (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {brands.map((group) => (
                 <BrandGroupCard
                   key={group.id}

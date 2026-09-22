@@ -138,7 +138,7 @@ export function BulkAddAssetsDialog({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add brand asset</DialogTitle>
           <DialogDescription>
@@ -147,7 +147,7 @@ export function BulkAddAssetsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="set-name">Name</Label>
             <Input
@@ -231,7 +231,7 @@ export function BulkAddAssetsDialog({
                   type="button"
                   aria-label={`Remove ${item.file.name}`}
                   onClick={() => unstage(item.preview)}
-                  className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-overlay/90 text-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-overlay/90 text-foreground transition-opacity reveal-on-hover after:absolute after:-inset-1 after:content-['']"
                 >
                   <X className="h-2.5 w-2.5" />
                 </button>
@@ -262,9 +262,9 @@ export function BulkAddAssetsDialog({
           />
         </div>
 
-        <div className="flex items-center gap-2.5 border-t border-border pt-4">
-          <Images className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-          <span className="flex-1 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-border pt-4">
+          <Images className="hidden h-4 w-4 flex-shrink-0 text-muted-foreground sm:block" />
+          <span className="w-full sm:w-auto sm:flex-1 text-xs text-muted-foreground">
             {total === 0
               ? "Nothing added yet."
               : `${total} photograph${total === 1 ? "" : "s"} ready` +

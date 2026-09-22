@@ -527,6 +527,18 @@
 }
 
 @layer utilities {
+  /* Hidden until hover only where hover exists; touch screens always show it. */
+  @media (hover: hover) {
+    .reveal-on-hover {
+      opacity: 0;
+    }
+    .group:hover .reveal-on-hover,
+    .group:focus-within .reveal-on-hover,
+    .reveal-on-hover:focus-visible {
+      opacity: 1;
+    }
+  }
+
   .animate-fade-up {
     animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     opacity: 0;

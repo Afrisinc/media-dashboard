@@ -183,7 +183,7 @@ export function StoryBriefForm() {
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <PresetField
               id="story-genre"
               label="Genre"
@@ -287,12 +287,16 @@ export function StoryBriefForm() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <p className="text-xs text-muted-foreground">
               Only the title and premise are required. You generate episode one
               after the story is created.
             </p>
-            <Button type="submit" disabled={!canSubmit || create.isPending}>
+            <Button
+              type="submit"
+              className="w-full sm:w-auto sm:shrink-0"
+              disabled={!canSubmit || create.isPending}
+            >
               {create.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}

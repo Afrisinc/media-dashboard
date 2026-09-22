@@ -128,7 +128,8 @@ export function FilterBar<T>({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                aria-label="Clear search"
                 onClick={() => {
                   setSearchValue("");
                   onSearchChange("");
@@ -142,7 +143,7 @@ export function FilterBar<T>({
 
         {/* Date Range Picker */}
         {enableDateRange && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Select
               value={datePreset}
               onValueChange={(v) =>
@@ -205,7 +206,12 @@ export function FilterBar<T>({
             </Popover>
 
             {dateRange?.start && (
-              <Button variant="ghost" size="sm" onClick={clearDateRange}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearDateRange}
+                aria-label="Clear date range"
+              >
                 <X className="h-4 w-4" />
               </Button>
             )}
@@ -215,7 +221,7 @@ export function FilterBar<T>({
 
       {/* Column Filters */}
       {filterableColumns.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {filterableColumns.map((column) => {
             if (!column.filterable) return null;
 
@@ -233,7 +239,7 @@ export function FilterBar<T>({
                     )
                   }
                 >
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder={column.label} />
                   </SelectTrigger>
                   <SelectContent>

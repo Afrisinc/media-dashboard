@@ -199,7 +199,7 @@ export function AddPagesToGroupDialog({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add pages to {group?.name}</DialogTitle>
           <DialogDescription>
@@ -276,8 +276,8 @@ export function AddPagesToGroupDialog({
           </p>
         )}
 
-        <div className="flex items-center gap-2.5 border-t border-border pt-4">
-          <span className="flex-1 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-border pt-4">
+          <span className="w-full sm:w-auto sm:flex-1 text-xs text-muted-foreground">
             {chosen.length === 0
               ? "Select at least one page"
               : `${chosen.length} selected${

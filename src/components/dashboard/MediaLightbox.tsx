@@ -54,7 +54,7 @@ export const MediaLightbox = ({
           <img
             src={images[safeIndex]}
             alt={`Slide ${safeIndex + 1}`}
-            className="max-h-[90vh] max-w-[92vw] object-contain rounded-lg shadow-2xl"
+            className="max-h-[calc(100dvh-8rem)] max-w-full object-contain rounded-lg shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           />
 
@@ -74,7 +74,7 @@ export const MediaLightbox = ({
                   event.stopPropagation();
                   onIndexChange(safeIndex === 0 ? total - 1 : safeIndex - 1);
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="absolute left-2 top-1/2 sm:left-4 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
@@ -85,7 +85,7 @@ export const MediaLightbox = ({
                   event.stopPropagation();
                   onIndexChange(safeIndex === total - 1 ? 0 : safeIndex + 1);
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="absolute right-2 top-1/2 sm:right-4 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>

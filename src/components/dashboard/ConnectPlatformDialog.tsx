@@ -526,8 +526,8 @@ export function ConnectPlatformDialog({
           </div>
         )}
 
-        <div className="flex items-center gap-2.5 border-t border-border pt-4">
-          <span className="flex-1 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-border pt-4">
+          <span className="w-full sm:w-auto sm:flex-1 text-xs text-muted-foreground">
             {step === 0 &&
               (credsReady ? "Credentials ready" : "All fields required")}
             {step === 1 &&

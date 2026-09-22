@@ -75,7 +75,7 @@ export const RepostDialog = ({ post, onClose }: RepostDialogProps) => {
               </p>
             </div>
 
-            <div className="flex gap-2 justify-end pt-2 border-t">
+            <div className="flex flex-wrap gap-2 justify-end pt-2 border-t">
               <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>

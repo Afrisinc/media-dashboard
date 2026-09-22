@@ -9,13 +9,16 @@ import { AutopilotProvider, useAutopilot } from "@/contexts/AutopilotContext";
 const DashboardChrome = () => {
   const { autopilot } = useAutopilot();
   return (
-    <div className="min-h-screen flex w-full bg-muted/30">
+    <div className="min-h-dvh flex w-full bg-muted/30">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardHeader />
         {autopilot && <AgentsTickerBar />}
-        <main className="flex-1 min-w-0 p-6 overflow-auto">
-          <Outlet />
+        {/* The one owner of the page gutter and max width — pages never set their own. */}
+        <main className="flex-1 min-w-0 p-4 sm:p-6 overflow-auto">
+          <div className="mx-auto w-full max-w-screen-2xl">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

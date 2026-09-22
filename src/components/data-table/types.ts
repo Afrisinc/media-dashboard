@@ -26,6 +26,13 @@ export interface ColumnConfig<T> {
   render?: (value: unknown, row: T) => ReactNode;
   width?: string;
   align?: "left" | "center" | "right";
+  /**
+   * Where this column goes in the `mobileLayout="cards"` view. Defaults to
+   * "title" for the first column and "field" for the rest.
+   */
+  mobilePlacement?: "title" | "field" | "footer" | "hidden";
+  /** Leave this column out of the table view below a breakpoint; cards still show it. */
+  hideBelow?: "lg" | "xl" | "2xl";
 }
 
 export interface DataTableQuery {
@@ -55,6 +62,10 @@ export interface DataTableProps<T> {
   emptyMessage?: string;
   searchPlaceholder?: string;
   pageSize?: number;
+  /** "cards" renders each row as a card below `md` instead of a sideways-scrolling table. */
+  mobileLayout?: "table" | "cards";
+  /** Breakpoint below which `mobileLayout="cards"` applies. Defaults to "md". */
+  cardsBelow?: "md" | "lg" | "xl";
 }
 
 export interface FilterBarProps<T = Record<string, unknown>> {

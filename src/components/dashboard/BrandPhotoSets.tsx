@@ -28,12 +28,12 @@ export function BrandPhotoSets({ group }: { group: AccountGroup }) {
   const toAdd = picking.filter((id) => !held.has(id));
 
   return (
-    <div className="border-t border-border/50 px-5 py-3">
+    <div className="border-t border-border/50 px-5 py-1.5">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 text-left"
+        className="flex w-full items-center gap-2 py-1.5 text-left"
       >
         <Images className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
         <span className="flex-1 text-[11px] font-bold uppercase tracking-wider text-dim-5">
@@ -43,7 +43,7 @@ export function BrandPhotoSets({ group }: { group: AccountGroup }) {
       </button>
 
       {open && (
-        <div className="mt-3 space-y-3">
+        <div className="mt-3 space-y-3 pb-1.5">
           {isLoading && <Skeleton className="h-16 w-full" />}
 
           {!isLoading && assets.length === 0 && (
@@ -75,7 +75,7 @@ export function BrandPhotoSets({ group }: { group: AccountGroup }) {
                     onClick={() =>
                       unassign.mutate({ id: group.id, assetId: asset.id })
                     }
-                    className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-overlay/90 text-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-overlay/90 text-foreground transition-opacity reveal-on-hover after:absolute after:-inset-1 after:content-['']"
                   >
                     <X className="h-2.5 w-2.5" />
                   </button>

@@ -26,7 +26,7 @@ import { Link } from "react-router-dom";
 
 function StoriesSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {[0, 1, 2].map((key) => (
         <Card key={key}>
           <CardContent className="space-y-3 pt-6">
@@ -47,7 +47,10 @@ function StoryCard({ story }: { story: Story }) {
         <CardContent className="space-y-3 pt-6">
           <div className="flex items-start justify-between gap-2">
             <h3 className="truncate font-semibold">{story.title}</h3>
-            <Badge variant={STORY_STATUS_VARIANT[story.status]}>
+            <Badge
+              variant={STORY_STATUS_VARIANT[story.status]}
+              className="shrink-0"
+            >
               {STORY_STATUS_LABELS[story.status]}
             </Badge>
           </div>
@@ -145,7 +148,7 @@ const Stories = () => {
           description="Start one above — a title and a premise is all it takes."
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stories.map((story) => (
             <StoryCard key={story.id} story={story} />
           ))}

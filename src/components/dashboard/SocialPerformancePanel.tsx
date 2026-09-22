@@ -147,7 +147,7 @@ function TopMedia({ posts }: { posts: RankedPost[] }) {
                 href={post.postUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="truncate text-xs font-bold hover:underline"
+                className="block truncate text-xs font-bold hover:underline"
               >
                 {post.title}
               </a>
@@ -179,7 +179,7 @@ function PlatformGrid({ platforms }: { platforms: PlatformTotals[] }) {
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {platforms.map((platform) => (
         <Card key={platform.platform} className="p-4">
           <div className="flex items-center gap-2 text-xs font-bold">
@@ -236,7 +236,7 @@ export function SocialPerformancePanel({ days }: { days: number }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm font-bold">Engagement over time</p>

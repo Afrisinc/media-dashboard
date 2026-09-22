@@ -3,6 +3,7 @@ import { ConnectedAccountsPanel } from "@/components/dashboard/ConnectedAccounts
 import { PostingPlanPanel } from "@/components/dashboard/PostingPlanPanel";
 import { SocialPerformancePanel } from "@/components/dashboard/SocialPerformancePanel";
 import { WebsiteAnalyticsPanel } from "@/components/dashboard/WebsiteAnalyticsPanel";
+import { PageHeader } from "@/components/ui/page-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useState } from "react";
 
@@ -18,23 +19,19 @@ const DashboardAnalytics = () => {
 
   return (
     <div className="space-y-6 animate-fade-up">
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <p className="line-accent">Analytics</p>
-          <h1 className="heading-section font-display italic mt-2">
-            Proof the machine works
-          </h1>
-          <p className="text-secondary mt-1">
-            Every number here is measured — readership as it happens, social
-            performance as each platform reports it back.
-          </p>
-        </div>
-        <SegmentedControl
-          value={range}
-          onChange={setRange}
-          options={[...ranges]}
-        />
-      </div>
+      <PageHeader
+        eyebrow="Analytics"
+        title="Proof the machine works"
+        titleClassName="font-display italic"
+        subtitle="Every number here is measured — readership as it happens, social performance as each platform reports it back."
+        action={
+          <SegmentedControl
+            value={range}
+            onChange={setRange}
+            options={[...ranges]}
+          />
+        }
+      />
 
       <WebsiteAnalyticsPanel days={days} />
       <PostingPlanPanel days={days} />

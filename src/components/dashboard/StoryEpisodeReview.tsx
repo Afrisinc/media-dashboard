@@ -14,14 +14,18 @@ import {
   PROVIDER_LABELS,
   type StoryEpisode,
 } from "@/types/story";
+import { MetricList } from "@/components/ui/metric-list";
 import {
   AlertTriangle,
+  BookCheck,
   CheckCircle2,
+  Eye,
   Loader2,
   RefreshCw,
   Send,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface Props {
   storyId: string;
@@ -29,21 +33,6 @@ interface Props {
 }
 
 export function StoryEpisodeReview({ storyId, episode }: Props) {
-  const approve = useApproveStoryEpisode();
-  const publish = usePublishStoryEpisode();
-  const regenerate = useRegenerateEpisode();
-  const retryPromotion = useRetryEpisodePromotion();
-
-  const canApprove =
-    episode.status === "READY_FOR_REVIEW" && !approve.isPending;
-  const canPublish = episode.status === "APPROVED" && !publish.isPending;
-  const canRegenerate =
-    episode.status === "READY_FOR_REVIEW" && !regenerate.isPending;
-  const canRetryPromotion =
-    episode.status === "PUBLISHED" &&
-    episode.promotionStatus === "failed" &&
-    !retryPromotion.isPending;
-
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
@@ -51,8 +40,23 @@ export function StoryEpisodeReview({ storyId, episode }: Props) {
           <CardTitle className="truncate">
             Episode {episode.episodeNumber} — {episode.title}
           </CardTitle>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span>{episode.wordCount.toLocaleString()} words</span>
+            {episode.status === "PUBLISHED" && (
+              <>
+                <span>·</span>
+                <MetricList
+                  items={[
+                    { label: "Views", value: episode.viewCount, icon: Eye },
+                    {
+                      label: "Reads",
+                      value: episode.completedReads,
+                      icon: BookCheck,
+                    },
+                  ]}
+                />
+              </>
+            )}
             {episode.llmProvider && (
               <>
                 <span>·</span>
@@ -65,7 +69,7 @@ export function StoryEpisodeReview({ storyId, episode }: Props) {
                 </span>
               </>
             )}
-          </p>
+          </div>
         </div>
         <Badge variant={EPISODE_STATUS_VARIANT[episode.status]}>
           {EPISODE_STATUS_LABELS[episode.status]}
@@ -107,6 +111,34 @@ export function StoryEpisodeReview({ storyId, episode }: Props) {
 
         <Separator />
 
+        <EpisodePromotion storyId={storyId} episode={episode} />
+
+        <EpisodeActions
+          storyId={storyId}
+          episode={episode}
+          className="justify-end pt-2"
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+interface EpisodePartProps {
+  storyId: string;
+  episode: StoryEpisode;
+  className?: string;
+}
+
+export function EpisodePromotion({ storyId, episode }: EpisodePartProps) {
+  const retryPromotion = useRetryEpisodePromotion();
+  const canRetryPromotion =
+    episode.status === "PUBLISHED" &&
+    episode.promotionStatus === "failed" &&
+    !retryPromotion.isPending;
+
+  return (
+    <>
+      {episode.promotionCaption && (
         <div className="space-y-1.5">
           <p className="text-xs font-semibold text-muted-foreground">
             Promo caption
@@ -118,101 +150,115 @@ export function StoryEpisodeReview({ storyId, episode }: Props) {
             </p>
           )}
         </div>
+      )}
 
-        {episode.status === "PUBLISHED" && episode.promotionStatus && (
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              {episode.promotionStatus === "failed" ? (
-                <>
-                  <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-                  The promo post could not be queued: {episode.promotionError}
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                  Promo post{" "}
-                  {episode.promotionStatus === "queued"
-                    ? "queued"
-                    : "awaiting review"}{" "}
-                  in{" "}
-                  <Link
-                    to="/studio"
-                    className="font-medium text-primary hover:underline"
-                  >
-                    Post Studio
-                  </Link>
-                  .
-                </>
-              )}
-            </p>
-            {episode.promotionStatus === "failed" && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!canRetryPromotion}
-                onClick={() =>
-                  retryPromotion.mutate({ storyId, episodeId: episode.id })
-                }
-              >
-                <RefreshCw
-                  className={`mr-2 h-3.5 w-3.5 ${retryPromotion.isPending ? "animate-spin" : ""}`}
-                />
-                Retry promotion
-              </Button>
+      {episode.status === "PUBLISHED" && episode.promotionStatus && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {episode.promotionStatus === "failed" ? (
+              <>
+                <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                The promo post could not be queued: {episode.promotionError}
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                Promo post{" "}
+                {episode.promotionStatus === "queued"
+                  ? "queued"
+                  : "awaiting review"}{" "}
+                in{" "}
+                <Link
+                  to="/studio"
+                  className="font-medium text-primary hover:underline"
+                >
+                  Post Studio
+                </Link>
+                .
+              </>
             )}
-          </div>
-        )}
+          </p>
+          {episode.promotionStatus === "failed" && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canRetryPromotion}
+              onClick={() =>
+                retryPromotion.mutate({ storyId, episodeId: episode.id })
+              }
+            >
+              <RefreshCw
+                className={`mr-2 h-3.5 w-3.5 ${retryPromotion.isPending ? "animate-spin" : ""}`}
+              />
+              Retry promotion
+            </Button>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
 
-        {(canApprove || canPublish) && (
-          <div className="flex flex-wrap justify-end gap-2 pt-2">
-            {episode.status === "READY_FOR_REVIEW" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={!canRegenerate}
-                onClick={() =>
-                  regenerate.mutate({ storyId, episodeId: episode.id })
-                }
-              >
-                <RefreshCw
-                  className={`mr-2 h-4 w-4 ${regenerate.isPending ? "animate-spin" : ""}`}
-                />
-                Try again
-              </Button>
-            )}
-            {episode.status === "READY_FOR_REVIEW" && (
-              <Button
-                size="sm"
-                disabled={!canApprove}
-                onClick={() =>
-                  approve.mutate({ storyId, episodeId: episode.id })
-                }
-              >
-                {approve.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Approve
-              </Button>
-            )}
-            {episode.status === "APPROVED" && (
-              <Button
-                size="sm"
-                disabled={!canPublish}
-                onClick={() =>
-                  publish.mutate({ storyId, episodeId: episode.id })
-                }
-              >
-                {publish.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
-                Publish
-              </Button>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+export function EpisodeActions({
+  storyId,
+  episode,
+  className,
+}: EpisodePartProps) {
+  const approve = useApproveStoryEpisode();
+  const publish = usePublishStoryEpisode();
+  const regenerate = useRegenerateEpisode();
+
+  const canApprove =
+    episode.status === "READY_FOR_REVIEW" && !approve.isPending;
+  const canPublish = episode.status === "APPROVED" && !publish.isPending;
+  const canRegenerate =
+    episode.status === "READY_FOR_REVIEW" && !regenerate.isPending;
+
+  if (episode.status !== "READY_FOR_REVIEW" && episode.status !== "APPROVED") {
+    return null;
+  }
+
+  return (
+    <div className={cn("flex flex-wrap gap-2", className)}>
+      {episode.status === "READY_FOR_REVIEW" && (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={!canRegenerate}
+          onClick={() => regenerate.mutate({ storyId, episodeId: episode.id })}
+        >
+          <RefreshCw
+            className={`mr-2 h-4 w-4 ${regenerate.isPending ? "animate-spin" : ""}`}
+          />
+          Try again
+        </Button>
+      )}
+      {episode.status === "READY_FOR_REVIEW" && (
+        <Button
+          size="sm"
+          disabled={!canApprove}
+          onClick={() => approve.mutate({ storyId, episodeId: episode.id })}
+        >
+          {approve.isPending && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          Approve
+        </Button>
+      )}
+      {episode.status === "APPROVED" && (
+        <Button
+          size="sm"
+          disabled={!canPublish}
+          onClick={() => publish.mutate({ storyId, episodeId: episode.id })}
+        >
+          {publish.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="mr-2 h-4 w-4" />
+          )}
+          Publish
+        </Button>
+      )}
+    </div>
   );
 }

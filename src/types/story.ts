@@ -47,13 +47,22 @@ export interface StoryEpisode {
   llmProvider: string | null;
   llmAttempts: number;
   status: StoryEpisodeStatus;
+  viewCount: number;
+  completedReads: number;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
+export interface StoryListItem extends Story {
+  episodeCount: number;
+  publishedEpisodeCount: number;
+  totalViews: number;
+  totalReads: number;
+}
+
 export interface StoryPage {
-  items: Story[];
+  items: StoryListItem[];
   total: number;
   page: number;
   limit: number;

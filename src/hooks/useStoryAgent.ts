@@ -27,6 +27,7 @@ export function useStories(params: ListStoriesParams = {}) {
   return useQuery({
     queryKey: storyKeys.list(params),
     queryFn: () => listStories(params),
+    refetchInterval: 60_000,
   });
 }
 

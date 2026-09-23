@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  BookCheck,
   BookOpen,
+  Eye,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -9,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { LayoutToggle } from "@/components/dashboard/LayoutToggle";
+import { MetricList, type MetricItem } from "@/components/ui/metric-list";
 import { PostMediaPreview } from "@/components/dashboard/PostMediaPreview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,12 +28,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLayoutParam } from "@/hooks/useLayoutParam";
 import { useStories } from "@/hooks/useStoryAgent";
 import { formatDateShort } from "@/lib/dateFormat";
+import { coverTint } from "@/lib/storyCover";
 import { cn } from "@/lib/utils";
 import { describeStoryError } from "@/services/storyService";
 import {
   STORY_STATUS_LABELS,
   STORY_STATUS_VARIANT,
   type Story,
+  type StoryListItem,
   type StoryStatus,
 } from "@/types/story";
 
@@ -44,26 +49,22 @@ const STATUS_FILTERS: { label: string; value: StoryFilter }[] = [
   { label: STORY_STATUS_LABELS.ARCHIVED, value: "ARCHIVED" },
 ];
 
-const COVER_TINTS = [
-  "bg-gradient-to-br from-primary/25 to-primary/5",
-  "bg-gradient-to-br from-emerald/25 to-emerald/5",
-  "bg-gradient-to-br from-indigo/25 to-indigo/5",
-  "bg-gradient-to-br from-gold/25 to-gold/5",
-  "bg-gradient-to-br from-forest/25 to-forest/5",
-  "bg-gradient-to-br from-amber/25 to-amber/5",
-];
-
-const coverTint = (story: Story) => {
-  const hash = [...story.id].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return COVER_TINTS[hash % COVER_TINTS.length];
-};
-
 const storyCover = (story: Story) => ({
   mediaUrls: story.coverImageUrl ? [story.coverImageUrl] : [],
   mediaType: "image",
   altText: story.title,
   message: story.title,
 });
+
+const storyMetrics = (story: StoryListItem): MetricItem[] => [
+  { label: "Views", value: story.totalViews, icon: Eye },
+  { label: "Reads", value: story.totalReads, icon: BookCheck },
+];
+
+const episodeSummary = (story: StoryListItem) =>
+  story.episodeCount === 0
+    ? "No episodes yet"
+    : `${story.publishedEpisodeCount} of ${story.episodeCount} ${story.episodeCount === 1 ? "episode" : "episodes"} published`;
 
 const storyMeta = (story: Story) =>
   [story.genre, story.language.toUpperCase()].filter(Boolean).join(" · ");
@@ -97,7 +98,7 @@ const AutoPromoteMark = () => (
 );
 
 interface StoryCardProps {
-  story: Story;
+  story: StoryListItem;
   onOpen: () => void;
 }
 
@@ -130,8 +131,9 @@ function StoryCard({ story, onOpen }: StoryCardProps) {
         <>
           <span className="line-clamp-2">{story.premise}</span>
           <span className="mt-1 block">
-            Started {formatDateShort(story.createdAt)}
+            {episodeSummary(story)} · Started {formatDateShort(story.createdAt)}
           </span>
+          <MetricList items={storyMetrics(story)} className="mt-2" />
         </>
       }
     />
@@ -157,11 +159,15 @@ function StoryRow({ story, onOpen }: StoryCardProps) {
           {story.title}
         </span>
         <span className="block truncate text-xs text-muted-foreground">
-          {[storyMeta(story), `Started ${formatDateShort(story.createdAt)}`]
+          {[storyMeta(story), episodeSummary(story)]
             .filter(Boolean)
             .join(" · ")}
         </span>
       </span>
+      <MetricList
+        items={storyMetrics(story)}
+        className="hidden shrink-0 sm:flex"
+      />
       <StoryStatusBadge story={story} />
     </button>
   );

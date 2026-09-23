@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import {
   Clock,
   Hourglass,
@@ -38,6 +38,9 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  Heart,
+  MessageCircle,
+  Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SocialMediaPost } from "@/hooks/useSocialMediaPosts";
@@ -45,6 +48,7 @@ import { PlatformIcon } from "@/components/ui/platform-icon";
 import { MediaLightbox } from "./MediaLightbox";
 import { DataTable, type ColumnConfig } from "@/components/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MetricList, type MetricItem } from "@/components/ui/metric-list";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard, MediaCardOverlayChip } from "@/components/ui/media-card";
@@ -52,6 +56,7 @@ import { useLayoutParam } from "@/hooks/useLayoutParam";
 import { LayoutToggle } from "./LayoutToggle";
 import { splitTrailingHashtags } from "@/lib/hashtags";
 import { isVideoUrl } from "@/lib/media";
+import { compactNumber } from "@/lib/numberFormat";
 import { PostMediaPreview } from "./PostMediaPreview";
 
 const statusConfig = {
@@ -179,6 +184,29 @@ const whenLabel = (post: SocialMediaPost) => {
 
 const PAGE_SIZE = 12;
 
+const isPublished = (post: SocialMediaPost) => post.status === "published";
+
+const engagementStats = (post: SocialMediaPost) =>
+  (
+    [
+      ["Views", post.views],
+      ["Likes", post.likes],
+      ["Comments", post.comments],
+      ["Shares", post.shares],
+      ["Reach", post.reach],
+      ["Impressions", post.impressions],
+    ] as [string, number | null | undefined][]
+  ).flatMap(([label, value]) =>
+    typeof value === "number" ? [[label, value] as const] : [],
+  );
+
+const postMetrics = (post: SocialMediaPost): MetricItem[] => [
+  { label: "Views", value: post.views, icon: Eye },
+  { label: "Likes", value: post.likes, icon: Heart },
+  { label: "Comments", value: post.comments, icon: MessageCircle },
+  { label: "Shares", value: post.shares, icon: Share2 },
+];
+
 interface PostGalleryCardProps {
   post: SocialMediaPost;
   actions: React.ReactNode;
@@ -218,7 +246,14 @@ const PostGalleryCard = ({
         {post.aiGenerated && <AiGeneratedMark />}
       </>
     }
-    caption={whenLabel(post)}
+    caption={
+      <>
+        <span className="block">{whenLabel(post)}</span>
+        {isPublished(post) && (
+          <MetricList items={postMetrics(post)} className="mt-2" />
+        )}
+      </>
+    }
     footer={actions}
   />
 );
@@ -481,6 +516,17 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
       filterType: "select",
       filterOptions: STATUS_FILTER_OPTIONS,
       render: (_value, post) => <PostStatusBadge status={post.status} />,
+    },
+    {
+      key: "engagement",
+      label: "Engagement",
+      hideBelow: "xl",
+      render: (_value, post) =>
+        isPublished(post) ? (
+          <MetricList items={postMetrics(post)} className="max-w-[11rem]" />
+        ) : (
+          <span className="text-muted-foreground/50">—</span>
+        ),
     },
     {
       key: "createdAt",
@@ -770,23 +816,32 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
 
                 {selectedPost.status === "published" && (
                   <DetailField label="Engagement">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {(
-                        [
-                          ["Likes", selectedPost.likes],
-                          ["Comments", selectedPost.comments],
-                          ["Shares", selectedPost.shares],
-                          ["Views", selectedPost.views],
-                        ] as const
-                      ).map(([label, value]) => (
-                        <div key={label} className="bg-muted p-3 rounded-lg">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {engagementStats(selectedPost).map(([label, value]) => (
+                        <div key={label} className="rounded-lg bg-muted p-3">
                           <p className="text-xs text-muted-foreground">
                             {label}
                           </p>
-                          <p className="text-lg font-semibold">{value}</p>
+                          <p
+                            className="text-lg font-semibold tabular-nums"
+                            title={value.toLocaleString()}
+                          >
+                            {compactNumber(value)}
+                          </p>
                         </div>
                       ))}
                     </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {selectedPost.lastMetricsUpdate
+                        ? "Synced from "
+                        : "Not synced from "}
+                      <span className="capitalize">
+                        {selectedPost.platform}
+                      </span>
+                      {selectedPost.lastMetricsUpdate
+                        ? ` ${formatDistanceToNow(new Date(selectedPost.lastMetricsUpdate), { addSuffix: true })}`
+                        : " yet"}
+                    </p>
                   </DetailField>
                 )}
 

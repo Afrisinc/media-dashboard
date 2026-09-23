@@ -21,6 +21,7 @@ import {
   BarChart3,
   Building2,
   BookOpen,
+  Rss,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ const mainItems = [
   { title: "Media Studio", url: "/media", icon: Newspaper },
   { title: "Post Studio", url: "/studio", icon: Sparkles },
   { title: "Story Studio", url: "/stories", icon: BookOpen },
+  { title: "News Desk", url: "/news", icon: Rss },
   { title: "Brands", url: "/brands", icon: Building2 },
   { title: "Automation", url: "/automation", icon: Workflow },
   { title: "AI Agents", url: "/agents", icon: Bot },

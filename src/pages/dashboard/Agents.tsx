@@ -11,8 +11,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAgentRuns } from "@/hooks/useAutomation";
 import { usePostDrafts } from "@/hooks/usePostAgent";
+import { useNewsArticles, useNewsDeskSummary } from "@/hooks/useNewsDesk";
 import { useStories } from "@/hooks/useStoryAgent";
 import { formatDateShort } from "@/lib/dateFormat";
+import { compactNumber } from "@/lib/numberFormat";
 import {
   FORMAT_LABELS,
   STATUS_LABELS,
@@ -20,8 +22,14 @@ import {
   type PostDraft,
   type PostDraftStatus,
 } from "@/types/postAgent";
+import { newsArticleTitle } from "@/lib/newsDesk";
+import {
+  NEWS_STATUS_LABELS,
+  NEWS_STATUS_VARIANT,
+  type NewsArticle,
+} from "@/types/newsDesk";
 import { STORY_STATUS_VARIANT, type Story } from "@/types/story";
-import { Bot, BookOpen, Inbox, Mail, ServerCrash } from "lucide-react";
+import { Bot, BookOpen, Inbox, Mail, Rss, ServerCrash } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const RECENT_LIMIT = 8;
@@ -94,6 +102,38 @@ function StoryRow({ story }: { story: Story }) {
   );
 }
 
+function NewsRow({ article }: { article: NewsArticle }) {
+  return (
+    <Link
+      to="/news"
+      className="flex items-center gap-4 border-b border-border/50 py-3 last:border-0 hover:bg-muted/30 -mx-2 px-2 rounded-md transition-colors"
+    >
+      <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md border border-border bg-inset">
+        <Rss className="h-4 w-4 text-muted-foreground" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">
+          {newsArticleTitle(article)}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {[article.creator, formatDateShort(article.created_at)]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      </div>
+
+      <Badge
+        variant={
+          article.stuck ? "destructive" : NEWS_STATUS_VARIANT[article.status]
+        }
+      >
+        {article.stuck ? "Stuck" : NEWS_STATUS_LABELS[article.status]}
+      </Badge>
+    </Link>
+  );
+}
+
 const DashboardAgents = () => {
   const { data, isLoading, isError } = usePostDrafts({ limit: 50 });
   const { data: runPage } = useAgentRuns({ limit: 1 });
@@ -104,6 +144,9 @@ const DashboardAgents = () => {
   } = useStories({
     limit: 50,
   });
+
+  const newsSummary = useNewsDeskSummary();
+  const newsArticles = useNewsArticles({ page: 1, limit: RECENT_LIMIT });
 
   const drafts = data?.items ?? [];
   const stories = storyData?.items ?? [];
@@ -142,6 +185,29 @@ const DashboardAgents = () => {
     .map((story) => story.updatedAt)
     .sort()
     .at(-1);
+
+  const newsCounts = newsSummary.data?.byStatus;
+  const newsNeedsFix =
+    (newsCounts?.failed ?? 0) + (newsSummary.data?.stuck ?? 0);
+  const newsAgentStatus =
+    (newsCounts?.processing ?? 0) > 0
+      ? "Enhancing"
+      : newsNeedsFix > 0
+        ? "Needs a fix"
+        : "Scheduled";
+  const newsAgentStats: AgentSummaryStat[] = [
+    { label: "Published", value: String(newsCounts?.published ?? 0) },
+    { label: "Queued", value: String(newsCounts?.draft ?? 0) },
+    {
+      label: "Needs a fix",
+      value: String(newsNeedsFix),
+      tone: newsNeedsFix > 0 ? "danger" : "default",
+    },
+    {
+      label: "Views",
+      value: compactNumber(newsSummary.data?.views ?? 0),
+    },
+  ];
 
   const storyAgentStats: AgentSummaryStat[] = [
     { label: "Stories", value: String(stories.length) },
@@ -264,6 +330,50 @@ const DashboardAgents = () => {
                   </Link>
                 </Button>
               )}
+            </AgentCard>
+          )}
+
+          {newsSummary.isError ? (
+            <EmptyState
+              icon={ServerCrash}
+              variant="compact"
+              title="Could not reach content-service for the news agent"
+            />
+          ) : (
+            <AgentCard
+              name="News agent"
+              description="Reads African news feeds; GPT-4o judges and rewrites what matters, draws a cover and publishes it."
+              icon={Rss}
+              status={newsAgentStatus}
+              statusTone={
+                (newsSummary.data?.byStatus.processing ?? 0) > 0 ||
+                newsNeedsFix > 0
+                  ? "default"
+                  : "secondary"
+              }
+              stats={newsAgentStats}
+              open={openAgent === "news"}
+              onToggle={() => toggle("news")}
+              action={
+                <Button asChild size="sm">
+                  <Link to="/news">Open News Desk</Link>
+                </Button>
+              }
+            >
+              {newsArticles.isLoading && <Skeleton className="h-32 w-full" />}
+
+              {!newsArticles.isLoading &&
+                (newsArticles.data?.items.length ?? 0) === 0 && (
+                  <EmptyState
+                    icon={Rss}
+                    variant="compact"
+                    title="No articles ingested yet."
+                  />
+                )}
+
+              {newsArticles.data?.items.map((article) => (
+                <NewsRow key={article.id} article={article} />
+              ))}
             </AgentCard>
           )}
 

@@ -15,7 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MEDIA_CARD_GRID } from "@/components/ui/media-card";
+import {
+  MEDIA_CARD_GRID,
+  MediaCardGridSkeleton,
+} from "@/components/ui/media-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { FilterBar } from "./FilterBar";
@@ -57,6 +60,7 @@ export function DataTable<T extends Record<string, unknown>>({
   renderGridItem,
   chrome = "cards",
   emptyState,
+  loadingSkeleton,
 }: DataTableProps<T>) {
   const [query, setQuery] = useState<DataTableQuery>({
     page: 1,
@@ -203,20 +207,9 @@ export function DataTable<T extends Record<string, unknown>>({
               </p>
             </div>
           ) : loading && showGrid ? (
-            <div className={MEDIA_CARD_GRID}>
-              {Array.from({ length: pageSize }).map((_, i) => (
-                <div
-                  key={i}
-                  className="overflow-hidden rounded-xl border border-border/60"
-                >
-                  <Skeleton className="aspect-[4/5] w-full rounded-none" />
-                  <div className="space-y-2 p-3">
-                    <Skeleton className="h-4 w-4/5" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <MediaCardGridSkeleton count={pageSize} />
+          ) : loading && loadingSkeleton ? (
+            loadingSkeleton
           ) : loading ? (
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -290,76 +283,79 @@ export function DataTable<T extends Record<string, unknown>>({
                 </ul>
               )}
 
-              <div
-                className={cn(
-                  showGrid && "hidden",
-                  mobileLayout === "cards" && CARD_BREAKPOINT[cardsBelow].table,
-                )}
-              >
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {columns.map((column) => (
-                        <TableHead
-                          key={String(column.key)}
-                          style={{ width: column.width }}
-                          className={cn(
-                            "px-3",
-                            column.align === "center" && "text-center",
-                            column.align === "right" && "text-right",
-                            column.sortable &&
-                              "cursor-pointer select-none hover:bg-muted/50",
-                            column.hideBelow && HIDE_BELOW[column.hideBelow],
-                          )}
-                          onClick={() =>
-                            column.sortable && handleSort(String(column.key))
-                          }
-                        >
-                          <div className="flex items-center gap-2">
-                            {column.label}
-                            {column.sortable && (
-                              <div className="flex flex-col">
-                                {sortBy === String(column.key) ? (
-                                  sortOrder === "asc" ? (
-                                    <ChevronsUp className="h-4 w-4" />
-                                  ) : sortOrder === "desc" ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : null
-                                ) : null}
-                              </div>
-                            )}
-                          </div>
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.map((row) => (
-                      <TableRow
-                        key={String(row[rowKey as keyof T])}
-                        className={
-                          onRowClick ? "cursor-pointer hover:bg-muted/50" : ""
-                        }
-                        onClick={() => onRowClick?.(row)}
-                      >
+              {!showGrid && (
+                <div
+                  className={cn(
+                    mobileLayout === "cards" &&
+                      CARD_BREAKPOINT[cardsBelow].table,
+                  )}
+                >
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
                         {columns.map((column) => (
-                          <TableCell
+                          <TableHead
                             key={String(column.key)}
+                            style={{ width: column.width }}
                             className={cn(
                               "px-3",
                               column.align === "center" && "text-center",
                               column.align === "right" && "text-right",
+                              column.sortable &&
+                                "cursor-pointer select-none hover:bg-muted/50",
                               column.hideBelow && HIDE_BELOW[column.hideBelow],
                             )}
+                            onClick={() =>
+                              column.sortable && handleSort(String(column.key))
+                            }
                           >
-                            {renderCellValue(column, row)}
-                          </TableCell>
+                            <div className="flex items-center gap-2">
+                              {column.label}
+                              {column.sortable && (
+                                <div className="flex flex-col">
+                                  {sortBy === String(column.key) ? (
+                                    sortOrder === "asc" ? (
+                                      <ChevronsUp className="h-4 w-4" />
+                                    ) : sortOrder === "desc" ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : null
+                                  ) : null}
+                                </div>
+                              )}
+                            </div>
+                          </TableHead>
                         ))}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {data.map((row) => (
+                        <TableRow
+                          key={String(row[rowKey as keyof T])}
+                          className={
+                            onRowClick ? "cursor-pointer hover:bg-muted/50" : ""
+                          }
+                          onClick={() => onRowClick?.(row)}
+                        >
+                          {columns.map((column) => (
+                            <TableCell
+                              key={String(column.key)}
+                              className={cn(
+                                "px-3",
+                                column.align === "center" && "text-center",
+                                column.align === "right" && "text-right",
+                                column.hideBelow &&
+                                  HIDE_BELOW[column.hideBelow],
+                              )}
+                            >
+                              {renderCellValue(column, row)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
 
               {/* Pagination */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t">

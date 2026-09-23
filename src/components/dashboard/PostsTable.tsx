@@ -26,7 +26,6 @@ import {
   XCircle,
   Loader2,
   ExternalLink,
-  LayoutList,
   Eye,
   Edit2,
   Trash2,
@@ -45,7 +44,8 @@ import { PlatformIcon } from "@/components/ui/platform-icon";
 import { MediaLightbox } from "./MediaLightbox";
 import { DataTable, type ColumnConfig } from "@/components/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { IconBox } from "@/components/ui/icon-box";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard, MediaCardOverlayChip } from "@/components/ui/media-card";
 import { useLayoutParam } from "@/hooks/useLayoutParam";
 import { LayoutToggle } from "./LayoutToggle";
@@ -507,17 +507,13 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
     <Card className="border-border/50">
       <CardContent className="space-y-4 p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <IconBox icon={LayoutList} size="sm" />
-            <div className="min-w-0">
-              <h3 className="font-semibold text-foreground">Posts</h3>
-              <p className="text-sm text-muted-foreground">
-                {isLoading
-                  ? "Loading…"
-                  : `${total.toLocaleString()} ${total === 1 ? "post" : "posts"}${filtered ? " match" : ""}`}
-              </p>
-            </div>
-          </div>
+          {isLoading ? (
+            <Skeleton className="h-4 w-20" />
+          ) : (
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              {`${total.toLocaleString()} ${total === 1 ? "post" : "posts"}${filtered ? " match" : ""}`}
+            </p>
+          )}
           <LayoutToggle value={layout} onChange={setLayout} />
         </div>
 
@@ -569,6 +565,9 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
           mobileLayout="cards"
           cardsBelow="xl"
           chrome="plain"
+          loadingSkeleton={
+            <ListSkeleton rows={6} thumb label="Loading posts" />
+          }
           layout={layout === "grid" ? "grid" : "table"}
           renderGridItem={(post) => (
             <PostGalleryCard

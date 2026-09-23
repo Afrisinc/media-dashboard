@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ImageOff, Layers, Play, Type } from "lucide-react";
 import { isVideoUrl } from "@/lib/media";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { SocialMediaPost } from "@/hooks/useSocialMediaPosts";
 
@@ -25,6 +26,7 @@ export function PostMediaPreview({
   className,
 }: PostMediaPreviewProps) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const urls = post.mediaUrls ?? [];
   const cover = urls[0];
   const isThumb = variant === "thumb";
@@ -57,6 +59,7 @@ export function PostMediaPreview({
   }
 
   const video = isVideoUrl(cover, post.mediaType);
+  const fit = isThumb ? "object-cover" : "object-contain";
 
   return (
     <div
@@ -65,13 +68,32 @@ export function PostMediaPreview({
         className,
       )}
     >
+      {!loaded && (
+        <Skeleton className="absolute inset-0 rounded-none" aria-hidden />
+      )}
+      {!isThumb && !video && (
+        <img
+          src={cover}
+          alt=""
+          aria-hidden
+          className={cn(
+            "absolute inset-0 h-full w-full scale-125 object-cover opacity-40 blur-2xl transition-opacity duration-300 saturate-150",
+            !loaded && "opacity-0",
+          )}
+        />
+      )}
       {video ? (
         <video
           src={`${cover}#t=0.1`}
           muted
           playsInline
           preload="metadata"
-          className="h-full w-full object-cover"
+          className={cn(
+            "absolute inset-0 h-full w-full transition-opacity duration-300",
+            fit,
+            !loaded && "opacity-0",
+          )}
+          onLoadedData={() => setLoaded(true)}
           onError={() => setFailed(true)}
         />
       ) : (
@@ -80,7 +102,12 @@ export function PostMediaPreview({
           alt={post.altText || post.message || "Post media"}
           loading="lazy"
           decoding="async"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          className={cn(
+            "absolute inset-0 h-full w-full transition-opacity duration-300",
+            fit,
+            !loaded && "opacity-0",
+          )}
+          onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
         />
       )}

@@ -85,6 +85,11 @@ export default {
           8: "hsl(var(--dim-8))",
         },
         amber: "hsl(var(--amber))",
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          light: "hsl(var(--gold-light))",
+          muted: "hsl(var(--gold-muted))",
+        },
         emerald: {
           DEFAULT: "hsl(var(--emerald))",
           mid: "hsl(var(--emerald-mid))",

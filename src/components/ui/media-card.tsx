@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface MediaCardProps {
@@ -38,18 +39,18 @@ export function MediaCard({
         className,
       )}
     >
-      <div className="relative aspect-[4/5]">
+      <div className="relative aspect-[4/5] overflow-hidden bg-muted">
         {onMediaClick ? (
           <button
             type="button"
             onClick={onMediaClick}
-            className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            className="absolute inset-0 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             aria-label={mediaLabel}
           >
             {media}
           </button>
         ) : (
-          <div className="h-full w-full" aria-label={mediaLabel} role="img">
+          <div className="absolute inset-0" aria-label={mediaLabel} role="img">
             {media}
           </div>
         )}
@@ -117,3 +118,48 @@ export function MediaCardOverlayChip({
 
 export const MEDIA_CARD_GRID =
   "grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4";
+
+export function MediaCardSkeleton() {
+  return (
+    <div
+      className="flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card"
+      aria-hidden
+    >
+      <Skeleton className="aspect-[4/5] w-full rounded-none" />
+      <div className="flex flex-1 flex-col gap-2 p-3">
+        <Skeleton className="h-4 w-11/12" />
+        <Skeleton className="h-4 w-3/5" />
+        <div className="mt-2 flex gap-2">
+          <Skeleton className="h-5 w-14 rounded-full" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+        <Skeleton className="h-3 w-2/5" />
+      </div>
+      <div className="flex justify-end gap-2 border-t border-border/50 px-3 py-2.5">
+        {[0, 1, 2].map((key) => (
+          <Skeleton key={key} className="h-5 w-5 rounded-md" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface MediaCardGridSkeletonProps {
+  count?: number;
+  label?: string;
+}
+
+export function MediaCardGridSkeleton({
+  count = 8,
+  label = "Loading",
+}: MediaCardGridSkeletonProps) {
+  return (
+    <div role="status" aria-busy="true" aria-label={label}>
+      <div className={MEDIA_CARD_GRID}>
+        {Array.from({ length: count }, (_, index) => (
+          <MediaCardSkeleton key={index} />
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -11,7 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { MEDIA_CARD_GRID, MediaCard } from "@/components/ui/media-card";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
+import {
+  MEDIA_CARD_GRID,
+  MediaCard,
+  MediaCardGridSkeleton,
+} from "@/components/ui/media-card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -196,25 +201,6 @@ function DraftCard({ draft, onOpenSlides }: DraftCardProps) {
   );
 }
 
-function DraftsSkeleton() {
-  return (
-    <div className={MEDIA_CARD_GRID}>
-      {[0, 1, 2].map((key) => (
-        <div
-          key={key}
-          className="overflow-hidden rounded-xl border border-border/60"
-        >
-          <Skeleton className="aspect-[4/5] w-full rounded-none" />
-          <div className="space-y-2 p-3">
-            <Skeleton className="h-4 w-4/5" />
-            <Skeleton className="h-3 w-1/2" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function HistoryRow({
   draft,
   onOpenSlides,
@@ -319,7 +305,12 @@ const Studio = () => {
   // difference between a spinner and knowing what is happening.
   const watching = run && isRunWorthWatching(run) ? run : undefined;
 
-  const scheduled = drafts.filter((d) => d.status === "scheduled").length;
+  const scheduledDrafts = drafts.filter((d) => d.status === "scheduled");
+  const scheduled = scheduledDrafts.length;
+  const nextScheduledAt = scheduledDrafts
+    .map((d) => d.scheduledAt)
+    .filter((at): at is string => !!at)
+    .sort()[0];
   const needsFix = drafts.filter(
     (d) => d.status === "failed" || d.status === "rendered",
   ).length;
@@ -331,6 +322,7 @@ const Studio = () => {
       icon: Inbox,
       tone: queue.length > 0 ? "attention" : "default",
       onSelect: () => setView("review"),
+      hint: queue.length > 0 ? "Ready for your review" : "All clear",
     },
     {
       label: "Scheduled",
@@ -338,6 +330,9 @@ const Studio = () => {
       icon: CalendarClock,
       tone: scheduled > 0 ? "success" : "default",
       onSelect: () => showDrafts("scheduled"),
+      hint: nextScheduledAt
+        ? `Next ${formatDateShort(nextScheduledAt)}`
+        : "Nothing queued",
     },
     {
       label: "Needs a fix",
@@ -345,12 +340,14 @@ const Studio = () => {
       icon: AlertCircle,
       tone: needsFix > 0 ? "danger" : "default",
       onSelect: () => showDrafts("fix"),
+      hint: needsFix > 0 ? "Failed or not queued" : "Nothing broken",
     },
     {
       label: "Drafted",
-      value: String(drafts.length),
+      value: String(recent.data?.total ?? drafts.length),
       icon: CheckCircle2,
       onSelect: () => showDrafts("all"),
+      hint: "Written by your agents",
     },
   ];
 
@@ -383,7 +380,11 @@ const Studio = () => {
         }
       />
 
-      <StatStrip stats={stats} />
+      <StatStrip
+        variant="tiles"
+        stats={stats}
+        loading={review.isLoading || recent.isLoading}
+      />
 
       {watching && (
         <Card>
@@ -503,7 +504,12 @@ const Studio = () => {
                 <LayoutToggle value={layout} onChange={setLayout} />
               </div>
 
-              {recent.isLoading && <DraftsSkeleton />}
+              {recent.isLoading &&
+                (layout === "grid" ? (
+                  <MediaCardGridSkeleton count={4} label="Loading drafts" />
+                ) : (
+                  <ListSkeleton rows={4} thumb label="Loading drafts" />
+                ))}
 
               {recent.isError && (
                 <EmptyState

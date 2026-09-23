@@ -70,6 +70,7 @@ export interface DataTableProps<T> {
   renderGridItem?: (row: T) => ReactNode;
   chrome?: "cards" | "plain";
   emptyState?: ReactNode;
+  loadingSkeleton?: ReactNode;
 }
 
 export interface FilterBarProps<T = Record<string, unknown>> {

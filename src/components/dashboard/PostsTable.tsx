@@ -36,10 +36,11 @@ import {
   Images,
   SearchX,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SocialMediaPost } from "@/hooks/useSocialMediaPosts";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PlatformIcon } from "@/components/ui/platform-icon";
 import { MediaLightbox } from "./MediaLightbox";
 import { DataTable, type ColumnConfig } from "@/components/data-table";
@@ -49,6 +50,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard, MediaCardOverlayChip } from "@/components/ui/media-card";
 import { useLayoutParam } from "@/hooks/useLayoutParam";
 import { LayoutToggle } from "./LayoutToggle";
+import { splitTrailingHashtags } from "@/lib/hashtags";
 import { isVideoUrl } from "@/lib/media";
 import { PostMediaPreview } from "./PostMediaPreview";
 
@@ -300,6 +302,11 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
   const posts = data?.posts || [];
   const total = data?.total || 0;
   const filtered = !!query.search || Object.values(query.filters).some(Boolean);
+
+  const selectedCaption = splitTrailingHashtags(
+    selectedPost?.message,
+    selectedPost?.tags,
+  );
 
   const openMedia = (post: SocialMediaPost) => {
     if (!hasViewableImages(post)) {
@@ -605,41 +612,6 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
               </DialogHeader>
 
               <div className="space-y-6">
-                {/* Platform & Status */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <DetailField label="Platform">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium capitalize">
-                        {selectedPost.platform}
-                      </span>
-                      <PostFormatBadge postFormat={selectedPost.postFormat} />
-                    </div>
-                  </DetailField>
-                  <DetailField label="Status">
-                    <PostStatusBadge status={selectedPost.status} />
-                  </DetailField>
-                </div>
-
-                <DetailField label="Message">
-                  <p className="text-sm whitespace-pre-wrap break-words">
-                    {selectedPost.message || "—"}
-                  </p>
-                </DetailField>
-
-                {selectedPost.link && (
-                  <DetailField label="Link">
-                    <a
-                      href={selectedPost.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline inline-flex items-center gap-1 break-all"
-                    >
-                      {selectedPost.link}
-                      <ExternalLink className="w-3 h-3 shrink-0" />
-                    </a>
-                  </DetailField>
-                )}
-
                 {/* Media Carousel */}
                 {selectedPost.mediaUrls &&
                   selectedPost.mediaUrls.length > 0 && (
@@ -682,6 +654,8 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
                         {selectedPost.mediaUrls.length > 1 && (
                           <>
                             <button
+                              type="button"
+                              aria-label="Previous image"
                               onClick={() =>
                                 setCurrentImageIndex((prev) =>
                                   prev === 0
@@ -689,11 +663,13 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
                                     : prev - 1,
                                 )
                               }
-                              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 p-2 rounded-full text-white transition"
+                              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/85 p-2 text-foreground shadow-sm backdrop-blur transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <ChevronLeft className="w-5 h-5" />
                             </button>
                             <button
+                              type="button"
+                              aria-label="Next image"
                               onClick={() =>
                                 setCurrentImageIndex((prev) =>
                                   prev === selectedPost.mediaUrls.length - 1
@@ -701,7 +677,7 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
                                     : prev + 1,
                                 )
                               }
-                              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 p-2 rounded-full text-white transition"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/85 p-2 text-foreground shadow-sm backdrop-blur transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <ChevronRight className="w-5 h-5" />
                             </button>
@@ -711,12 +687,15 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
                               {selectedPost.mediaUrls.map((_, idx) => (
                                 <button
                                   key={`dot-${idx}`}
+                                  type="button"
+                                  aria-label={`Show image ${idx + 1}`}
+                                  aria-current={idx === currentImageIndex}
                                   onClick={() => setCurrentImageIndex(idx)}
                                   className={cn(
-                                    "w-2 h-2 rounded-full transition",
+                                    "h-2 w-2 rounded-full shadow-sm ring-1 ring-foreground/20 transition",
                                     idx === currentImageIndex
-                                      ? "bg-white"
-                                      : "bg-white/50 hover:bg-white/70",
+                                      ? "bg-background"
+                                      : "bg-background/50 hover:bg-background/75",
                                   )}
                                 />
                               ))}
@@ -726,6 +705,31 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
                       </div>
                     </div>
                   )}
+
+                {/* Error Message */}
+                {selectedPost.status === "failed" &&
+                  selectedPost.errorMessage && (
+                    <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                      <p className="text-sm text-destructive">
+                        {selectedPost.errorMessage}
+                      </p>
+                    </div>
+                  )}
+
+                {/* Platform & Status */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <DetailField label="Platform">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium capitalize">
+                        {selectedPost.platform}
+                      </span>
+                      <PostFormatBadge postFormat={selectedPost.postFormat} />
+                    </div>
+                  </DetailField>
+                  <DetailField label="Status">
+                    <PostStatusBadge status={selectedPost.status} />
+                  </DetailField>
+                </div>
 
                 {selectedPost.scheduledAt && (
                   <DetailField label="Scheduled For">
@@ -738,12 +742,26 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
                   </DetailField>
                 )}
 
-                {selectedPost.tags && selectedPost.tags.length > 0 && (
+                {selectedPost.link && (
+                  <DetailField label="Link">
+                    <a
+                      href={selectedPost.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline inline-flex items-center gap-1 break-all"
+                    >
+                      {selectedPost.link}
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                  </DetailField>
+                )}
+
+                {selectedCaption.hashtags.length > 0 && (
                   <DetailField label="Hashtags">
                     <div className="flex flex-wrap gap-2">
-                      {selectedPost.tags.map((tag) => (
+                      {selectedCaption.hashtags.map((tag) => (
                         <Badge key={tag} variant="secondary">
-                          {tag.startsWith("#") ? tag : `#${tag}`}
+                          {tag}
                         </Badge>
                       ))}
                     </div>
@@ -781,15 +799,11 @@ const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
                   </div>
                 )}
 
-                {/* Error Message */}
-                {selectedPost.status === "failed" &&
-                  selectedPost.errorMessage && (
-                    <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
-                      <p className="text-sm text-destructive">
-                        {selectedPost.errorMessage}
-                      </p>
-                    </div>
-                  )}
+                <DetailField label="Message">
+                  <p className="text-sm whitespace-pre-wrap break-words">
+                    {selectedCaption.body || "—"}
+                  </p>
+                </DetailField>
               </div>
 
               {/* Actions */}

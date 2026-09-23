@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { IconBox, type IconBoxTone } from "@/components/ui/icon-box";
 import { cn } from "@/lib/utils";
-import type { LucideIcon } from "lucide-react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 export interface AgentSummaryStat {

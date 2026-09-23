@@ -1,6 +1,5 @@
-import type { LucideIcon } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, type LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconBox, type IconBoxTone } from "@/components/ui/icon-box";
 import { cn } from "@/lib/utils";

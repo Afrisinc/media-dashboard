@@ -1,101 +1,84 @@
-import { StoryBriefForm } from "@/components/dashboard/StoryBriefForm";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { StatStrip, type StripStat } from "@/components/dashboard/StatStrip";
-import { useStories } from "@/hooks/useStoryAgent";
-import { formatDateShort } from "@/lib/dateFormat";
 import {
-  STORY_STATUS_LABELS,
-  STORY_STATUS_VARIANT,
-  type Story,
-} from "@/types/story";
+  StoriesPanel,
+  type StoryFilter,
+} from "@/components/dashboard/StoriesPanel";
+import { StoryBriefForm } from "@/components/dashboard/StoryBriefForm";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { useStories } from "@/hooks/useStoryAgent";
 import {
   BookOpen,
   CheckCircle2,
+  PenLine,
   Plus,
-  ServerCrash,
   Sparkles,
   X,
 } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
-
-function StoriesSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {[0, 1, 2].map((key) => (
-        <Card key={key}>
-          <CardContent className="space-y-3 pt-6">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function StoryCard({ story }: { story: Story }) {
-  return (
-    <Link to={`/stories/${story.id}`}>
-      <Card className="h-full transition-colors hover:border-primary/40">
-        <CardContent className="space-y-3 pt-6">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="truncate font-semibold">{story.title}</h3>
-            <Badge
-              variant={STORY_STATUS_VARIANT[story.status]}
-              className="shrink-0"
-            >
-              {STORY_STATUS_LABELS[story.status]}
-            </Badge>
-          </div>
-          <p className="line-clamp-2 text-sm text-muted-foreground">
-            {story.premise}
-          </p>
-          <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            {story.genre && <span>{story.genre}</span>}
-            {story.genre && <span>·</span>}
-            <span>Started {formatDateShort(story.createdAt)}</span>
-            {story.autoPromote && (
-              <>
-                <span>·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" />
-                  auto-promotes
-                </span>
-              </>
-            )}
-          </p>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
+import { useEffect, useState } from "react";
 
 const Stories = () => {
-  const { data, isLoading, isError } = useStories({ limit: 50 });
+  const all = useStories({ page: 1, limit: 12 });
+  const active = useStories({ status: "ACTIVE", page: 1, limit: 12 });
+  const completed = useStories({ status: "COMPLETED", page: 1, limit: 12 });
+  const drafts = useStories({ status: "DRAFT", page: 1, limit: 12 });
   const [composing, setComposing] = useState(false);
+  const [filter, setFilter] = useState<StoryFilter>("all");
 
-  const stories = data?.items ?? [];
-  const active = stories.filter((story) => story.status === "ACTIVE").length;
-  const completed = stories.filter(
-    (story) => story.status === "COMPLETED",
-  ).length;
+  useEffect(() => {
+    if (!composing) return;
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setComposing(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [composing]);
+
+  const openComposer = () => {
+    setComposing(true);
+    requestAnimationFrame(() =>
+      document
+        .getElementById("story-composer")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+
+  const count = (query: typeof all) => query.data?.total ?? 0;
+  const activeCount = count(active);
+  const draftCount = count(drafts);
 
   const stats: StripStat[] = [
-    { label: "Stories", value: String(stories.length), icon: BookOpen },
+    {
+      label: "Stories",
+      value: String(count(all)),
+      icon: BookOpen,
+      hint: "Every series you've started",
+      onSelect: () => setFilter("all"),
+    },
     {
       label: "Active",
-      value: String(active),
+      value: String(activeCount),
       icon: Sparkles,
-      tone: active > 0 ? "success" : "default",
+      tone: activeCount > 0 ? "success" : "default",
+      hint: activeCount > 0 ? "Taking new episodes" : "None in progress",
+      onSelect: () => setFilter("ACTIVE"),
     },
-    { label: "Completed", value: String(completed), icon: CheckCircle2 },
+    {
+      label: "Completed",
+      value: String(count(completed)),
+      icon: CheckCircle2,
+      hint: "Finished series",
+      onSelect: () => setFilter("COMPLETED"),
+    },
+    {
+      label: "Drafts",
+      value: String(draftCount),
+      icon: PenLine,
+      tone: draftCount > 0 ? "attention" : "default",
+      hint: draftCount > 0 ? "Waiting for a first episode" : "Nothing waiting",
+      onSelect: () => setFilter("DRAFT"),
+    },
   ];
 
   return (
@@ -105,7 +88,7 @@ const Stories = () => {
         subtitle="Brief a series once, then generate it episode by episode — chatgpt writes, claude and ollama back it up."
         action={
           <Button
-            onClick={() => setComposing((open) => !open)}
+            onClick={() => (composing ? setComposing(false) : openComposer())}
             variant={composing ? "outline" : "default"}
             aria-expanded={composing}
             aria-controls="story-composer"
@@ -125,35 +108,29 @@ const Stories = () => {
         }
       />
 
-      <StatStrip stats={stats} />
+      <StatStrip
+        variant="tiles"
+        stats={stats}
+        loading={
+          all.isLoading ||
+          active.isLoading ||
+          completed.isLoading ||
+          drafts.isLoading
+        }
+      />
 
       {composing && (
-        <div id="story-composer" className="animate-fade-up">
+        <div id="story-composer" className="scroll-mt-4 animate-fade-up">
           <StoryBriefForm />
         </div>
       )}
 
-      {isLoading ? (
-        <StoriesSkeleton />
-      ) : isError ? (
-        <EmptyState
-          icon={ServerCrash}
-          title="Couldn't load stories"
-          description="Try refreshing the page."
-        />
-      ) : stories.length === 0 ? (
-        <EmptyState
-          icon={BookOpen}
-          title="No stories yet"
-          description="Start one above — a title and a premise is all it takes."
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {stories.map((story) => (
-            <StoryCard key={story.id} story={story} />
-          ))}
-        </div>
-      )}
+      <StoriesPanel
+        status={filter}
+        onStatusChange={setFilter}
+        onCreate={openComposer}
+        showCreateButton={false}
+      />
     </div>
   );
 };

@@ -36,13 +36,27 @@ import {
 
 const PAGE_SIZE = 12;
 
-const STATUS_FILTERS: { label: string; value: StoryStatus | "all" }[] = [
+const STATUS_FILTERS: { label: string; value: StoryFilter }[] = [
   { label: "All", value: "all" },
   { label: STORY_STATUS_LABELS.ACTIVE, value: "ACTIVE" },
   { label: STORY_STATUS_LABELS.DRAFT, value: "DRAFT" },
   { label: STORY_STATUS_LABELS.COMPLETED, value: "COMPLETED" },
   { label: STORY_STATUS_LABELS.ARCHIVED, value: "ARCHIVED" },
 ];
+
+const COVER_TINTS = [
+  "bg-gradient-to-br from-primary/25 to-primary/5",
+  "bg-gradient-to-br from-emerald/25 to-emerald/5",
+  "bg-gradient-to-br from-indigo/25 to-indigo/5",
+  "bg-gradient-to-br from-gold/25 to-gold/5",
+  "bg-gradient-to-br from-forest/25 to-forest/5",
+  "bg-gradient-to-br from-amber/25 to-amber/5",
+];
+
+const coverTint = (story: Story) => {
+  const hash = [...story.id].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return COVER_TINTS[hash % COVER_TINTS.length];
+};
 
 const storyCover = (story: Story) => ({
   mediaUrls: story.coverImageUrl ? [story.coverImageUrl] : [],
@@ -91,7 +105,11 @@ function StoryCard({ story, onOpen }: StoryCardProps) {
   return (
     <MediaCard
       media={
-        <PostMediaPreview post={storyCover(story)} emptyLabel="No cover" />
+        <PostMediaPreview
+          post={storyCover(story)}
+          emptyLabel={story.genre ?? "Story"}
+          emptyClassName={coverTint(story)}
+        />
       }
       mediaLabel={`Open ${story.title}`}
       onMediaClick={onOpen}
@@ -128,7 +146,11 @@ function StoryRow({ story, onOpen }: StoryCardProps) {
       className="flex w-full items-center gap-3 border-b border-border/50 py-3 text-left transition-colors last:border-0 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
     >
       <span className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border/60">
-        <PostMediaPreview post={storyCover(story)} variant="thumb" />
+        <PostMediaPreview
+          post={storyCover(story)}
+          variant="thumb"
+          emptyClassName={coverTint(story)}
+        />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">
@@ -145,11 +167,26 @@ function StoryRow({ story, onOpen }: StoryCardProps) {
   );
 }
 
-export function StoriesPanel() {
+export type StoryFilter = StoryStatus | "all";
+
+interface StoriesPanelProps {
+  status?: StoryFilter;
+  onStatusChange?: (status: StoryFilter) => void;
+  onCreate?: () => void;
+  showCreateButton?: boolean;
+}
+
+export function StoriesPanel({
+  status: controlledStatus,
+  onStatusChange,
+  onCreate,
+  showCreateButton = true,
+}: StoriesPanelProps = {}) {
   const navigate = useNavigate();
   const [layout, setLayout] = useLayoutParam();
-  const [status, setStatus] = useState<StoryStatus | "all">("all");
+  const [localStatus, setLocalStatus] = useState<StoryFilter>("all");
   const [page, setPage] = useState(1);
+  const status = controlledStatus ?? localStatus;
 
   const stories = useStories({
     status: status === "all" ? undefined : status,
@@ -161,10 +198,11 @@ export function StoriesPanel() {
   const total = stories.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const openStory = (story: Story) => navigate(`/stories/${story.id}`);
-  const startStory = () => navigate("/stories");
+  const startStory = onCreate ?? (() => navigate("/stories"));
 
-  const changeStatus = (next: StoryStatus | "all") => {
-    setStatus(next);
+  const changeStatus = (next: StoryFilter) => {
+    setLocalStatus(next);
+    onStatusChange?.(next);
     setPage(1);
   };
 
@@ -180,10 +218,12 @@ export function StoriesPanel() {
             </p>
           )}
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={startStory}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              New story
-            </Button>
+            {showCreateButton && (
+              <Button variant="outline" size="sm" onClick={startStory}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                New story
+              </Button>
+            )}
             <LayoutToggle value={layout} onChange={setLayout} />
           </div>
         </div>

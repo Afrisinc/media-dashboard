@@ -12,6 +12,7 @@ interface PostMediaPreviewProps {
   >;
   variant?: "cover" | "thumb";
   emptyLabel?: string;
+  emptyClassName?: string;
   className?: string;
 }
 
@@ -25,6 +26,7 @@ export function PostMediaPreview({
   post,
   variant = "cover",
   emptyLabel = "Text post",
+  emptyClassName,
   className,
 }: PostMediaPreviewProps) {
   const [failed, setFailed] = useState(false);
@@ -39,6 +41,7 @@ export function PostMediaPreview({
         className={cn(
           "flex h-full w-full flex-col items-center justify-center gap-2 bg-muted text-muted-foreground",
           !isThumb && "p-5",
+          emptyClassName,
           className,
         )}
       >

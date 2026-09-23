@@ -1,6 +1,7 @@
 import { AgentRunTimeline } from "@/components/dashboard/AgentRunTimeline";
 import { LayoutToggle } from "@/components/dashboard/LayoutToggle";
 import { MediaLightbox } from "@/components/dashboard/MediaLightbox";
+import { StoriesPanel } from "@/components/dashboard/StoriesPanel";
 import { PostMediaPreview } from "@/components/dashboard/PostMediaPreview";
 import { PostBriefForm } from "@/components/dashboard/PostBriefForm";
 import { PostDraftReview } from "@/components/dashboard/PostDraftReview";
@@ -24,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLatestAgentRun } from "@/hooks/useAutomation";
 import { useLayoutParam } from "@/hooks/useLayoutParam";
 import { usePostDrafts } from "@/hooks/usePostAgent";
+import { useStories } from "@/hooks/useStoryAgent";
 import { formatDateShort } from "@/lib/dateFormat";
 import { isRunWorthWatching } from "@/types/accountGroup";
 import {
@@ -45,6 +47,7 @@ import {
   Plus,
   Sparkles,
   X,
+  BookOpen,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -69,7 +72,7 @@ const COMPOSERS = [
   },
 ] as const;
 
-const VIEWS = ["posts", "drafts", "review"] as const;
+const VIEWS = ["posts", "drafts", "stories", "review"] as const;
 type StudioView = (typeof VIEWS)[number];
 
 const isStudioView = (value: string | null): value is StudioView =>
@@ -97,7 +100,7 @@ function ViewTab({
       value={value}
       className="group h-9 min-w-0 gap-1.5 rounded-md px-2 sm:gap-2 sm:px-3.5 data-[state=active]:shadow-sm"
     >
-      <Icon className="h-4 w-4 shrink-0 opacity-70 group-data-[state=active]:opacity-100" />
+      <Icon className="hidden h-4 w-4 shrink-0 opacity-70 sm:block group-data-[state=active]:opacity-100" />
       <span className="lg:hidden">{shortLabel}</span>
       <span className="hidden lg:inline">{label}</span>
       {count !== undefined && count > 0 && (
@@ -173,7 +176,14 @@ function DraftCard({ draft, onOpenSlides }: DraftCardProps) {
       mediaLabel={hasSlides ? "View slides full size" : "No slides rendered"}
       onMediaClick={hasSlides ? onOpenSlides : undefined}
       topLeft={
-        <Badge variant={STATUS_VARIANT[draft.status]} className="shadow-sm">
+        <Badge
+          variant={STATUS_VARIANT[draft.status]}
+          className={cn(
+            "shadow-sm",
+            STATUS_VARIANT[draft.status] === "outline" &&
+              "bg-background/85 backdrop-blur",
+          )}
+        >
           {STATUS_LABELS[draft.status]}
         </Badge>
       }
@@ -238,6 +248,7 @@ function HistoryRow({
 const Studio = () => {
   const review = usePostDrafts({ status: REVIEW_STATUS, limit: 20 });
   const recent = usePostDrafts({ limit: 20 });
+  const storyTotal = useStories({ page: 1, limit: 12 }).data?.total;
   const { run } = useLatestAgentRun();
   const [composer, setComposer] = useState<string>("agent");
   // The queue is what you came for; composing is a deliberate act, so it starts
@@ -427,7 +438,7 @@ const Studio = () => {
       )}
 
       <Tabs value={view} onValueChange={setView}>
-        <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-lg sm:inline-flex sm:w-auto border border-border/50 bg-muted/60 p-1">
+        <TabsList className="grid h-auto w-full grid-cols-4 gap-1 rounded-lg sm:inline-flex sm:w-auto border border-border/50 bg-muted/60 p-1">
           <ViewTab
             value="posts"
             label="Everything published"
@@ -440,6 +451,13 @@ const Studio = () => {
             shortLabel="Drafts"
             icon={FileText}
             count={history.length}
+          />
+          <ViewTab
+            value="stories"
+            label="Stories"
+            shortLabel="Stories"
+            icon={BookOpen}
+            count={storyTotal}
           />
           <ViewTab
             value="review"
@@ -584,6 +602,10 @@ const Studio = () => {
                 ))}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="stories" className="mt-4">
+          <StoriesPanel />
         </TabsContent>
 
         <TabsContent value="posts" className="mt-4">

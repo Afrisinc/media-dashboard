@@ -11,6 +11,7 @@ interface PostMediaPreviewProps {
     "mediaUrls" | "mediaType" | "altText" | "message"
   >;
   variant?: "cover" | "thumb";
+  emptyLabel?: string;
   className?: string;
 }
 
@@ -23,6 +24,7 @@ const Chip = ({ children }: { children: React.ReactNode }) => (
 export function PostMediaPreview({
   post,
   variant = "cover",
+  emptyLabel = "Text post",
   className,
 }: PostMediaPreviewProps) {
   const [failed, setFailed] = useState(false);
@@ -51,7 +53,7 @@ export function PostMediaPreview({
         )}
         {!isThumb && (
           <span className="text-[11px] font-medium uppercase tracking-wide">
-            {failed ? "Image unavailable" : "Text post"}
+            {failed ? "Image unavailable" : emptyLabel}
           </span>
         )}
       </div>

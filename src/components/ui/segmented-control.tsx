@@ -1,8 +1,9 @@
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface SegmentedControlProps<T extends string> {
-  options: { label: string; value: T }[];
+  options: { label: string; value: T; icon?: LucideIcon }[];
   value: T;
   // NoInfer keeps a `Dispatch<SetStateAction<T>>` handler from widening T to
   // string: SetStateAction includes an updater function, which is not a string,
@@ -30,10 +31,11 @@ export function SegmentedControl<T extends string>({
           type="button"
           variant={value === option.value ? "default" : "ghost"}
           size="sm"
-          className="shrink-0"
+          className={cn("shrink-0", option.icon && "gap-1.5")}
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
         >
+          {option.icon && <option.icon className="h-4 w-4" />}
           {option.label}
         </Button>
       ))}

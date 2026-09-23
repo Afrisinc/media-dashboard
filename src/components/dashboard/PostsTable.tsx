@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useSocialMediaPosts } from "@/hooks/useSocialMediaPosts";
 import {
   useDeleteSocialMediaPost,
@@ -33,6 +33,10 @@ import {
   Send,
   Repeat,
   ZoomIn,
+  Plus,
+  Images,
+  SearchX,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SocialMediaPost } from "@/hooks/useSocialMediaPosts";
@@ -40,6 +44,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PlatformIcon } from "@/components/ui/platform-icon";
 import { MediaLightbox } from "./MediaLightbox";
 import { DataTable, type ColumnConfig } from "@/components/data-table";
+import { EmptyState } from "@/components/ui/empty-state";
+import { IconBox } from "@/components/ui/icon-box";
+import { MediaCard, MediaCardOverlayChip } from "@/components/ui/media-card";
+import { useLayoutParam } from "@/hooks/useLayoutParam";
+import { LayoutToggle } from "./LayoutToggle";
+import { isVideoUrl } from "@/lib/media";
+import { PostMediaPreview } from "./PostMediaPreview";
 
 const statusConfig = {
   pending: {
@@ -119,6 +130,97 @@ const PostFormatBadge = ({ postFormat }: { postFormat?: string | null }) => {
   );
 };
 
+const PostStatusBadge = ({
+  status,
+  className,
+}: {
+  status: string;
+  className?: string;
+}) => {
+  const entry = statusConfig[status as keyof typeof statusConfig];
+  const StatusIcon = entry?.icon || Clock;
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "flex items-center gap-1.5 w-fit font-medium border",
+        entry?.className || "",
+        className,
+      )}
+    >
+      <StatusIcon className="w-3 h-3" />
+      {entry?.label || "Unknown"}
+    </Badge>
+  );
+};
+
+const AiGeneratedMark = () => (
+  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary">
+    <Sparkles className="h-3 w-3" />
+    AI generated
+  </span>
+);
+
+const hasViewableImages = (post: SocialMediaPost) =>
+  (post.mediaUrls ?? []).some((url) => !isVideoUrl(url, post.mediaType));
+
+const whenLabel = (post: SocialMediaPost) => {
+  if (post.publishedAt) {
+    return `Published ${format(new Date(post.publishedAt), "MMM d, HH:mm")}`;
+  }
+  if (post.scheduledAt) {
+    return `Scheduled ${format(new Date(post.scheduledAt), "MMM d, HH:mm")}`;
+  }
+  return `Created ${format(new Date(post.createdAt), "MMM d, HH:mm")}`;
+};
+
+const PAGE_SIZE = 12;
+
+interface PostGalleryCardProps {
+  post: SocialMediaPost;
+  actions: React.ReactNode;
+  onOpenMedia: () => void;
+  onOpenDetails: () => void;
+}
+
+const PostGalleryCard = ({
+  post,
+  actions,
+  onOpenMedia,
+  onOpenDetails,
+}: PostGalleryCardProps) => (
+  <MediaCard
+    media={<PostMediaPreview post={post} />}
+    mediaLabel={
+      hasViewableImages(post) ? "View images full size" : "View post details"
+    }
+    onMediaClick={onOpenMedia}
+    topLeft={
+      <PostStatusBadge
+        status={post.status}
+        className="bg-background/85 shadow-sm backdrop-blur"
+      />
+    }
+    topRight={
+      <MediaCardOverlayChip className="h-7 w-7">
+        <PlatformIcon platform={post.platform} />
+        <span className="sr-only">{post.platform}</span>
+      </MediaCardOverlayChip>
+    }
+    title={post.message || "(No message)"}
+    onTitleClick={onOpenDetails}
+    meta={
+      <>
+        <PostFormatBadge postFormat={post.postFormat} />
+        {post.aiGenerated && <AiGeneratedMark />}
+      </>
+    }
+    caption={whenLabel(post)}
+    footer={actions}
+  />
+);
+
 interface DateTimeCellProps {
   value?: string | null;
 }
@@ -152,7 +254,11 @@ const DetailField = ({ label, children, className }: DetailFieldProps) => (
   </div>
 );
 
-const PostsTable = () => {
+interface PostsTableProps {
+  onCreate?: () => void;
+}
+
+const PostsTable = ({ onCreate }: PostsTableProps = {}) => {
   const [selectedPost, setSelectedPost] = useState<SocialMediaPost | null>(
     null,
   );
@@ -165,10 +271,14 @@ const PostsTable = () => {
     useState<SocialMediaPost | null>(null);
   const [publishingPostId, setPublishingPostId] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxPost, setLightboxPost] = useState<SocialMediaPost | null>(
+    null,
+  );
+  const [layout, setLayout] = useLayoutParam();
 
   const [query, setQuery] = useState({
     page: 1,
-    limit: 10,
+    limit: PAGE_SIZE,
     search: "",
     filters: {} as Record<string, string>,
     sortBy: undefined as string | undefined,
@@ -189,14 +299,131 @@ const PostsTable = () => {
 
   const posts = data?.posts || [];
   const total = data?.total || 0;
+  const filtered = !!query.search || Object.values(query.filters).some(Boolean);
 
-  const columns = useMemo<ColumnConfig<SocialMediaPost>[]>(
-    () => [
-      {
-        key: "message",
-        label: "Message",
-        render: (_value, post) => (
-          <div className="space-y-1 max-w-xs">
+  const openMedia = (post: SocialMediaPost) => {
+    if (!hasViewableImages(post)) {
+      setSelectedPost(post);
+      return;
+    }
+    setLightboxPost(post);
+    setCurrentImageIndex(0);
+    setLightboxOpen(true);
+  };
+
+  const renderActions = (post: SocialMediaPost) => (
+    <div className="flex justify-end gap-1">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => setSelectedPost(post)}
+        title="View details"
+        aria-label="View details"
+      >
+        <Eye className="w-4 h-4" />
+      </Button>
+      {post.status === "pending" && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setEditingPost(post)}
+            title="Edit post"
+            aria-label="Edit post"
+          >
+            <Edit2 className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-emerald hover:text-emerald/80"
+            onClick={() => {
+              setPublishingPostId(post.id);
+              publishPostMutation.mutate(post.id);
+            }}
+            disabled={
+              publishingPostId === post.id && publishPostMutation.isPending
+            }
+            title="Publish now"
+            aria-label="Publish now"
+          >
+            {publishingPostId === post.id && publishPostMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </Button>
+        </>
+      )}
+      {post.status === "failed" && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-amber hover:text-amber/80"
+          onClick={() => {
+            setPublishingPostId(post.id);
+            publishPostMutation.mutate(post.id);
+          }}
+          disabled={
+            publishingPostId === post.id && publishPostMutation.isPending
+          }
+          title="Retry publish"
+          aria-label="Retry publish"
+        >
+          {publishingPostId === post.id && publishPostMutation.isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+        </Button>
+      )}
+      {post.status === "published" && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-primary hover:text-primary/80"
+          onClick={() => setRepostingPost(post)}
+          title="Repost"
+          aria-label="Repost"
+        >
+          <Repeat className="w-4 h-4" />
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-destructive hover:text-destructive"
+        onClick={() => setDeleteConfirmPost(post)}
+        disabled={deletePostMutation.isPending}
+        title="Delete post"
+        aria-label="Delete post"
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+
+  const columns: ColumnConfig<SocialMediaPost>[] = [
+    {
+      key: "message",
+      label: "Post",
+      render: (_value, post) => (
+        <div className="flex max-w-sm items-start gap-3">
+          <button
+            type="button"
+            onClick={() => openMedia(post)}
+            className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={
+              hasViewableImages(post)
+                ? "View images full size"
+                : "View post details"
+            }
+          >
+            <PostMediaPreview post={post} variant="thumb" />
+          </button>
+          <div className="min-w-0 space-y-1">
             <p className="font-medium text-foreground line-clamp-2">
               {post.message || "(No message)"}
             </p>
@@ -214,195 +441,84 @@ const PostsTable = () => {
                   : post.link}
               </a>
             )}
-            {post.aiGenerated && (
-              <Badge variant="secondary" className="w-fit text-xs">
-                AI Generated
-              </Badge>
-            )}
+            {post.aiGenerated && <AiGeneratedMark />}
           </div>
-        ),
-      },
-      {
-        key: "platform",
-        label: "Platform",
-        filterable: true,
-        filterType: "select",
-        filterOptions: PLATFORM_FILTER_OPTIONS,
-        render: (_value, post) => (
-          <div className="flex items-center gap-2">
-            <PlatformIcon platform={post.platform} />
-            <span className="text-sm capitalize">{post.platform}</span>
-          </div>
-        ),
-      },
-      {
-        key: "postFormat",
-        hideBelow: "2xl",
-        label: "Format",
-        render: (_value, post) => (
-          <PostFormatBadge postFormat={post.postFormat} />
-        ),
-      },
-      {
-        key: "status",
-        label: "Status",
-        filterable: true,
-        filterType: "select",
-        filterOptions: STATUS_FILTER_OPTIONS,
-        render: (_value, post) => {
-          const status = statusConfig[post.status as keyof typeof statusConfig];
-          const StatusIcon = status?.icon || Clock;
-
-          return (
-            <Badge
-              variant="outline"
-              className={cn(
-                "flex items-center gap-1.5 w-fit font-medium border",
-                status?.className || "",
-              )}
-            >
-              <StatusIcon className="w-3 h-3" />
-              {status?.label || "Unknown"}
-            </Badge>
-          );
-        },
-      },
-      {
-        key: "createdAt",
-        hideBelow: "2xl",
-        label: "Created",
-        sortable: true,
-        render: (_value, post) => <DateTimeCell value={post.createdAt} />,
-      },
-      {
-        key: "scheduledAt",
-        label: "Scheduled",
-        sortable: true,
-        render: (_value, post) => <DateTimeCell value={post.scheduledAt} />,
-      },
-      {
-        key: "publishedAt",
-        label: "Published",
-        sortable: true,
-        render: (_value, post) => <DateTimeCell value={post.publishedAt} />,
-      },
-      {
-        key: "actions",
-        label: "Actions",
-        align: "right",
-        mobilePlacement: "footer",
-        render: (_value, post) => (
-          <div className="flex justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setSelectedPost(post)}
-              title="View details"
-              aria-label="View details"
-            >
-              <Eye className="w-4 h-4" />
-            </Button>
-            {post.status === "pending" && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setEditingPost(post)}
-                  title="Edit post"
-                  aria-label="Edit post"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-emerald hover:text-emerald/80"
-                  onClick={() => {
-                    setPublishingPostId(post.id);
-                    publishPostMutation.mutate(post.id);
-                  }}
-                  disabled={
-                    publishingPostId === post.id &&
-                    publishPostMutation.isPending
-                  }
-                  title="Publish now"
-                  aria-label="Publish now"
-                >
-                  {publishingPostId === post.id &&
-                  publishPostMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </Button>
-              </>
-            )}
-            {post.status === "failed" && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-amber hover:text-amber/80"
-                onClick={() => {
-                  setPublishingPostId(post.id);
-                  publishPostMutation.mutate(post.id);
-                }}
-                disabled={
-                  publishingPostId === post.id && publishPostMutation.isPending
-                }
-                title="Retry publish"
-                aria-label="Retry publish"
-              >
-                {publishingPostId === post.id &&
-                publishPostMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
-            )}
-            {post.status === "published" && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-primary hover:text-primary/80"
-                onClick={() => setRepostingPost(post)}
-                title="Repost"
-                aria-label="Repost"
-              >
-                <Repeat className="w-4 h-4" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => setDeleteConfirmPost(post)}
-              disabled={deletePostMutation.isPending}
-              title="Delete post"
-              aria-label="Delete post"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        ),
-      },
-    ],
-    [publishingPostId, publishPostMutation, deletePostMutation.isPending],
-  );
+        </div>
+      ),
+    },
+    {
+      key: "platform",
+      label: "Platform",
+      filterable: true,
+      filterType: "select",
+      filterOptions: PLATFORM_FILTER_OPTIONS,
+      render: (_value, post) => (
+        <div className="flex items-center gap-2">
+          <PlatformIcon platform={post.platform} />
+          <span className="text-sm capitalize">{post.platform}</span>
+        </div>
+      ),
+    },
+    {
+      key: "postFormat",
+      hideBelow: "2xl",
+      label: "Format",
+      render: (_value, post) => (
+        <PostFormatBadge postFormat={post.postFormat} />
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      filterable: true,
+      filterType: "select",
+      filterOptions: STATUS_FILTER_OPTIONS,
+      render: (_value, post) => <PostStatusBadge status={post.status} />,
+    },
+    {
+      key: "createdAt",
+      hideBelow: "2xl",
+      label: "Created",
+      sortable: true,
+      render: (_value, post) => <DateTimeCell value={post.createdAt} />,
+    },
+    {
+      key: "scheduledAt",
+      label: "Scheduled",
+      sortable: true,
+      render: (_value, post) => <DateTimeCell value={post.scheduledAt} />,
+    },
+    {
+      key: "publishedAt",
+      label: "Published",
+      sortable: true,
+      render: (_value, post) => <DateTimeCell value={post.publishedAt} />,
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      align: "right",
+      mobilePlacement: "footer",
+      render: (_value, post) => renderActions(post),
+    },
+  ];
 
   return (
     <Card className="border-border/50">
       <CardContent className="space-y-4 p-4 sm:p-6">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-muted">
-            <LayoutList className="w-4 h-4 text-muted-foreground" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <IconBox icon={LayoutList} size="sm" />
+            <div className="min-w-0">
+              <h3 className="font-semibold text-foreground">Posts</h3>
+              <p className="text-sm text-muted-foreground">
+                {isLoading
+                  ? "Loading…"
+                  : `${total.toLocaleString()} ${total === 1 ? "post" : "posts"}${filtered ? " match" : ""}`}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Recent Posts</h3>
-            <p className="text-sm text-muted-foreground">{total} total posts</p>
-          </div>
+          <LayoutToggle value={layout} onChange={setLayout} />
         </div>
 
         <DataTable<SocialMediaPost>
@@ -426,9 +542,42 @@ const PostsTable = () => {
           rowKey="id"
           searchPlaceholder="Search posts by message, caption or link..."
           emptyMessage="No posts yet. Create your first post using the form above."
-          pageSize={10}
+          emptyState={
+            filtered ? (
+              <EmptyState
+                icon={SearchX}
+                title="No posts match"
+                description="Try a different search, or clear the platform and status filters."
+              />
+            ) : (
+              <EmptyState
+                icon={Images}
+                title="No posts yet"
+                description="Posts you publish or schedule show up here with their images."
+                action={
+                  onCreate && (
+                    <Button onClick={onCreate}>
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      Create post
+                    </Button>
+                  )
+                }
+              />
+            )
+          }
+          pageSize={PAGE_SIZE}
           mobileLayout="cards"
           cardsBelow="xl"
+          chrome="plain"
+          layout={layout === "grid" ? "grid" : "table"}
+          renderGridItem={(post) => (
+            <PostGalleryCard
+              post={post}
+              actions={renderActions(post)}
+              onOpenMedia={() => openMedia(post)}
+              onOpenDetails={() => setSelectedPost(post)}
+            />
+          )}
         />
       </CardContent>
 
@@ -468,7 +617,7 @@ const PostsTable = () => {
                     </div>
                   </DetailField>
                   <DetailField label="Status">
-                    <Badge variant="outline">{selectedPost.status}</Badge>
+                    <PostStatusBadge status={selectedPost.status} />
                   </DetailField>
                 </div>
 
@@ -510,7 +659,10 @@ const PostsTable = () => {
                       <div className="relative bg-muted rounded-lg overflow-hidden group">
                         <button
                           type="button"
-                          onClick={() => setLightboxOpen(true)}
+                          onClick={() => {
+                            setLightboxPost(selectedPost);
+                            setLightboxOpen(true);
+                          }}
                           className="w-full block relative cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
                           aria-label={`Open image ${currentImageIndex + 1} full size`}
                         >
@@ -693,7 +845,7 @@ const PostsTable = () => {
       />
 
       <MediaLightbox
-        images={selectedPost?.mediaUrls ?? []}
+        images={lightboxPost?.mediaUrls ?? []}
         index={currentImageIndex}
         open={lightboxOpen}
         onOpenChange={setLightboxOpen}

@@ -66,6 +66,10 @@ export interface DataTableProps<T> {
   mobileLayout?: "table" | "cards";
   /** Breakpoint below which `mobileLayout="cards"` applies. Defaults to "md". */
   cardsBelow?: "md" | "lg" | "xl";
+  layout?: "table" | "grid";
+  renderGridItem?: (row: T) => ReactNode;
+  chrome?: "cards" | "plain";
+  emptyState?: ReactNode;
 }
 
 export interface FilterBarProps<T = Record<string, unknown>> {
@@ -79,6 +83,7 @@ export interface FilterBarProps<T = Record<string, unknown>> {
   filterableColumns?: ColumnConfig<T>[];
   enableSearch?: boolean;
   searchPlaceholder?: string;
+  inline?: boolean;
 }
 
 export interface ExportDropdownProps {

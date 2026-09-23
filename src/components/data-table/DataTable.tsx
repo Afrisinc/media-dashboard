@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MEDIA_CARD_GRID } from "@/components/ui/media-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { FilterBar } from "./FilterBar";
@@ -52,6 +53,10 @@ export function DataTable<T extends Record<string, unknown>>({
   pageSize = 10,
   mobileLayout = "table",
   cardsBelow = "md",
+  layout = "table",
+  renderGridItem,
+  chrome = "cards",
+  emptyState,
 }: DataTableProps<T>) {
   const [query, setQuery] = useState<DataTableQuery>({
     page: 1,
@@ -131,6 +136,9 @@ export function DataTable<T extends Record<string, unknown>>({
     return value?.toString() || "—";
   };
 
+  const showGrid = layout === "grid" && !!renderGridItem;
+  const plain = chrome === "plain";
+
   const mobilePlacement = (column: (typeof columns)[0], index: number) =>
     column.mobilePlacement ?? (index === 0 ? "title" : "field");
   const mobileColumns = (placement: "title" | "field" | "footer") =>
@@ -141,8 +149,8 @@ export function DataTable<T extends Record<string, unknown>>({
   return (
     <div className="space-y-4">
       {/* Filter Bar */}
-      <Card>
-        <CardContent className="p-4">
+      <Card className={cn(plain && "border-0 bg-transparent shadow-none")}>
+        <CardContent className={cn("p-4", plain && "p-0")}>
           <div className="flex flex-col sm:flex-row justify-between gap-3">
             <div className="min-w-0 flex-1">
               <FilterBar
@@ -160,6 +168,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 filterableColumns={filterableColumns}
                 enableSearch={enableSearch}
                 searchPlaceholder={searchPlaceholder}
+                inline={plain}
               />
             </div>
             {enableExport && (
@@ -175,18 +184,38 @@ export function DataTable<T extends Record<string, unknown>>({
       </Card>
 
       {/* Data Table */}
-      <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-base">
-            Total: {total.toLocaleString()} {total === 1 ? "record" : "records"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+      <Card className={cn(plain && "border-0 bg-transparent shadow-none")}>
+        {!plain && (
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base">
+              Total: {total.toLocaleString()}{" "}
+              {total === 1 ? "record" : "records"}
+            </CardTitle>
+          </CardHeader>
+        )}
+        <CardContent
+          className={cn("p-4 pt-0 sm:p-6 sm:pt-0", plain && "p-0 sm:p-0")}
+        >
           {error ? (
             <div className="text-center py-12">
               <p className="text-destructive">
                 Error loading data: {error.message}
               </p>
+            </div>
+          ) : loading && showGrid ? (
+            <div className={MEDIA_CARD_GRID}>
+              {Array.from({ length: pageSize }).map((_, i) => (
+                <div
+                  key={i}
+                  className="overflow-hidden rounded-xl border border-border/60"
+                >
+                  <Skeleton className="aspect-[4/5] w-full rounded-none" />
+                  <div className="space-y-2 p-3">
+                    <Skeleton className="h-4 w-4/5" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : loading ? (
             <div className="space-y-3">
@@ -195,12 +224,27 @@ export function DataTable<T extends Record<string, unknown>>({
               ))}
             </div>
           ) : data.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {emptyMessage}
-            </div>
+            (emptyState ?? (
+              <div className="text-center py-12 text-muted-foreground">
+                {emptyMessage}
+              </div>
+            ))
           ) : (
             <>
-              {mobileLayout === "cards" && (
+              {showGrid && (
+                <ul className={MEDIA_CARD_GRID}>
+                  {data.map((row) => (
+                    <li
+                      key={String(row[rowKey as keyof T])}
+                      className="min-w-0"
+                    >
+                      {renderGridItem(row)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {!showGrid && mobileLayout === "cards" && (
                 <ul
                   className={cn(
                     "grid grid-cols-1 gap-3 md:grid-cols-2",
@@ -248,6 +292,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
               <div
                 className={cn(
+                  showGrid && "hidden",
                   mobileLayout === "cards" && CARD_BREAKPOINT[cardsBelow].table,
                 )}
               >

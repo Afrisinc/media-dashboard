@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -6,6 +7,7 @@ interface EmptyStateProps {
   title?: string;
   description?: string;
   variant?: "default" | "compact";
+  action?: ReactNode;
   className?: string;
 }
 
@@ -14,6 +16,7 @@ export function EmptyState({
   title,
   description,
   variant = "default",
+  action,
   className,
 }: EmptyStateProps) {
   if (variant === "compact") {
@@ -41,6 +44,7 @@ export function EmptyState({
       {description && (
         <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
       )}
+      {action && <div className="mt-1">{action}</div>}
     </div>
   );
 }

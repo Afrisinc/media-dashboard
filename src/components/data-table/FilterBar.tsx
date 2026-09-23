@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { FilterBarProps, DateRangePreset } from "./types";
 
 export function FilterBar<T>({
@@ -28,6 +29,7 @@ export function FilterBar<T>({
   onColumnFiltersChange,
   filterableColumns = [],
   enableSearch = true,
+  inline = false,
   searchPlaceholder = "Search...",
 }: FilterBarProps<T>) {
   const [searchValue, setSearchValue] = useState(search);
@@ -112,8 +114,13 @@ export function FilterBar<T>({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col sm:flex-row gap-3">
+    <div
+      className={cn(
+        "space-y-3",
+        inline && "lg:flex lg:items-center lg:gap-3 lg:space-y-0",
+      )}
+    >
+      <div className="flex min-w-0 flex-1 flex-col sm:flex-row gap-3">
         {/* Search Input */}
         {enableSearch && (
           <div className="relative flex-1">

@@ -1,15 +1,24 @@
-import { StatStrip, type StripStat } from "@/components/dashboard/StatStrip";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { BarList } from "@/components/ui/bar-list";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ListRow } from "@/components/ui/list-row";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
+import { PlatformIcon } from "@/components/ui/platform-icon";
+import { RankedList } from "@/components/ui/ranked-list";
+import {
+  SectionCard,
+  SectionCardSkeleton,
+  SectionLabel,
+} from "@/components/ui/section-card";
 import { useAnalyticsSummary } from "@/hooks/useAnalytics";
-import { cn } from "@/lib/utils";
-import type { AnalyticsSummary } from "@/services/analyticsService";
-import { BookOpenCheck, Eye, LineChart, Share2, Users } from "lucide-react";
+import { percent, windowStartDate } from "@/lib/analyticsWindow";
+import { compactNumber } from "@/lib/numberFormat";
+import type {
+  AnalyticsSummary,
+  SharePlatform,
+  ViewSource,
+} from "@/services/analyticsService";
+import { BookOpenCheck, Globe } from "lucide-react";
 
-const SOURCE_LABELS: Record<keyof AnalyticsSummary["sources"], string> = {
+const SOURCE_LABELS: Record<ViewSource, string> = {
   direct: "Direct",
   search: "Search",
   social: "Social",
@@ -17,7 +26,7 @@ const SOURCE_LABELS: Record<keyof AnalyticsSummary["sources"], string> = {
   referral: "Referral",
 };
 
-const SHARE_LABELS: Record<keyof AnalyticsSummary["shares"], string> = {
+const SHARE_LABELS: Record<SharePlatform, string> = {
   facebook: "Facebook",
   twitter: "X",
   linkedin: "LinkedIn",
@@ -25,176 +34,180 @@ const SHARE_LABELS: Record<keyof AnalyticsSummary["shares"], string> = {
   other: "Other",
 };
 
-function percent(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+const SHARE_ICON: Record<SharePlatform, string> = {
+  facebook: "facebook",
+  twitter: "x",
+  linkedin: "linkedin",
+  whatsapp: "whatsapp",
+  other: "other",
+};
 
-function Breakdown({
-  title,
-  entries,
-  total,
-}: {
-  title: string;
-  entries: Array<[string, number]>;
-  total: number;
-}) {
-  return (
-    <div>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-dim-5">
-        {title}
-      </p>
-      <div className="mt-2.5 space-y-1.5">
-        {entries.map(([label, value]) => (
-          <div key={label} className="flex items-center gap-3">
-            <span className="w-20 flex-shrink-0 text-xs text-muted-foreground">
-              {label}
-            </span>
-            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-track">
-              <span
-                className="block h-full rounded-full bg-primary"
-                style={{
-                  width: total > 0 ? `${(value / total) * 100}%` : "0%",
-                }}
-              />
-            </span>
-            <span className="w-10 flex-shrink-0 text-right text-xs font-bold tabular-nums">
-              {value}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
+const LOAD_ERROR =
+  "content-service is not answering. Check that it is running.";
+
+function shareTotal(summary: AnalyticsSummary): number {
+  return Object.values(summary.shares).reduce(
+    (total, value) => total + value,
+    0,
   );
 }
 
-export function WebsiteAnalyticsPanel({ days }: { days: number }) {
-  const from = new Date(Date.now() - days * 86400000)
-    .toISOString()
-    .slice(0, 10);
-  const { data, isLoading, isError } = useAnalyticsSummary({ from });
+function useWebsiteSummary(days: number) {
+  return useAnalyticsSummary({ from: windowStartDate(days) });
+}
 
-  if (isLoading) {
-    return <Skeleton className="h-56 w-full" />;
+export function WebsiteTrafficPanel({ days }: Readonly<{ days: number }>) {
+  const query = useWebsiteSummary(days);
+
+  if (query.isLoading) {
+    return <SectionCardSkeleton rows={5} />;
   }
 
-  if (isError || !data) {
+  if (query.isError || !query.data) {
     return (
-      <EmptyState
-        icon={LineChart}
-        title="Could not load analytics"
-        description="content-service is not answering. Check that it is running, then reload."
-      />
+      <SectionCard title="Website traffic" icon={Globe}>
+        <ErrorState
+          title="Could not load website traffic"
+          description={LOAD_ERROR}
+          onRetry={() => query.refetch()}
+          retrying={query.isFetching}
+        />
+      </SectionCard>
     );
   }
 
-  const sources = Object.entries(data.sources) as Array<
-    [keyof AnalyticsSummary["sources"], number]
-  >;
-  const shares = Object.entries(data.shares) as Array<
-    [keyof AnalyticsSummary["shares"], number]
-  >;
-  const shareTotal = shares.reduce((total, [, value]) => total + value, 0);
-
-  const stats: StripStat[] = [
-    { label: "Views", value: String(data.views), icon: Eye },
-    { label: "Unique", value: String(data.uniqueViews), icon: Users },
-    {
-      label: "Read through",
-      value: percent(data.readCompletionRate),
-      icon: BookOpenCheck,
-      tone: data.readCompletionRate >= 0.4 ? "success" : "default",
-    },
-    { label: "Shares", value: String(shareTotal), icon: Share2 },
-    {
-      label: "Published",
-      value: String(data.articlesPublished),
-      icon: LineChart,
-    },
-  ];
-
-  const measured = data.views > 0 || shareTotal > 0;
+  const data = query.data;
+  const shares = shareTotal(data);
+  const sources = (Object.entries(data.sources) as Array<[ViewSource, number]>)
+    .filter(([, value]) => value > 0)
+    .sort((a, b) => b[1] - a[1]);
+  const shareRows = (
+    Object.entries(data.shares) as Array<[SharePlatform, number]>
+  )
+    .filter(([, value]) => value > 0)
+    .sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="space-y-4">
-      <StatStrip stats={stats} />
-
-      {!measured && (
-        <div className="rounded-xl border border-dashed border-border px-5 py-4 text-xs text-muted-foreground">
-          No website readership recorded in this window yet — the site reports
-          views as readers arrive.
+    <SectionCard
+      title="Website traffic"
+      icon={Globe}
+      iconTone="primary"
+      description={`${compactNumber(data.uniqueViews)} unique readers · ${data.articlesPublished} articles published · ${compactNumber(shares)} shares`}
+    >
+      {data.views === 0 && shares === 0 ? (
+        <EmptyState
+          icon={Globe}
+          variant="compact"
+          title="No readership recorded in this window yet. The website reports views as readers arrive."
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-3">
+            <SectionLabel>Where readers came from</SectionLabel>
+            {sources.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No views yet.</p>
+            ) : (
+              <BarList
+                max={data.views}
+                items={sources.map(([key, value]) => ({
+                  key,
+                  label: SOURCE_LABELS[key],
+                  value,
+                  display: compactNumber(value),
+                  meta:
+                    data.views > 0 ? percent(value / data.views) : undefined,
+                }))}
+              />
+            )}
+          </div>
+          <div className="space-y-3">
+            <SectionLabel>Where it was shared</SectionLabel>
+            {shareRows.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No shares yet.</p>
+            ) : (
+              <BarList
+                tone="emerald"
+                max={shares}
+                items={shareRows.map(([key, value]) => ({
+                  key,
+                  label: SHARE_LABELS[key],
+                  value,
+                  display: compactNumber(value),
+                  leading: (
+                    <PlatformIcon
+                      platform={SHARE_ICON[key]}
+                      className="h-3.5 w-3.5"
+                    />
+                  ),
+                }))}
+              />
+            )}
+          </div>
         </div>
       )}
+    </SectionCard>
+  );
+}
 
-      {measured && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card>
-            <CardContent className="space-y-5 pt-6">
-              <Breakdown
-                title="Where readers came from"
-                entries={sources.map(([key, value]) => [
-                  SOURCE_LABELS[key],
-                  value,
-                ])}
-                total={data.views}
-              />
-              <Breakdown
-                title="Where it was shared"
-                entries={shares.map(([key, value]) => [
-                  SHARE_LABELS[key],
-                  value,
-                ])}
-                total={shareTotal}
-              />
-            </CardContent>
-          </Card>
+export function BestReadPanel({ days }: Readonly<{ days: number }>) {
+  const query = useWebsiteSummary(days);
 
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-dim-5">
-                Best read
-              </p>
+  if (query.isLoading) {
+    return <SectionCardSkeleton rows={5} />;
+  }
 
-              {data.topPosts.length === 0 && (
-                <EmptyState
-                  icon={BookOpenCheck}
-                  variant="compact"
-                  title="No post has been read yet in this window."
-                />
-              )}
+  if (query.isError || !query.data) {
+    return (
+      <SectionCard title="Best read on the website" icon={BookOpenCheck}>
+        <ErrorState
+          title="Could not load the best read articles"
+          description={LOAD_ERROR}
+          onRetry={() => query.refetch()}
+          retrying={query.isFetching}
+        />
+      </SectionCard>
+    );
+  }
 
-              <div className="mt-2.5 space-y-1.5">
-                {data.topPosts.map((row) => (
-                  <ListRow
-                    key={row.mediaPostId}
-                    className="rounded-lg border border-border bg-inset px-3 py-2"
-                  >
-                    <div className="min-w-[120px] flex-1">
-                      <p className="truncate text-xs font-bold">
-                        {row.post?.title ?? "Untitled"}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-dim-5">
-                        {row.uniqueViews} unique · {percent(row.completionRate)}{" "}
-                        read through
-                      </p>
-                    </div>
-                    <Badge variant="secondary" className="flex-shrink-0">
-                      {row.views} views
-                    </Badge>
-                    <span
-                      className={cn(
-                        "w-12 flex-shrink-0 text-right text-xs tabular-nums",
-                        row.shares > 0 ? "text-emerald" : "text-dim-6",
-                      )}
-                    >
-                      {row.shares} ↗
-                    </span>
-                  </ListRow>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+  const posts = query.data.topPosts;
+
+  return (
+    <SectionCard
+      title="Best read on the website"
+      icon={BookOpenCheck}
+      iconTone="success"
+      description="Ranked by views in this window"
+    >
+      {posts.length === 0 ? (
+        <EmptyState
+          icon={BookOpenCheck}
+          variant="compact"
+          title="No article has been read in this window yet."
+        />
+      ) : (
+        <RankedList
+          items={posts.map((row) => ({
+            key: row.mediaPostId,
+            title: row.post?.title ?? "Untitled",
+            meta: [
+              `${compactNumber(row.uniqueViews)} unique`,
+              `${percent(row.completionRate)} read through`,
+              `${compactNumber(row.shares)} shares`,
+            ].join(" · "),
+            value: compactNumber(row.views),
+            valueLabel: "views",
+          }))}
+        />
       )}
+    </SectionCard>
+  );
+}
+
+export function WebsiteAnalyticsPanel({ days }: Readonly<{ days: number }>) {
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <WebsiteTrafficPanel days={days} />
+      <BestReadPanel days={days} />
     </div>
   );
 }

@@ -1,7 +1,10 @@
 import {
   Facebook,
+  Globe,
   Instagram,
   Linkedin,
+  MessageCircle,
+  Music2,
   Twitter,
   Youtube,
   LayoutList,
@@ -17,6 +20,10 @@ const platformConfig: Record<string, { Icon: LucideIcon; className: string }> =
     youtube: { Icon: Youtube, className: "text-platform-youtube" },
     // X has no brand hue of its own — it reads as ink, so it must follow the theme.
     twitter: { Icon: Twitter, className: "text-foreground" },
+    x: { Icon: Twitter, className: "text-foreground" },
+    tiktok: { Icon: Music2, className: "text-platform-tiktok" },
+    whatsapp: { Icon: MessageCircle, className: "text-platform-whatsapp" },
+    website: { Icon: Globe, className: "text-emerald" },
   };
 
 const fallback = { Icon: LayoutList, className: "text-muted-foreground" };

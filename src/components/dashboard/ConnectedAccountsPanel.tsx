@@ -1,32 +1,37 @@
+import type { ReactNode } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/ui/error-state";
+import { PlatformIcon } from "@/components/ui/platform-icon";
+import { SectionCard, SectionCardSkeleton } from "@/components/ui/section-card";
 import { useConnectedAccounts } from "@/hooks/useAnalytics";
+import { windowStartDate } from "@/lib/analyticsWindow";
 import { formatDateProfessional } from "@/lib/dateFormat";
 import { compactNumber } from "@/lib/numberFormat";
+import { platformLabel } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
 import type { ConnectedAccount } from "@/services/analyticsService";
-import { TrendingDown, TrendingUp, Users } from "lucide-react";
+import { Plus, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const PLATFORM_LABEL: Record<string, string> = {
-  facebook: "Facebook",
-  instagram: "Instagram",
-  tiktok: "TikTok",
-  youtube: "YouTube",
-  linkedin: "LinkedIn",
-  x: "X",
-  twitter: "X",
-  website: "Website",
-};
+const METRIC_GRID =
+  "grid grid-cols-3 gap-x-4 gap-y-3 sm:grid-cols-5 lg:flex-shrink-0 lg:grid-cols-[8.5rem_3.5rem_4.5rem_5.5rem_4.5rem]";
+
+const METRIC_COLUMNS = [
+  "Followers",
+  "Posts",
+  "Reach",
+  "Engagement",
+  "Eng. rate",
+] as const;
 
 function initials(name: string | null, platform: string): string {
-  const source = name?.trim() || platform;
+  const source = (name ?? platform).replace(/^@/, "").trim() || platform;
   return source.slice(0, 2).toUpperCase();
 }
 
-function FollowerDelta({ change }: { change: number | null }) {
+function FollowerDelta({ change }: Readonly<{ change: number | null }>) {
   if (change === null || change === 0) {
     return null;
   }
@@ -36,136 +41,169 @@ function FollowerDelta({ change }: { change: number | null }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-[11px] font-bold tabular-nums",
+        "inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums",
         change > 0 ? "text-emerald" : "text-destructive",
       )}
+      title={`${change > 0 ? "+" : ""}${change.toLocaleString()} followers in this window`}
     >
-      <Icon className="h-3 w-3" />
+      <Icon className="h-3 w-3" aria-hidden />
       {change > 0 ? "+" : ""}
       {compactNumber(change)}
     </span>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function AccountMetric({
+  label,
+  children,
+}: Readonly<{
+  label: string;
+  children: ReactNode;
+}>) {
   return (
-    <div>
-      <p className="text-[10px] font-extrabold uppercase tracking-wider text-dim-5">
+    <div className="min-w-0">
+      <dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground lg:sr-only">
         {label}
-      </p>
-      <p className="mt-0.5 text-sm font-bold tabular-nums">{value}</p>
+      </dt>
+      <dd className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-sm font-semibold tabular-nums lg:mt-0 lg:flex-nowrap">
+        {children}
+      </dd>
     </div>
   );
 }
 
-function AccountRow({ account }: { account: ConnectedAccount }) {
+function AccountRow({ account }: Readonly<{ account: ConnectedAccount }>) {
   const rate =
     account.reach > 0
-      ? Math.round((account.engagements / account.reach) * 100)
-      : null;
+      ? `${Math.round((account.engagements / account.reach) * 100)}%`
+      : "—";
+  const name = account.pageName ?? account.pageId;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-border bg-card px-4 py-3">
-      <div className="flex min-w-[180px] flex-1 items-center gap-3">
-        <Avatar className="h-9 w-9 flex-shrink-0">
-          {account.pageAvatar && (
-            <AvatarImage src={account.pageAvatar} alt="" />
-          )}
-          <AvatarFallback className="text-[11px]">
-            {initials(account.pageName, account.platform)}
-          </AvatarFallback>
-        </Avatar>
+    <li className="flex flex-col gap-3 py-3.5 lg:flex-row lg:items-center lg:gap-6">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="relative flex-shrink-0">
+          <Avatar className="h-10 w-10">
+            {account.pageAvatar && (
+              <AvatarImage src={account.pageAvatar} alt="" />
+            )}
+            <AvatarFallback className="text-xs font-semibold">
+              {initials(account.pageName, account.platform)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card">
+            <PlatformIcon platform={account.platform} className="h-3 w-3" />
+          </span>
+        </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold">
-            {account.pageName ?? account.pageId}
+          <p className="truncate text-sm font-semibold" title={name}>
+            {name}
           </p>
-          <p className="text-[11px] text-dim-5">
-            {PLATFORM_LABEL[account.platform] ?? account.platform}
-            {!account.metricsSupported && " · not synced yet"}
+          <p className="text-xs text-muted-foreground">
+            {platformLabel(account.platform)}
+            {!account.metricsSupported && " · metrics not synced yet"}
           </p>
         </div>
       </div>
 
-      <div className="min-w-[110px]">
-        <p className="text-[10px] font-extrabold uppercase tracking-wider text-dim-5">
-          Followers
-        </p>
-        <div className="mt-0.5 flex items-center gap-2">
-          <p className="text-sm font-bold tabular-nums">
-            {account.followers === null
-              ? "—"
-              : compactNumber(account.followers)}
-          </p>
+      <dl className={METRIC_GRID}>
+        <AccountMetric label="Followers">
+          {account.followers === null ? "—" : compactNumber(account.followers)}
           <FollowerDelta change={account.followerChange} />
-        </div>
-      </div>
-
-      <Metric label="Posts" value={String(account.posts)} />
-      <Metric label="Reach" value={compactNumber(account.reach)} />
-      <Metric label="Engagement" value={compactNumber(account.engagements)} />
-      <Metric label="Rate" value={rate === null ? "—" : `${rate}%`} />
-    </div>
+        </AccountMetric>
+        <AccountMetric label="Posts">{account.posts}</AccountMetric>
+        <AccountMetric label="Reach">
+          {compactNumber(account.reach)}
+        </AccountMetric>
+        <AccountMetric label="Engagement">
+          {compactNumber(account.engagements)}
+        </AccountMetric>
+        <AccountMetric label="Eng. rate">{rate}</AccountMetric>
+      </dl>
+    </li>
   );
 }
 
-export function ConnectedAccountsPanel({ days }: { days: number }) {
-  const from = new Date(Date.now() - days * 86400000)
-    .toISOString()
-    .slice(0, 10);
-  const { data, isLoading, isError } = useConnectedAccounts({ from });
+export function ConnectedAccountsPanel({ days }: Readonly<{ days: number }>) {
+  const query = useConnectedAccounts({ from: windowStartDate(days) });
 
-  if (isLoading) {
-    return <Skeleton className="h-40 w-full" />;
+  if (query.isLoading) {
+    return <SectionCardSkeleton rows={3} />;
   }
 
-  if (isError || !data) {
+  if (query.isError || !query.data) {
     return (
-      <EmptyState
-        icon={Users}
-        title="Could not load connected accounts"
-        description="content-service is not answering. Check that it is running, then reload."
-      />
+      <SectionCard title="Connected accounts" icon={Users}>
+        <ErrorState
+          title="Could not load connected accounts"
+          description="content-service is not answering. Check that it is running."
+          onRetry={() => query.refetch()}
+          retrying={query.isFetching}
+        />
+      </SectionCard>
     );
   }
 
-  if (data.accounts.length === 0) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <EmptyState
-            icon={Users}
-            title="No account connected yet"
-            description="Install a Facebook page or Instagram account to start tracking how it performs."
-          />
-          <div className="flex justify-center">
-            <Link
-              to="/settings"
-              className="text-xs font-bold text-primary hover:underline"
-            >
-              Connect an account →
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const { accounts, lastSyncedAt } = query.data;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-bold">Connected accounts</p>
-        <p className="text-[11px] text-dim-5">
-          {data.lastSyncedAt
-            ? `Platforms last read ${formatDateProfessional(data.lastSyncedAt, "relative")}`
-            : "Platforms not read back yet — the first sweep runs a day after a post goes out"}
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        {data.accounts.map((account) => (
-          <AccountRow key={account.id} account={account} />
-        ))}
-      </div>
-    </div>
+    <SectionCard
+      title="Connected accounts"
+      icon={Users}
+      iconTone="primary"
+      description={
+        lastSyncedAt
+          ? `Platforms last read ${formatDateProfessional(lastSyncedAt, "relative")}`
+          : "Platforms are first read a day after a post goes out"
+      }
+      action={
+        <Button asChild size="sm" variant="ghost">
+          <Link to="/settings">
+            <Plus className="h-3.5 w-3.5 sm:mr-1" aria-hidden />
+            <span className="sr-only sm:not-sr-only">Connect</span>
+          </Link>
+        </Button>
+      }
+      contentClassName="pt-2"
+    >
+      {accounts.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No account connected yet"
+          description="Connect a Facebook page or Instagram account to start tracking how it performs."
+          action={
+            <Button asChild size="sm">
+              <Link to="/settings">Connect an account</Link>
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          <div
+            className="hidden items-center gap-6 border-b border-border/60 pb-2 lg:flex"
+            aria-hidden
+          >
+            <span className="flex-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Account
+            </span>
+            <div className={METRIC_GRID}>
+              {METRIC_COLUMNS.map((column) => (
+                <span
+                  key={column}
+                  className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                >
+                  {column}
+                </span>
+              ))}
+            </div>
+          </div>
+          <ul className="divide-y divide-border/60">
+            {accounts.map((account) => (
+              <AccountRow key={account.id} account={account} />
+            ))}
+          </ul>
+        </>
+      )}
+    </SectionCard>
   );
 }

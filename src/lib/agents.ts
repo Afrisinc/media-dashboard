@@ -49,8 +49,15 @@ export const isWorkspaceRun = (run: AgentRun) =>
 export const runOwnerLabel = (run: AgentRun) =>
   run.groupName ?? (run.agentKey ? AGENT_NAMES[run.agentKey] : run.agent);
 
+const QUOTED_MESSAGE = /"message"\s*:\s*"((?:[^"\\]|\\.)*)"/;
+
+export function readableError(text: string): string {
+  const message = QUOTED_MESSAGE.exec(text)?.[1];
+  return message ? message.replace(/\\"/g, '"') : text;
+}
+
 export const runOutcome = (run: AgentRun) =>
-  run.errorMessage ??
+  (run.errorMessage ? readableError(run.errorMessage) : null) ??
   [...run.steps].reverse().find((step) => step.detail)?.detail ??
   null;
 
@@ -89,7 +96,11 @@ export function describeLastRun(run: AgentLastRun | null): string {
     run.status === "running"
       ? "Running now"
       : `Last run ${formatDateShort(run.finishedAt ?? run.startedAt)}`;
-  return [when, describeTrigger(run.trigger).toLowerCase(), run.summary]
+  return [
+    when,
+    describeTrigger(run.trigger).toLowerCase(),
+    run.summary ? readableError(run.summary) : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 }

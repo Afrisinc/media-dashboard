@@ -50,6 +50,8 @@ import {
   AlertTriangle,
   BookOpen,
   Bot,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Hand,
   History,
   Inbox,
@@ -67,6 +69,29 @@ const AGENT_KEYS: AgentKey[] = [
 ];
 
 const RECENT_LIMIT = 8;
+
+const EXPANDED_STORAGE_KEY = "agents:expanded";
+
+function readExpanded(): AgentKey[] {
+  try {
+    const parsed: unknown = JSON.parse(
+      localStorage.getItem(EXPANDED_STORAGE_KEY) ?? "[]",
+    );
+    return Array.isArray(parsed)
+      ? AGENT_KEYS.filter((key) => parsed.includes(key))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveExpanded(keys: AgentKey[]) {
+  try {
+    localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify(keys));
+  } catch {
+    return;
+  }
+}
 
 function countBy(drafts: PostDraft[], status: PostDraftStatus): number {
   return drafts.filter((draft) => draft.status === status).length;
@@ -172,9 +197,9 @@ const RECENT_EMPTY = "text-sm text-muted-foreground py-2";
 
 function AgentsSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-      {[0, 1, 2, 3].map((key) => (
-        <Skeleton key={key} className="h-72 w-full rounded-xl" />
+    <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
+      {AGENT_KEYS.map((key) => (
+        <Skeleton key={key} className="h-[104px] w-full rounded-xl" />
       ))}
     </div>
   );
@@ -215,6 +240,13 @@ const DashboardAgents = () => {
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<AgentKey[]>(readExpanded);
+
+  const updateExpanded = (next: AgentKey[]) => {
+    setExpanded(next);
+    saveExpanded(next);
+  };
+  const allExpanded = expanded.length === AGENT_KEYS.length;
 
   const drafts = data?.items ?? [];
   const stories = storyData?.items ?? [];
@@ -312,6 +344,15 @@ const DashboardAgents = () => {
       lastRun: describeLastRun(agent?.lastRun ?? null),
       lastRunFailed: agent?.lastRun?.status === "failed",
       runsLink: `/automation?agent=${key}`,
+      expanded: expanded.includes(key),
+      onExpandedChange: (open: boolean) =>
+        updateExpanded(
+          open
+            ? AGENT_KEYS.filter(
+                (item) => item === key || expanded.includes(item),
+              )
+            : expanded.filter((item) => item !== key),
+        ),
     };
   };
 
@@ -352,7 +393,29 @@ const DashboardAgents = () => {
       {agentsQuery.isLoading && <AgentsSkeleton />}
 
       {agentsQuery.data && (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {runningCount} of {agents.length} agents on. Open an agent for its
+            numbers, schedule and recent work.
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-shrink-0"
+            onClick={() => updateExpanded(allExpanded ? [] : AGENT_KEYS)}
+          >
+            {allExpanded ? (
+              <ChevronsDownUp className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <ChevronsUpDown className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+            )}
+            {allExpanded ? "Collapse all" : "Expand all"}
+          </Button>
+        </div>
+      )}
+
+      {agentsQuery.data && (
+        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
           <AgentControlCard
             {...cardFor("post")}
             metrics={[

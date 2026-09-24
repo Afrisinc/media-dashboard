@@ -14,6 +14,7 @@ import {
   AGENT_ICONS,
   describeTrigger,
   isWorkspaceRun,
+  readableError,
   runOutcome,
   runOwnerLabel,
 } from "@/lib/agents";
@@ -90,7 +91,7 @@ export function AgentRunRow({ run }: { run: AgentRun }) {
               : workspace
                 ? (runOutcome(run) ?? describeTrigger(run.trigger))
                 : run.errorMessage
-                  ? run.errorMessage
+                  ? readableError(run.errorMessage)
                   : `${progress}% · ${run.steps.length} stages`}
           </p>
         </div>

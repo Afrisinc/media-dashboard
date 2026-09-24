@@ -14,6 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
+  ArrowUpRight,
   Newspaper,
   Settings,
   Globe,
@@ -98,6 +99,7 @@ export const DashboardSidebar = () => {
   const collapsed = state === "collapsed" && !isMobile;
   // The mobile drawer overlays the page, so following a link must dismiss it.
   const closeMobile = () => setOpenMobile(false);
+  const websiteUrl = getRuntimeConfig().websiteUrl;
 
   const isActive = (url: string) => location.pathname === url;
 
@@ -190,10 +192,20 @@ export const DashboardSidebar = () => {
               tooltip="Website"
               className="text-muted-foreground hover:bg-muted/40 hover:text-foreground"
             >
-              <Link to="/" onClick={closeMobile}>
+              <a
+                href={websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeMobile}
+                aria-label="Website, opens in a new tab"
+              >
                 <Globe className="h-4 w-4 flex-shrink-0" />
-                <span className="text-sm">Website</span>
-              </Link>
+                <span className="flex-1 text-sm">Website</span>
+                <ArrowUpRight
+                  className="h-3.5 w-3.5 flex-shrink-0 opacity-60"
+                  aria-hidden
+                />
+              </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>

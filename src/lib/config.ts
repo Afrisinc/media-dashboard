@@ -8,13 +8,23 @@ export interface RuntimeConfig {
   serverUrl: string;
   apiUrl: string;
   authUiUrl: string;
+  websiteUrl: string;
 }
+
+const DEFAULT_WEBSITE_URL = "https://afrisinc.com";
 
 let config: RuntimeConfig | null = null;
 let configLoaded = false;
 
 function isPlaceholder(value: string | undefined): boolean {
   return !value || value.startsWith("__");
+}
+
+function injectedWebsiteUrl(): string | undefined {
+  const injected = window.__ENV__?.VITE_WEBSITE_URL;
+  return !isPlaceholder(injected)
+    ? injected
+    : import.meta.env.VITE_WEBSITE_URL || undefined;
 }
 
 function validateConfig(cfg: Partial<RuntimeConfig>): RuntimeConfig {
@@ -38,6 +48,7 @@ function validateConfig(cfg: Partial<RuntimeConfig>): RuntimeConfig {
     serverUrl: cfg.serverUrl!,
     apiUrl: cfg.apiUrl!,
     authUiUrl: cfg.authUiUrl!,
+    websiteUrl: cfg.websiteUrl || injectedWebsiteUrl() || DEFAULT_WEBSITE_URL,
   };
 }
 
@@ -75,6 +86,7 @@ export async function loadRuntimeConfig(): Promise<RuntimeConfig> {
         serverUrl: runtimeConfig.serverUrl || apiUrl,
         apiUrl: runtimeConfig.apiUrl || apiUrl,
         authUiUrl: runtimeConfig.authUiUrl || authUiUrl,
+        websiteUrl: runtimeConfig.websiteUrl,
       });
     } else {
       config = validateConfig({

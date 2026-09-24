@@ -1,4 +1,4 @@
-export type AgentKey = "post" | "news" | "newsletter" | "analytics";
+export type AgentKey = "post" | "story" | "news" | "newsletter" | "analytics";
 
 export type AgentScope = "user" | "workspace";
 

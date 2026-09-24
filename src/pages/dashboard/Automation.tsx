@@ -52,6 +52,7 @@ const RUN_LIMIT = 12;
 
 const AGENT_FILTER_ORDER: AgentKey[] = [
   "post",
+  "story",
   "news",
   "newsletter",
   "analytics",

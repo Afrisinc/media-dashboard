@@ -58,7 +58,13 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const AGENT_KEYS: AgentKey[] = ["post", "news", "newsletter", "analytics"];
+const AGENT_KEYS: AgentKey[] = [
+  "post",
+  "story",
+  "news",
+  "newsletter",
+  "analytics",
+];
 
 const RECENT_LIMIT = 8;
 
@@ -222,10 +228,10 @@ const DashboardAgents = () => {
   const activeStories = stories.filter(
     (story) => story.status === "ACTIVE",
   ).length;
-  const lastStoryUpdate = stories
-    .map((story) => story.updatedAt)
-    .sort()
-    .at(-1);
+  const episodesToReview = stories.reduce(
+    (total, story) => total + story.episodeCount - story.publishedEpisodeCount,
+    0,
+  );
   const newsCounts = newsSummary.data?.byStatus;
   const newsNeedsFix =
     (newsCounts?.failed ?? 0) + (newsSummary.data?.stuck ?? 0);
@@ -422,29 +428,24 @@ const DashboardAgents = () => {
           />
 
           <AgentControlCard
-            icon={BookOpen}
-            name="Story agent"
-            description="Writes episodic fiction on request — ChatGPT writes, Claude and a local model back it up."
-            tags={["Your stories", "On request"]}
-            status={
-              activeStories > 0
-                ? { label: `${activeStories} writing`, tone: "idle" }
-                : { label: "On request", tone: "off" }
-            }
-            schedule="Writes an episode when you ask for one"
+            {...cardFor("story")}
             metrics={[
               { label: "Stories", value: String(stories.length) },
               {
                 label: "Active",
                 value: String(activeStories),
-                tone: activeStories > 0 ? "attention" : "default",
+                tone: activeStories > 0 ? "success" : "default",
+              },
+              {
+                label: "To review",
+                value: String(episodesToReview),
+                tone: episodesToReview > 0 ? "attention" : "default",
+              },
+              {
+                label: "Runs today",
+                value: String(agentByKey("story")?.runsToday ?? 0),
               },
             ]}
-            lastRun={
-              lastStoryUpdate
-                ? `Last activity ${formatDateShort(lastStoryUpdate)}`
-                : "No stories yet"
-            }
             primaryLink={{ label: "Story Studio", to: "/stories" }}
             recentWork={
               isLoadingStories ? (

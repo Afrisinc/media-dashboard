@@ -1,162 +1,141 @@
-import { useState } from "react";
-import { FileText, Video, Mic, ImageIcon } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { StatCard, StatGrid } from "@/components/ui/stat-card";
-import { IconBox } from "@/components/ui/icon-box";
-import { LabeledProgress } from "@/components/ui/labeled-progress";
-import { SegmentedControl } from "@/components/ui/segmented-control";
-import { ListRow } from "@/components/ui/list-row";
-import { PageHeader } from "@/components/ui/page-header";
+import { useNavigate } from "react-router-dom";
+import { CalendarClock, Eye, FileText, Inbox, Sparkles } from "lucide-react";
+import { MediaFormatCards } from "@/components/dashboard/MediaFormatCards";
+import { MediaLibrarySection } from "@/components/dashboard/MediaLibrarySection";
 import {
-  MediaPreviewDialog,
-  type PreviewItem,
-} from "@/components/dashboard/MediaPreviewDialog";
-import { useCommandPalette } from "@/contexts/CommandPaletteContext";
+  ProductionQueue,
+  type ProductionItem,
+} from "@/components/dashboard/ProductionQueue";
+import { StatStrip, type StripStat } from "@/components/dashboard/StatStrip";
+import { IconBox } from "@/components/ui/icon-box";
+import { PageHeader } from "@/components/ui/page-header";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useAutopilot } from "@/contexts/AutopilotContext";
-
-type MediaKind = "article" | "video" | "podcast" | "story";
-
-const kindIcon: Record<MediaKind, typeof FileText> = {
-  article: FileText,
-  video: Video,
-  podcast: Mic,
-  story: ImageIcon,
-};
-
-const queue: {
-  title: string;
-  kind: MediaKind;
-  meta: string;
-  stage: string;
-  progress: number;
-}[] = [
-  {
-    title: "How African startups win with AI marketing",
-    kind: "video",
-    meta: "Video · 9:16 · TikTok, Reels, Shorts",
-    stage: "Rendering visuals",
-    progress: 61,
-  },
-  {
-    title: "Lagos fintech weekly roundup — Issue 34",
-    kind: "article",
-    meta: "Blog article · 2,100 words · Website, LinkedIn",
-    stage: "SEO optimization",
-    progress: 78,
-  },
-  {
-    title: "Afrisinc Radio Ep. 12 — Automation for creators",
-    kind: "podcast",
-    meta: "Podcast · 18 min · voice: Amara (ElevenLabs)",
-    stage: "Mixing audio",
-    progress: 44,
-  },
-  {
-    title: "5-part story series: Meet your AI creative team",
-    kind: "story",
-    meta: "Stories · 1080×1920 · Website, IG, WhatsApp",
-    stage: "Sequencing series",
-    progress: 92,
-  },
-];
-
-const library: {
-  title: string;
-  kind: MediaKind;
-  platforms: string;
-  metric: string;
-  status: "Published" | "Scheduled";
-}[] = [
-  {
-    title: "Why 2026 is the year of autonomous marketing",
-    kind: "video",
-    platforms: "TikTok +2",
-    metric: "128K views",
-    status: "Published",
-  },
-  {
-    title: "AI marketing in Africa: the 2026 playbook",
-    kind: "article",
-    platforms: "Website +2",
-    metric: "4.2K reads",
-    status: "Published",
-  },
-  {
-    title: "Behind the automation: a day with zero humans",
-    kind: "story",
-    platforms: "Website +2",
-    metric: "Tue 09:00",
-    status: "Scheduled",
-  },
-  {
-    title: "Ep. 11 — Scaling content without a team",
-    kind: "podcast",
-    platforms: "YouTube",
-    metric: "9.8K plays",
-    status: "Published",
-  },
-  {
-    title: "60-second explainer: your AI creative director",
-    kind: "video",
-    platforms: "Shorts, TikTok",
-    metric: "Wed 14:00",
-    status: "Scheduled",
-  },
-  {
-    title: "Case study: 3× engagement, zero manual posts",
-    kind: "article",
-    platforms: "Website, LinkedIn",
-    metric: "2.9K reads",
-    status: "Published",
-  },
-  {
-    title: "Poll series: what should our AI make next?",
-    kind: "story",
-    platforms: "Website +2",
-    metric: "31K taps",
-    status: "Published",
-  },
-  {
-    title: "Product tour: the Afrisinc automation engine",
-    kind: "video",
-    platforms: "YouTube +2",
-    metric: "54K views",
-    status: "Published",
-  },
-];
-
-const tabs = ["All", "Articles", "Videos", "Podcasts", "Stories"] as const;
+import { useCommandPalette } from "@/contexts/CommandPaletteContext";
+import { useNewsArticles, useNewsDeskSummary } from "@/hooks/useNewsDesk";
+import { usePostDrafts } from "@/hooks/usePostAgent";
+import { useStories } from "@/hooks/useStoryAgent";
+import {
+  articleToMedia,
+  isFinishedArticle,
+  isFinishedPost,
+  isStartedStory,
+  newestFirst,
+  postToMedia,
+  storyToMedia,
+} from "@/lib/mediaLibrary";
+import { newsArticleTitle } from "@/lib/newsDesk";
+import { compactNumber } from "@/lib/numberFormat";
+import { isReviewable } from "@/types/postAgent";
 
 const DashboardMedia = () => {
-  const { autopilot, setAutopilot } = useAutopilot();
-  const [tab, setTab] = useState<(typeof tabs)[number]>("All");
-  const [preview, setPreview] = useState<PreviewItem | null>(null);
+  const navigate = useNavigate();
+  const { autopilot, setAutopilot, isSaving } = useAutopilot();
   const { setOpen: setCommandOpen } = useCommandPalette();
 
-  const filteredLibrary =
-    tab === "All"
-      ? library
-      : library.filter((item) => `${item.kind}s` === tab.toLowerCase());
+  const drafts = usePostDrafts({ limit: 50 });
+  const articles = useNewsArticles({ page: 1, limit: 30 });
+  const newsSummary = useNewsDeskSummary();
+  const stories = useStories({ limit: 50 });
 
+  const draftItems = drafts.data?.items ?? [];
+  const articleItems = articles.data?.items ?? [];
+  const storyItems = stories.data?.items ?? [];
+
+  const waiting = draftItems.filter(isReviewable).length;
+  const scheduled = draftItems.filter(
+    (draft) => draft.status === "scheduled",
+  ).length;
+  const published = newsSummary.data?.byStatus.published ?? 0;
+  const storyReads = storyItems.reduce(
+    (total, story) => total + story.totalReads,
+    0,
+  );
+  const activeStories = storyItems.filter(
+    (story) => story.status === "ACTIVE",
+  ).length;
+
+  const stats: StripStat[] = [
+    {
+      label: "Waiting on you",
+      value: String(waiting),
+      icon: Inbox,
+      tone: waiting > 0 ? "attention" : "default",
+      hint: waiting > 0 ? "Posts ready for review" : "Nothing to review",
+      onSelect: () => navigate("/studio"),
+    },
+    {
+      label: "Scheduled",
+      value: String(scheduled),
+      icon: CalendarClock,
+      hint: "Posts queued to publish",
+      onSelect: () => navigate("/studio"),
+    },
+    {
+      label: "Articles live",
+      value: compactNumber(published),
+      icon: FileText,
+      tone: published > 0 ? "success" : "default",
+      hint: `${compactNumber(newsSummary.data?.views ?? 0)} views on the website`,
+      onSelect: () => navigate("/news"),
+    },
+    {
+      label: "Story reads",
+      value: compactNumber(storyReads),
+      icon: Eye,
+      hint: `${activeStories} ${activeStories === 1 ? "story" : "stories"} being written`,
+      onSelect: () => navigate("/stories"),
+    },
+  ];
+
+  const production: ProductionItem[] = [
+    ...draftItems
+      .filter((draft) => draft.status === "drafting")
+      .map((draft) => ({
+        id: `post-${draft.id}`,
+        kind: "post" as const,
+        title: draft.topic,
+        stage: "Drafting",
+        meta: "Social post · Post Studio",
+        href: "/studio",
+      })),
+    ...articleItems
+      .filter((article) => article.status === "processing" && !article.stuck)
+      .map((article) => ({
+        id: `article-${article.id}`,
+        kind: "article" as const,
+        title: newsArticleTitle(article),
+        stage: "Writing & illustrating",
+        meta: `Article · ${article.creator ?? "News Desk"}`,
+        href: "/news",
+      })),
+  ];
+
+  const library = newestFirst([
+    ...draftItems.filter(isFinishedPost).map(postToMedia),
+    ...articleItems.filter(isFinishedArticle).map(articleToMedia),
+    ...storyItems.filter(isStartedStory).map(storyToMedia),
+  ]);
   return (
-    <div className="space-y-6 animate-fade-up">
+    <div className="space-y-5 animate-fade-up">
       <PageHeader
         eyebrow="Media Studio"
         title="Your media, on autopilot"
         titleClassName="font-display italic"
         subtitle={
           autopilot
-            ? "Fully automated — content is generated, scheduled and published with no human input."
-            : "Human-in-loop — AI generates everything; items pause for your approval before publishing."
+            ? "Agents drive: posts, articles and stories are made and published without waiting for you."
+            : "You drive: the agents make everything, and each piece waits for your approval."
         }
         action={
           <SegmentedControl
             value={autopilot ? "auto" : "human"}
-            onChange={(value) => setAutopilot(value === "auto")}
+            onChange={(value) => {
+              if (!isSaving) setAutopilot(value === "auto");
+            }}
             options={[
-              { label: "Autopilot", value: "auto" },
-              { label: "Human-in-loop", value: "human" },
+              { label: "I drive", value: "human" },
+              { label: "Agents drive", value: "auto" },
             ]}
           />
         }
@@ -165,142 +144,56 @@ const DashboardMedia = () => {
       <button
         type="button"
         onClick={() => setCommandOpen(true)}
-        className="flex w-full items-center gap-4 rounded-xl border border-border-3 bg-card p-4 text-left transition-colors hover:border-primary/55 hover:bg-card-hi"
+        className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-card-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <IconBox icon={FileText} tone="primary" />
-        <span className="min-w-0 flex-1 text-sm text-muted-foreground">
-          Tell your AI team what to make — “3 Reels on mobile money, post
-          Thursday”
+        <IconBox icon={Sparkles} tone="primary" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium">
+            Tell your AI team what to make
+          </span>
+          <span className="block truncate text-xs text-muted-foreground">
+            “A carousel on mobile money for Thursday” or “the next episode of my
+            story”
+          </span>
         </span>
-        <span className="hidden rounded-md border border-border-3 bg-inset-3 px-2 py-1 text-[10.5px] font-bold text-dim-4 sm:inline">
+        <kbd className="hidden rounded-md border border-border bg-inset px-2 py-1 text-[11px] font-semibold text-muted-foreground sm:inline">
           ⌘K
-        </span>
+        </kbd>
       </button>
 
-      <StatGrid columns={4}>
-        <StatCard
-          label="Media this week"
-          value="86"
-          delta={{ value: "+24% vs last week", direction: "up" }}
-        />
-        <StatCard
-          label="Auto-published"
-          value={autopilot ? "79" : "58"}
-          delta={{
-            value: autopilot ? "92% straight-through" : "autopilot paused",
-            direction: autopilot ? "up" : "down",
-          }}
-        />
-        <StatCard
-          label="Awaiting review"
-          value={autopilot ? "0" : "7"}
-          subtitle={autopilot ? "no human needed" : "7 items waiting"}
-        />
-        <StatCard
-          label="Avg. engagement"
-          value="6.4%"
-          delta={{ value: "+1.1 pts vs last week", direction: "up" }}
-        />
-      </StatGrid>
+      <StatStrip
+        variant="tiles"
+        stats={stats}
+        loading={drafts.isLoading || newsSummary.isLoading || stories.isLoading}
+      />
 
-      <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border/60 px-5 py-4">
-          <div className="flex items-center gap-2.5">
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-sm font-bold">In production now</span>
-          </div>
-          <span className="text-xs text-dim-4">
-            {queue.length} items ·{" "}
-            {autopilot
-              ? "no human input required"
-              : "pausing for your approval"}
-          </span>
-        </div>
-        <div className="divide-y divide-border/40">
-          {queue.map((item) => {
-            const Icon = kindIcon[item.kind];
-            return (
-              <ListRow key={item.title} className="px-5 py-3.5">
-                <IconBox icon={Icon} tone="primary" size="sm" />
-                <div className="min-w-0 flex-1 basis-40">
-                  <p className="truncate text-sm font-semibold">{item.title}</p>
-                  <p className="truncate text-xs text-dim-4">{item.meta}</p>
-                </div>
-                <div className="w-full flex-1 basis-40 sm:w-64 sm:flex-none">
-                  <LabeledProgress
-                    label={item.stage}
-                    valueLabel={`${item.progress}%`}
-                    value={item.progress}
-                  />
-                </div>
-                <Badge
-                  className="justify-center whitespace-nowrap sm:w-28"
-                  variant={autopilot ? "default" : "secondary"}
-                >
-                  {autopilot ? "Auto-publish" : "Needs review"}
-                </Badge>
-              </ListRow>
-            );
-          })}
-        </div>
-      </Card>
+      <MediaFormatCards
+        loading={drafts.isLoading || articles.isLoading || stories.isLoading}
+        counts={{
+          post: drafts.data?.total ?? draftItems.length,
+          article: newsSummary.data?.total ?? articleItems.length,
+          story: stories.data?.total ?? storyItems.length,
+        }}
+      />
 
-      <div>
-        <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
-          <SegmentedControl
-            value={tab}
-            onChange={setTab}
-            options={tabs.map((t) => ({ label: t, value: t }))}
-          />
-          <span className="text-xs text-dim-4">
-            {filteredLibrary.length} assets · all generated &amp; published
-            automatically
-          </span>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {filteredLibrary.map((item) => {
-            const Icon = kindIcon[item.kind];
-            return (
-              <Card
-                key={item.title}
-                onClick={() =>
-                  setPreview({
-                    kind: item.kind,
-                    title: item.title,
-                    status: item.status,
-                    channels: item.platforms.replace(" +2", "").split(", "),
-                    metric: item.metric,
-                  })
-                }
-                className="cursor-pointer overflow-hidden transition-transform hover:-translate-y-1"
-              >
-                <div className="relative flex h-32 items-center justify-center bg-inset-2">
-                  <Icon className="h-6 w-6 text-foreground/85" />
-                  <Badge
-                    variant={
-                      item.status === "Published" ? "default" : "secondary"
-                    }
-                    className="absolute right-2 top-2"
-                  >
-                    {item.status}
-                  </Badge>
-                </div>
-                <div className="p-3.5">
-                  <p className="min-h-[35px] text-sm font-semibold leading-snug">
-                    {item.title}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between gap-2 text-xs text-dim-4">
-                    <span>{item.platforms}</span>
-                    <span>{item.metric}</span>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
+      <ProductionQueue
+        items={production}
+        loading={drafts.isLoading || articles.isLoading}
+        autopilot={autopilot}
+      />
 
-      <MediaPreviewDialog item={preview} onClose={() => setPreview(null)} />
+      <MediaLibrarySection
+        items={library}
+        loading={drafts.isLoading || articles.isLoading || stories.isLoading}
+        failed={drafts.isError && articles.isError && stories.isError}
+        retrying={drafts.isFetching || articles.isFetching}
+        onRetry={() => {
+          drafts.refetch();
+          articles.refetch();
+          stories.refetch();
+        }}
+        onOpen={(item) => navigate(item.href)}
+      />
     </div>
   );
 };

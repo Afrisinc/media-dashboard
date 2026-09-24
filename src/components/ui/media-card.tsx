@@ -14,7 +14,16 @@ interface MediaCardProps {
   caption?: ReactNode;
   footer?: ReactNode;
   className?: string;
+  aspect?: MediaCardAspect;
 }
+
+export type MediaCardAspect = "portrait" | "square" | "landscape";
+
+const ASPECT_CLASS: Record<MediaCardAspect, string> = {
+  portrait: "aspect-[4/5]",
+  square: "aspect-square",
+  landscape: "aspect-video",
+};
 
 const overlayClass =
   "pointer-events-none absolute inset-x-2 top-2 flex items-start justify-between gap-2";
@@ -31,6 +40,7 @@ export function MediaCard({
   caption,
   footer,
   className,
+  aspect = "portrait",
 }: MediaCardProps) {
   return (
     <article
@@ -39,7 +49,12 @@ export function MediaCard({
         className,
       )}
     >
-      <div className="relative aspect-[4/5] overflow-hidden bg-muted">
+      <div
+        className={cn(
+          "relative overflow-hidden bg-muted",
+          ASPECT_CLASS[aspect],
+        )}
+      >
         {onMediaClick ? (
           <button
             type="button"
@@ -119,13 +134,17 @@ export function MediaCardOverlayChip({
 export const MEDIA_CARD_GRID =
   "grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4";
 
-export function MediaCardSkeleton() {
+export function MediaCardSkeleton({
+  aspect = "portrait",
+}: {
+  aspect?: MediaCardAspect;
+} = {}) {
   return (
     <div
       className="flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card"
       aria-hidden
     >
-      <Skeleton className="aspect-[4/5] w-full rounded-none" />
+      <Skeleton className={cn("w-full rounded-none", ASPECT_CLASS[aspect])} />
       <div className="flex flex-1 flex-col gap-2 p-3">
         <Skeleton className="h-4 w-11/12" />
         <Skeleton className="h-4 w-3/5" />

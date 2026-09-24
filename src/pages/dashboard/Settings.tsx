@@ -1,15 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ChevronRight, KeyRound, Loader2, Plus, Trash2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/ui/page-header";
-import { Switch } from "@/components/ui/switch";
-import { ConnectivityBadge } from "@/components/ui/connectivity-badge";
-import { cn } from "@/lib/utils";
-import { useAutopilot } from "@/contexts/AutopilotContext";
-import { useAccountGroups } from "@/hooks/useAccountGroups";
-import { groupTone, type AccountGroup } from "@/types/accountGroup";
+import { useSearchParams } from "react-router-dom";
+import { Bot, Hand, Images, Plug, Users } from "lucide-react";
+import { BrandAssetsManager } from "@/components/dashboard/BrandAssetsManager";
 import {
   ConnectPlatformDialog,
   type ConnectPlatform,
@@ -18,269 +10,66 @@ import {
   EditCredentialsDialog,
   type EditCredentialsPlatform,
 } from "@/components/dashboard/EditCredentialsDialog";
-import { BrandAssetsManager } from "@/components/dashboard/BrandAssetsManager";
 import {
-  SOCIAL_PLATFORMS,
+  PlatformConnectionList,
+  type PlatformConnectionRow,
+} from "@/components/dashboard/PlatformConnectionList";
+import { PublishingModeCard } from "@/components/dashboard/PublishingModeCard";
+import { SettingsLinks } from "@/components/dashboard/SettingsLinks";
+import { StatStrip, type StripStat } from "@/components/dashboard/StatStrip";
+import { ErrorState } from "@/components/ui/error-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionCard } from "@/components/ui/section-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
   PLATFORM_CATALOG,
+  SOCIAL_PLATFORMS,
   type SocialPlatformKey,
 } from "@/config/socialPlatforms";
-import {
-  useSocialMediaIntegrations,
-  useAvailablePages,
-  useDeleteAccount,
-  useAddAccountFromFacebookPage,
-  type FacebookPage,
-} from "@/hooks/useSocialMediaIntegrations";
+import { useAutopilot } from "@/contexts/AutopilotContext";
+import { useAccountGroups } from "@/hooks/useAccountGroups";
+import { useBrandAssets } from "@/hooks/useBrandAssets";
+import { useSocialMediaIntegrations } from "@/hooks/useSocialMediaIntegrations";
 
-function formatSyncedAgo(iso: string | null): string {
-  if (!iso) return "not synced yet";
-  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (minutes < 1) return "synced just now";
-  if (minutes < 60) return `synced ${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `synced ${hours}h ago`;
-  return `synced ${Math.round(hours / 24)}d ago`;
-}
+const SETTINGS_TABS = [
+  { value: "publishing", label: "Publishing" },
+  { value: "platforms", label: "Platforms" },
+  { value: "assets", label: "Brand assets" },
+] as const;
 
-type ExpandedPlatformViewProps = {
-  row: {
-    key: SocialPlatformKey;
-    catalog: (typeof PLATFORM_CATALOG)[SocialPlatformKey];
-    connected: boolean;
-    accounts: Array<{ id: string; name: string; meta?: string }>;
-  };
-  groups: AccountGroup[];
-};
+type SettingsTab = (typeof SETTINGS_TABS)[number]["value"];
 
-/** Which brands a page publishes under, so a page is never silently orphaned. */
-function BrandBadges({
-  accountId,
-  groups,
-}: {
-  accountId: string;
-  groups: AccountGroup[];
-}) {
-  const memberships = groups.flatMap((group) =>
-    group.members
-      .filter((member) => member.accountId === accountId)
-      .map((member) => ({ group, isActive: member.isActive })),
-  );
-
-  if (memberships.length === 0) {
-    return (
-      <Link
-        to="/brands"
-        className="rounded-full bg-gold/12 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-gold"
-      >
-        No brand
-      </Link>
-    );
-  }
-
-  return (
-    <span className="flex flex-wrap gap-1">
-      {memberships.map(({ group, isActive }) => (
-        <span
-          key={group.id}
-          title={
-            isActive
-              ? `Publishing under ${group.name}`
-              : `Paused in ${group.name}`
-          }
-          className={cn(
-            "rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider",
-            isActive ? groupTone(group.color) : "bg-track text-dim-6",
-          )}
-        >
-          {group.name}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function ExpandedPlatformView({ row, groups }: ExpandedPlatformViewProps) {
-  const { data: pages, isLoading } = useAvailablePages(row.key);
-  const deleteAccount = useDeleteAccount();
-  const addAccount = useAddAccountFromFacebookPage();
-
-  const isInstagram = row.key === "instagram";
-
-  const handleAdd = (page: FacebookPage) => {
-    if (!page.access_token) return;
-
-    addAccount.mutate({
-      platform: row.key,
-      pageId: page.id,
-      pageName: page.name,
-      scopes: row.catalog.scopes
-        .filter((scope) => scope.required)
-        .map((scope) => scope.id),
-      accessToken: page.access_token,
-    });
-  };
-
-  return (
-    <div className="flex flex-col gap-2.5 px-4 pb-4 sm:px-6 sm:pl-[70px]">
-      {row.connected && row.accounts.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            Connected Pages
-          </p>
-          {row.accounts.map((account) => (
-            <div
-              key={account.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-inset px-3.5 py-2.5"
-            >
-              <span
-                className={cn(
-                  "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[10.5px] font-bold",
-                  row.catalog.tone,
-                )}
-              >
-                {account.name
-                  .replace(/[^A-Za-z]/g, "")
-                  .slice(0, 2)
-                  .toUpperCase() || "AF"}
-              </span>
-              <div className="min-w-[120px] flex-1">
-                <p className="text-xs font-bold">{account.name}</p>
-                {account.meta && (
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {account.meta}
-                  </p>
-                )}
-              </div>
-              <BrandBadges accountId={account.id} groups={groups} />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-shrink-0 h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
-                onClick={() => deleteAccount.mutate(account.id)}
-                disabled={deleteAccount.isPending}
-                title="Delete this account"
-                aria-label={`Delete ${account.name}`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted-foreground">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Fetching available pages…
-        </div>
-      ) : (
-        pages &&
-        pages.available.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Available Pages
-            </p>
-            {pages.available.map((page) => {
-              const instagram = page.instagramBusinessAccount;
-              const eligible = !isInstagram || !!instagram;
-              const displayName =
-                isInstagram && instagram?.username
-                  ? `@${instagram.username}`
-                  : page.name;
-
-              return (
-                <div
-                  key={page.id}
-                  className={cn(
-                    "flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-background px-3.5 py-2.5",
-                    !eligible && "opacity-60",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[10.5px] font-bold",
-                      row.catalog.tone,
-                    )}
-                  >
-                    {displayName
-                      .replace(/[^A-Za-z]/g, "")
-                      .slice(0, 2)
-                      .toUpperCase() || "AF"}
-                  </span>
-                  <div className="min-w-[120px] flex-1">
-                    <p className="text-xs font-bold">{displayName}</p>
-                    {isInstagram ? (
-                      <p className="mt-0.5 text-[11px] text-dim-5">
-                        {eligible
-                          ? `via ${page.name}`
-                          : `${page.name} — no Instagram professional account linked`}
-                      </p>
-                    ) : (
-                      page.category && (
-                        <p className="mt-0.5 text-[11px] text-dim-5">
-                          {page.category}
-                        </p>
-                      )
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-shrink-0 h-7 px-2 text-[10.5px]"
-                    onClick={() => handleAdd(page)}
-                    disabled={!eligible || addAccount.isPending}
-                  >
-                    {addAccount.isPending ? (
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    ) : (
-                      <Plus className="h-3 w-3 mr-1" />
-                    )}
-                    Add
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        )
-      )}
-
-      {!isLoading &&
-        pages &&
-        row.connected &&
-        pages.available.length === 0 &&
-        row.accounts.length > 0 && (
-          <p className="px-0.5 text-xs text-dim-5">
-            All your {row.catalog.displayName} pages are already connected.
-          </p>
-        )}
-
-      {!isLoading && !row.connected && (
-        <p className="px-0.5 text-xs text-dim-5">
-          Add app credentials and connect your account to see available pages.
-        </p>
-      )}
-    </div>
-  );
+function isSettingsTab(value: string | null): value is SettingsTab {
+  return SETTINGS_TABS.some((tab) => tab.value === value);
 }
 
 const DashboardSettings = () => {
-  const { autopilot, setAutopilot, isSaving: autopilotSaving } = useAutopilot();
-  const { data: integrations, isLoading } = useSocialMediaIntegrations();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const tab: SettingsTab = isSettingsTab(tabParam) ? tabParam : "publishing";
+  const setTab = (next: string) =>
+    setSearchParams(
+      (params) => {
+        params.set("tab", next);
+        return params;
+      },
+      { replace: true },
+    );
+
+  const { autopilot, isLoading: autopilotLoading } = useAutopilot();
+  const integrations = useSocialMediaIntegrations();
   const { data: groups } = useAccountGroups();
+  const brandAssets = useBrandAssets();
   const [connectingKey, setConnectingKey] = useState<SocialPlatformKey | null>(
     null,
   );
   const [editingKey, setEditingKey] = useState<SocialPlatformKey | null>(null);
-  const [expandedKey, setExpandedKey] = useState<SocialPlatformKey | null>(
-    null,
-  );
 
-  const rows = SOCIAL_PLATFORMS.map((key) => {
-    const catalog = PLATFORM_CATALOG[key];
-    const integration = integrations?.find((row) => row.platform === key);
+  const rows: PlatformConnectionRow[] = SOCIAL_PLATFORMS.map((key) => {
+    const integration = integrations.data?.find((row) => row.platform === key);
     return {
       key,
-      catalog,
+      catalog: PLATFORM_CATALOG[key],
       appId: integration?.appId ?? null,
       connected: integration?.connected ?? false,
       syncedAt: integration?.syncedAt ?? null,
@@ -289,7 +78,55 @@ const DashboardSettings = () => {
   });
 
   const connectedCount = rows.filter((row) => row.connected).length;
-  const notConnectedCount = rows.length - connectedCount;
+  const pageCount = rows.reduce((total, row) => total + row.accounts.length, 0);
+  const assets = brandAssets.data ?? [];
+  const approvedAssets = assets.filter((asset) => asset.approved).length;
+  const photographs = assets.reduce(
+    (total, asset) => total + asset.images.length,
+    0,
+  );
+
+  const overview: StripStat[] = [
+    {
+      label: "Autopilot",
+      value: autopilot ? "On" : "Off",
+      icon: autopilot ? Bot : Hand,
+      tone: autopilot ? "success" : "default",
+      hint: autopilot
+        ? "Agents publish with no approval step"
+        : "Every post waits for your approval",
+      onSelect: () => setTab("publishing"),
+    },
+    {
+      label: "Platforms",
+      value: `${connectedCount}/${rows.length}`,
+      icon: Plug,
+      tone: connectedCount === 0 ? "attention" : "default",
+      hint:
+        connectedCount === rows.length
+          ? "Every platform connected"
+          : `${rows.length - connectedCount} not connected`,
+      onSelect: () => setTab("platforms"),
+    },
+    {
+      label: "Pages",
+      value: String(pageCount),
+      icon: Users,
+      hint:
+        pageCount === 0
+          ? "Nothing to publish to yet"
+          : `Across ${connectedCount} ${connectedCount === 1 ? "platform" : "platforms"}`,
+      onSelect: () => setTab("platforms"),
+    },
+    {
+      label: "Brand assets",
+      value: `${approvedAssets}/${assets.length}`,
+      icon: Images,
+      tone: assets.length > 0 && approvedAssets === 0 ? "attention" : "default",
+      hint: `${photographs} ${photographs === 1 ? "photograph" : "photographs"} in the library`,
+      onSelect: () => setTab("assets"),
+    },
+  ];
 
   const connectingRow = rows.find((row) => row.key === connectingKey) ?? null;
   const connectingPlatform: ConnectPlatform | null = connectingRow
@@ -314,128 +151,69 @@ const DashboardSettings = () => {
     : null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 animate-fade-up">
-      <PageHeader eyebrow="Settings" title="Workspace" />
+    <div className="space-y-5 animate-fade-up">
+      <PageHeader
+        eyebrow="Settings"
+        title="Workspace"
+        subtitle="How the agents publish, where they publish to, and the photographs they build posts from."
+      />
 
-      <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6">
-          <div className="min-w-[200px] flex-1">
-            <p className="text-sm font-bold">Fully automated publishing</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              When on, the agents generate, schedule and publish to every live
-              page with no approval step. Pick which brands they run in{" "}
-              <Link
-                to="/brands"
-                className="font-semibold text-primary hover:underline"
-              >
-                Brands &amp; Accounts
-              </Link>
-              .
-            </p>
-          </div>
-          <Switch
-            checked={autopilot}
-            onCheckedChange={setAutopilot}
-            disabled={autopilotSaving}
-            aria-label="Fully automated publishing"
-          />
-        </CardContent>
-      </Card>
+      <StatStrip
+        variant="tiles"
+        stats={overview}
+        loading={
+          autopilotLoading || integrations.isLoading || brandAssets.isLoading
+        }
+      />
 
-      <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-4 py-4 sm:px-6">
-          <div>
-            <p className="text-sm font-bold">Connected platforms</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {connectedCount} of {rows.length} platforms connected · tokens
-              refresh automatically
-            </p>
-          </div>
-          {notConnectedCount > 0 && (
-            <span className="rounded-full bg-gold/12 px-2.5 py-1 text-[11px] font-bold text-gold whitespace-nowrap">
-              {notConnectedCount} not connected
-            </span>
-          )}
-        </div>
+      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+        <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-auto">
+          {SETTINGS_TABS.map((item) => (
+            <TabsTrigger key={item.value} value={item.value}>
+              {item.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center gap-2 px-6 py-10 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading platforms…
-          </div>
-        ) : (
-          <div className="divide-y divide-border/40">
-            {rows.map((row) => {
-              const expanded = expandedKey === row.key;
-              const detail = row.connected
-                ? `${row.accounts.map((a) => a.name).join(" · ")} · ${formatSyncedAgo(row.syncedAt)}`
-                : "Add app credentials, then connect";
+        <TabsContent value="publishing" className="mt-0 space-y-4">
+          <PublishingModeCard />
+          <SettingsLinks />
+        </TabsContent>
 
-              return (
-                <div key={row.key}>
-                  <div className="flex flex-wrap items-center gap-3 px-4 py-3.5 sm:px-6">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedKey(expanded ? null : row.key)}
-                      aria-expanded={expanded}
-                      aria-label={`${expanded ? "Hide" : "Show"} ${row.catalog.displayName} pages`}
-                      className={cn(
-                        "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground transition-transform",
-                        expanded && "rotate-90",
-                      )}
-                    >
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
-                    <span
-                      className={cn(
-                        "rounded-md px-2 py-1 text-[11px] font-bold",
-                        row.catalog.tone,
-                      )}
-                    >
-                      {row.catalog.short}
-                    </span>
-                    <div className="min-w-[150px] flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-bold">
-                          {row.catalog.displayName}
-                        </span>
-                        <ConnectivityBadge connected={row.connected} />
-                      </div>
-                      <p className="mt-0.5 truncate text-[11.5px] text-dim-5">
-                        {detail}
-                      </p>
-                    </div>
-                    <span className="flex-1 text-xs text-muted-foreground sm:w-28 sm:flex-none">
-                      {row.connected ? row.catalog.scopeSummary : "—"}
-                    </span>
-                    <button
-                      type="button"
-                      title="App credentials"
-                      aria-label={`${row.catalog.displayName} app credentials`}
-                      onClick={() => setEditingKey(row.key)}
-                      className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border-3 bg-inset text-muted-foreground"
-                    >
-                      <KeyRound className="h-3.5 w-3.5" />
-                    </button>
-                    <Button
-                      variant={row.connected ? "outline" : "default"}
-                      size="sm"
-                      onClick={() => setConnectingKey(row.key)}
-                    >
-                      {row.connected ? "Add account" : "Connect"}
-                    </Button>
-                  </div>
-                  {expanded && (
-                    <ExpandedPlatformView row={row} groups={groups ?? []} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
+        <TabsContent value="platforms" className="mt-0">
+          <SectionCard
+            title="Connected platforms"
+            icon={Plug}
+            iconTone="primary"
+            description={`${connectedCount} of ${rows.length} connected · tokens refresh automatically · open a platform to manage its pages`}
+            contentClassName="px-0 pb-0 pt-3"
+          >
+            {integrations.isError ? (
+              <ErrorState
+                title="Could not load your platforms"
+                description="content-service is not answering. Check that it is running."
+                onRetry={() => integrations.refetch()}
+                retrying={integrations.isFetching}
+                className="border-t border-border/60"
+              />
+            ) : (
+              <div className="border-t border-border/60">
+                <PlatformConnectionList
+                  rows={rows}
+                  groups={groups ?? []}
+                  loading={integrations.isLoading}
+                  onConnect={setConnectingKey}
+                  onEditCredentials={setEditingKey}
+                />
+              </div>
+            )}
+          </SectionCard>
+        </TabsContent>
 
-      <BrandAssetsManager />
+        <TabsContent value="assets" className="mt-0">
+          <BrandAssetsManager />
+        </TabsContent>
+      </Tabs>
 
       <ConnectPlatformDialog
         platform={connectingPlatform}

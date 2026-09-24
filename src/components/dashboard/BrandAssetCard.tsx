@@ -1,17 +1,8 @@
 import { MediaLightbox } from "@/components/dashboard/MediaLightbox";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { ListRow } from "@/components/ui/list-row";
 import {
@@ -65,7 +56,7 @@ export function BrandAssetCard({ asset }: { asset: BrandAsset }) {
   };
 
   return (
-    <Card className="p-4">
+    <Card className="bg-inset/40 p-4 shadow-none">
       <ListRow className="items-start">
         <button
           type="button"
@@ -209,27 +200,15 @@ export function BrandAssetCard({ asset }: { asset: BrandAsset }) {
         onIndexChange={setLightboxIndex}
       />
 
-      <AlertDialog open={confirming} onOpenChange={setConfirming}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete “{asset.name}”?</AlertDialogTitle>
-            <AlertDialogDescription>
-              The set and its {asset.images.length} photograph
-              {asset.images.length === 1 ? "" : "s"} go away, and any brand
-              using it falls back to the shared library.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => remove.mutate(asset.id)}
-            >
-              Delete set
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        title={`Delete “${asset.name}”?`}
+        description={`The set and its ${asset.images.length} photograph${asset.images.length === 1 ? "" : "s"} go away, and any brand using it falls back to the shared library.`}
+        confirmLabel="Delete set"
+        destructive
+        onConfirm={() => remove.mutate(asset.id)}
+      />
     </Card>
   );
 }

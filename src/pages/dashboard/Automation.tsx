@@ -1,6 +1,5 @@
 import { AgentRunRow } from "@/components/dashboard/AgentRunRow";
 import { AgentRunTimeline } from "@/components/dashboard/AgentRunTimeline";
-import { AgentSwitchboard } from "@/components/dashboard/AgentSwitchboard";
 import { AutomationModeCard } from "@/components/dashboard/AutomationModeCard";
 import { StatStrip, type StripStat } from "@/components/dashboard/StatStrip";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +36,7 @@ import {
   ServerCrash,
   Workflow,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   AGENT_ICONS,
@@ -47,7 +46,7 @@ import {
   runOwnerLabel,
 } from "@/lib/agents";
 import type { AgentKey } from "@/types/agents";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const RUN_LIMIT = 12;
 
@@ -61,7 +60,22 @@ const AGENT_FILTER_ORDER: AgentKey[] = [
 type AgentFilter = AgentKey | "all";
 
 const DashboardAutomation = () => {
-  const [agentFilter, setAgentFilter] = useState<AgentFilter>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const agentParam = searchParams.get("agent");
+  const agentFilter: AgentFilter = AGENT_FILTER_ORDER.includes(
+    agentParam as AgentKey,
+  )
+    ? (agentParam as AgentKey)
+    : "all";
+  const setAgentFilter = (next: AgentFilter) =>
+    setSearchParams(
+      (params) => {
+        if (next === "all") params.delete("agent");
+        else params.set("agent", next);
+        return params;
+      },
+      { replace: true },
+    );
   const agent = agentFilter === "all" ? undefined : agentFilter;
   const { data: groups, isLoading: groupsLoading } = useAccountGroups();
   const {
@@ -93,14 +107,15 @@ const DashboardAutomation = () => {
     })),
   ];
 
-  const showRunsFor = (key: AgentKey) => {
-    setAgentFilter(key);
-    requestAnimationFrame(() =>
-      document
-        .getElementById("recent-runs")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-    );
-  };
+  useEffect(() => {
+    if (agentParam) {
+      requestAnimationFrame(() =>
+        document
+          .getElementById("recent-runs")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    }
+  }, [agentParam]);
   const autopilotGroups = (groups ?? []).filter(
     (group) => group.autopilotEnabled,
   );
@@ -145,19 +160,26 @@ const DashboardAutomation = () => {
     <div className="space-y-4 animate-fade-up">
       <PageHeader
         title="Automation"
-        subtitle="What the agents run, when they run it, and where it lands."
+        subtitle="Who drives the workspace, and every run each agent has made — what it did, how long it took and where it stopped."
         action={
-          <Button asChild variant="outline" size="sm">
-            <Link to="/brands">
-              <Building2 className="mr-1.5 h-4 w-4" />
-              Manage brands
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/agents">
+                <Bot className="mr-1.5 h-4 w-4" />
+                Manage agents
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/brands">
+                <Building2 className="mr-1.5 h-4 w-4" />
+                Manage brands
+              </Link>
+            </Button>
+          </>
         }
       />
 
       <AutomationModeCard />
-      <AgentSwitchboard onShowRuns={showRunsFor} />
       <StatStrip stats={stats} />
 
       <Card className="overflow-hidden">

@@ -1,20 +1,43 @@
 import { useState } from "react";
-import {
-  AgentCard,
-  type AgentSummaryStat,
-} from "@/components/dashboard/AgentCard";
+import { AgentControlCard } from "@/components/dashboard/AgentControlCard";
 import { MediaLightbox } from "@/components/dashboard/MediaLightbox";
+import { StatStrip, type StripStat } from "@/components/dashboard/StatStrip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAgentRuns } from "@/hooks/useAutomation";
+import { useAutopilot } from "@/contexts/AutopilotContext";
+import {
+  useAgents,
+  useAutomationSummary,
+  useUpdateAgent,
+} from "@/hooks/useAutomation";
 import { usePostDrafts } from "@/hooks/usePostAgent";
 import { useNewsArticles, useNewsDeskSummary } from "@/hooks/useNewsDesk";
 import { useStories } from "@/hooks/useStoryAgent";
+import {
+  AGENT_ICONS,
+  AGENT_NAMES,
+  agentStatusPill,
+  describeLastRun,
+} from "@/lib/agents";
+import { describeCron } from "@/lib/cron";
 import { formatDateShort } from "@/lib/dateFormat";
+import { newsArticleTitle } from "@/lib/newsDesk";
 import { compactNumber } from "@/lib/numberFormat";
+import {
+  AGENT_SCOPE_LABELS,
+  type AgentKey,
+  type AgentStatus,
+} from "@/types/agents";
+import {
+  NEWS_STATUS_LABELS,
+  NEWS_STATUS_VARIANT,
+  type NewsArticle,
+} from "@/types/newsDesk";
 import {
   FORMAT_LABELS,
   STATUS_LABELS,
@@ -22,15 +45,20 @@ import {
   type PostDraft,
   type PostDraftStatus,
 } from "@/types/postAgent";
-import { newsArticleTitle } from "@/lib/newsDesk";
-import {
-  NEWS_STATUS_LABELS,
-  NEWS_STATUS_VARIANT,
-  type NewsArticle,
-} from "@/types/newsDesk";
 import { STORY_STATUS_VARIANT, type Story } from "@/types/story";
-import { Bot, BookOpen, Inbox, Mail, Rss, ServerCrash } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpen,
+  Bot,
+  Hand,
+  History,
+  Inbox,
+  Rss,
+  ServerCrash,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+
+const AGENT_KEYS: AgentKey[] = ["post", "news", "newsletter", "analytics"];
 
 const RECENT_LIMIT = 8;
 
@@ -134,93 +162,152 @@ function NewsRow({ article }: { article: NewsArticle }) {
   );
 }
 
+const RECENT_EMPTY = "text-sm text-muted-foreground py-2";
+
+function AgentsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      {[0, 1, 2, 3].map((key) => (
+        <Skeleton key={key} className="h-72 w-full rounded-xl" />
+      ))}
+    </div>
+  );
+}
+
+function ModeToggle() {
+  const { mode, setAutopilot, isSaving, isLoading } = useAutopilot();
+
+  if (isLoading) {
+    return <Skeleton className="h-10 w-64" />;
+  }
+
+  return (
+    <SegmentedControl
+      options={[
+        { label: "I drive", value: "manual", icon: Hand },
+        { label: "Agents drive", value: "autopilot", icon: Bot },
+      ]}
+      value={mode}
+      onChange={(next) => {
+        if (!isSaving && next !== mode) setAutopilot(next === "autopilot");
+      }}
+    />
+  );
+}
+
 const DashboardAgents = () => {
-  const { data, isLoading, isError } = usePostDrafts({ limit: 50 });
-  const { data: runPage } = useAgentRuns({ limit: 1 });
-  const {
-    data: storyData,
-    isLoading: isLoadingStories,
-    isError: isStoriesError,
-  } = useStories({
+  const { data, isLoading: isLoadingDrafts } = usePostDrafts({ limit: 50 });
+  const { data: storyData, isLoading: isLoadingStories } = useStories({
     limit: 50,
   });
-
   const newsSummary = useNewsDeskSummary();
   const newsArticles = useNewsArticles({ page: 1, limit: RECENT_LIMIT });
+  const agentsQuery = useAgents();
+  const updateAgent = useUpdateAgent();
+  const { data: todaySummary } = useAutomationSummary();
+  const { autopilot } = useAutopilot();
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
 
   const drafts = data?.items ?? [];
   const stories = storyData?.items ?? [];
-  const [openAgent, setOpenAgent] = useState<string | null>(null);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
+  const agents = agentsQuery.data ?? [];
+  const agentByKey = (key: AgentKey) =>
+    agents.find((agent) => agent.key === key);
 
   const inReview = countBy(drafts, "awaiting_approval");
   const scheduled = countBy(drafts, "scheduled");
   const needsFix = countBy(drafts, "failed") + countBy(drafts, "rendered");
-  const lastRun = drafts[0]?.createdAt;
-  const running = runPage?.items[0]?.status === "running";
-
-  const toggle = (id: string) =>
-    setOpenAgent((current) => (current === id ? null : id));
-
-  const postAgentStats: AgentSummaryStat[] = [
-    {
-      label: "In review",
-      value: String(inReview),
-      tone: inReview > 0 ? "attention" : "default",
-    },
-    { label: "Scheduled", value: String(scheduled) },
-    {
-      label: "Needs a fix",
-      value: String(needsFix),
-      tone: needsFix > 0 ? "danger" : "default",
-    },
-    { label: "Last run", value: lastRun ? formatDateShort(lastRun) : "never" },
-  ];
-
   const activeStories = stories.filter(
     (story) => story.status === "ACTIVE",
   ).length;
-  const lastStoryRun = stories
+  const lastStoryUpdate = stories
     .map((story) => story.updatedAt)
     .sort()
     .at(-1);
-
   const newsCounts = newsSummary.data?.byStatus;
   const newsNeedsFix =
     (newsCounts?.failed ?? 0) + (newsSummary.data?.stuck ?? 0);
-  const newsAgentStatus =
-    (newsCounts?.processing ?? 0) > 0
-      ? "Enhancing"
-      : newsNeedsFix > 0
-        ? "Needs a fix"
-        : "Scheduled";
-  const newsAgentStats: AgentSummaryStat[] = [
-    { label: "Published", value: String(newsCounts?.published ?? 0) },
-    { label: "Queued", value: String(newsCounts?.draft ?? 0) },
+
+  const runningCount = agents.filter((agent) => agent.active).length;
+  const runsToday = agents.reduce((total, agent) => total + agent.runsToday, 0);
+  const failedToday = todaySummary?.failed ?? 0;
+
+  const headline: StripStat[] = [
     {
-      label: "Needs a fix",
-      value: String(newsNeedsFix),
-      tone: newsNeedsFix > 0 ? "danger" : "default",
+      label: "Agents on",
+      value: `${runningCount}/${agents.length || AGENT_KEYS.length}`,
+      icon: Bot,
+      tone: runningCount > 0 ? "success" : "default",
+      hint: autopilot ? "The workspace is on Agents drive" : "You are driving",
     },
     {
-      label: "Views",
-      value: compactNumber(newsSummary.data?.views ?? 0),
+      label: "Waiting on you",
+      value: String(inReview),
+      icon: Inbox,
+      tone: inReview > 0 ? "attention" : "default",
+      hint: inReview > 0 ? "Posts ready for review" : "Nothing to review",
+    },
+    {
+      label: "Runs today",
+      value: String(runsToday),
+      icon: History,
+      hint: "Across every agent",
+    },
+    {
+      label: "Failed today",
+      value: String(failedToday),
+      icon: AlertTriangle,
+      tone: failedToday > 0 ? "danger" : "default",
+      hint: failedToday > 0 ? "Open the run log to see why" : "All clear",
     },
   ];
 
-  const storyAgentStats: AgentSummaryStat[] = [
-    { label: "Stories", value: String(stories.length) },
-    {
-      label: "Active",
-      value: String(activeStories),
-      tone: activeStories > 0 ? "attention" : "default",
-    },
-    {
-      label: "Last run",
-      value: lastStoryRun ? formatDateShort(lastStoryRun) : "never",
-    },
-  ];
+  const switchFor = (key: AgentKey) => {
+    const agent = agentByKey(key);
+    return agent
+      ? {
+          checked: agent.enabled,
+          disabled: !agent.allowedByServer || updateAgent.isPending,
+          onChange: (enabled: boolean) => updateAgent.mutate({ key, enabled }),
+        }
+      : undefined;
+  };
+
+  const tagsFor = (agent: AgentStatus | undefined, extra: string[] = []) =>
+    agent
+      ? [
+          AGENT_SCOPE_LABELS[agent.scope],
+          ...(agent.requiresAutopilot ? ["Needs Agents drive"] : []),
+          ...extra,
+        ]
+      : extra;
+
+  const scheduleFor = (agent: AgentStatus | undefined) =>
+    agent
+      ? agent.schedules
+          .map((item) => `${item.label} ${describeCron(item.cron)}`)
+          .join(" · ")
+      : "";
+
+  const cardFor = (key: AgentKey) => {
+    const agent = agentByKey(key);
+    return {
+      icon: AGENT_ICONS[key],
+      name: agent?.name ?? AGENT_NAMES[key],
+      description: agent?.description ?? "",
+      tags: tagsFor(agent),
+      status: agent
+        ? agentStatusPill(agent)
+        : { label: "Loading", tone: "off" as const },
+      switchControl: switchFor(key),
+      schedule: scheduleFor(agent),
+      lastRun: describeLastRun(agent?.lastRun ?? null),
+      lastRunFailed: agent?.lastRun?.status === "failed",
+      runsLink: `/automation?agent=${key}`,
+    };
+  };
 
   const openFrames = (id: string) => {
     setSelectedDraftId(id);
@@ -228,172 +315,173 @@ const DashboardAgents = () => {
   };
 
   return (
-    <div className="space-y-4 animate-fade-up">
+    <div className="space-y-5 animate-fade-up">
       <PageHeader
         title="AI Agents"
-        subtitle="What the agents have been doing and what is waiting on you."
+        subtitle="Switch each agent on or off, see what it is doing, and jump into its work."
+        action={<ModeToggle />}
       />
 
-      {isError && (
-        <EmptyState
-          icon={ServerCrash}
-          title="Could not reach content-service"
-          description="The agents run inside content-service. Check that it and the render service are up."
-        />
+      <StatStrip
+        variant="tiles"
+        stats={headline}
+        loading={agentsQuery.isLoading}
+      />
+
+      {agentsQuery.isError && (
+        <Card>
+          <EmptyState
+            icon={ServerCrash}
+            title="Could not reach content-service"
+            description="The agents run inside content-service. Check that it is up, then try again."
+            action={
+              <Button variant="outline" onClick={() => agentsQuery.refetch()}>
+                Try again
+              </Button>
+            }
+          />
+        </Card>
       )}
 
-      {!isError && (
-        <>
-          <AgentCard
-            name="Post agent"
-            description="Writes the copy, art-directs the frames, renders and queues them."
-            icon={Bot}
+      {agentsQuery.isLoading && <AgentsSkeleton />}
+
+      {agentsQuery.data && (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <AgentControlCard
+            {...cardFor("post")}
+            metrics={[
+              {
+                label: "In review",
+                value: String(inReview),
+                tone: inReview > 0 ? "attention" : "default",
+              },
+              { label: "Scheduled", value: String(scheduled) },
+              {
+                label: "Needs a fix",
+                value: String(needsFix),
+                tone: needsFix > 0 ? "danger" : "default",
+              },
+              {
+                label: "Runs today",
+                value: String(agentByKey("post")?.runsToday ?? 0),
+              },
+            ]}
+            primaryLink={{ label: "Post Studio", to: "/studio" }}
+            recentWork={
+              isLoadingDrafts ? (
+                <Skeleton className="h-24 w-full" />
+              ) : drafts.length === 0 ? (
+                <p className={RECENT_EMPTY}>
+                  Nothing drafted yet. Brief the agent from Post Studio.
+                </p>
+              ) : (
+                drafts
+                  .slice(0, RECENT_LIMIT)
+                  .map((draft) => (
+                    <DraftRow
+                      key={draft.id}
+                      draft={draft}
+                      onOpen={openFrames}
+                    />
+                  ))
+              )
+            }
+          />
+
+          <AgentControlCard
+            {...cardFor("news")}
+            metrics={[
+              {
+                label: "Published",
+                value: String(newsCounts?.published ?? 0),
+                tone: "success",
+              },
+              { label: "Queued", value: String(newsCounts?.draft ?? 0) },
+              {
+                label: "Needs a fix",
+                value: String(newsNeedsFix),
+                tone: newsNeedsFix > 0 ? "danger" : "default",
+              },
+              {
+                label: "Views",
+                value: compactNumber(newsSummary.data?.views ?? 0),
+              },
+            ]}
+            primaryLink={{ label: "News Desk", to: "/news" }}
+            recentWork={
+              newsArticles.isLoading ? (
+                <Skeleton className="h-24 w-full" />
+              ) : (newsArticles.data?.items.length ?? 0) === 0 ? (
+                <p className={RECENT_EMPTY}>No articles fetched yet.</p>
+              ) : (
+                newsArticles.data?.items.map((article) => (
+                  <NewsRow key={article.id} article={article} />
+                ))
+              )
+            }
+          />
+
+          <AgentControlCard
+            icon={BookOpen}
+            name="Story agent"
+            description="Writes episodic fiction on request — ChatGPT writes, Claude and a local model back it up."
+            tags={["Your stories", "On request"]}
             status={
-              running ? "Running" : inReview > 0 ? "Waiting on you" : "Idle"
+              activeStories > 0
+                ? { label: `${activeStories} writing`, tone: "idle" }
+                : { label: "On request", tone: "off" }
             }
-            statusTone={running || inReview > 0 ? "default" : "secondary"}
-            stats={postAgentStats}
-            open={openAgent === "post"}
-            onToggle={() => toggle("post")}
-            action={
-              <Button asChild size="sm">
-                <Link to="/studio">Open Post Studio</Link>
-              </Button>
+            schedule="Writes an episode when you ask for one"
+            metrics={[
+              { label: "Stories", value: String(stories.length) },
+              {
+                label: "Active",
+                value: String(activeStories),
+                tone: activeStories > 0 ? "attention" : "default",
+              },
+            ]}
+            lastRun={
+              lastStoryUpdate
+                ? `Last activity ${formatDateShort(lastStoryUpdate)}`
+                : "No stories yet"
             }
-          >
-            {isLoading && <Skeleton className="h-32 w-full" />}
+            primaryLink={{ label: "Story Studio", to: "/stories" }}
+            recentWork={
+              isLoadingStories ? (
+                <Skeleton className="h-24 w-full" />
+              ) : stories.length === 0 ? (
+                <p className={RECENT_EMPTY}>
+                  No stories yet. Start one from Story Studio.
+                </p>
+              ) : (
+                stories
+                  .slice(0, RECENT_LIMIT)
+                  .map((story) => <StoryRow key={story.id} story={story} />)
+              )
+            }
+          />
 
-            {!isLoading && drafts.length === 0 && (
-              <EmptyState
-                icon={Inbox}
-                variant="compact"
-                title="Nothing drafted yet. Brief the agent from Post Studio."
-              />
-            )}
+          <AgentControlCard
+            {...cardFor("newsletter")}
+            metrics={[
+              {
+                label: "Runs today",
+                value: String(agentByKey("newsletter")?.runsToday ?? 0),
+              },
+            ]}
+          />
 
-            {drafts.slice(0, RECENT_LIMIT).map((draft) => (
-              <DraftRow key={draft.id} draft={draft} onOpen={openFrames} />
-            ))}
-
-            {drafts.length > RECENT_LIMIT && (
-              <Button asChild variant="ghost" size="sm" className="mt-3 w-full">
-                <Link to="/studio">See all {drafts.length} in Post Studio</Link>
-              </Button>
-            )}
-          </AgentCard>
-
-          {isStoriesError ? (
-            <EmptyState
-              icon={ServerCrash}
-              variant="compact"
-              title="Could not reach content-service for the story agent"
-            />
-          ) : (
-            <AgentCard
-              name="Story agent"
-              description="Writes episodic fiction — chatgpt writes, claude and ollama back it up."
-              icon={BookOpen}
-              status={activeStories > 0 ? "Writing" : "Idle"}
-              statusTone={activeStories > 0 ? "default" : "secondary"}
-              stats={storyAgentStats}
-              open={openAgent === "story"}
-              onToggle={() => toggle("story")}
-              action={
-                <Button asChild size="sm">
-                  <Link to="/stories">Open Story Studio</Link>
-                </Button>
-              }
-            >
-              {isLoadingStories && <Skeleton className="h-32 w-full" />}
-
-              {!isLoadingStories && stories.length === 0 && (
-                <EmptyState
-                  icon={BookOpen}
-                  variant="compact"
-                  title="No stories yet. Start one from Story Studio."
-                />
-              )}
-
-              {stories.slice(0, RECENT_LIMIT).map((story) => (
-                <StoryRow key={story.id} story={story} />
-              ))}
-
-              {stories.length > RECENT_LIMIT && (
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="mt-3 w-full"
-                >
-                  <Link to="/stories">
-                    See all {stories.length} in Story Studio
-                  </Link>
-                </Button>
-              )}
-            </AgentCard>
-          )}
-
-          {newsSummary.isError ? (
-            <EmptyState
-              icon={ServerCrash}
-              variant="compact"
-              title="Could not reach content-service for the news agent"
-            />
-          ) : (
-            <AgentCard
-              name="News agent"
-              description="Reads African news feeds; GPT-4o judges and rewrites what matters, draws a cover and publishes it."
-              icon={Rss}
-              status={newsAgentStatus}
-              statusTone={
-                (newsSummary.data?.byStatus.processing ?? 0) > 0 ||
-                newsNeedsFix > 0
-                  ? "default"
-                  : "secondary"
-              }
-              stats={newsAgentStats}
-              open={openAgent === "news"}
-              onToggle={() => toggle("news")}
-              action={
-                <Button asChild size="sm">
-                  <Link to="/news">Open News Desk</Link>
-                </Button>
-              }
-            >
-              {newsArticles.isLoading && <Skeleton className="h-32 w-full" />}
-
-              {!newsArticles.isLoading &&
-                (newsArticles.data?.items.length ?? 0) === 0 && (
-                  <EmptyState
-                    icon={Rss}
-                    variant="compact"
-                    title="No articles ingested yet."
-                  />
-                )}
-
-              {newsArticles.data?.items.map((article) => (
-                <NewsRow key={article.id} article={article} />
-              ))}
-            </AgentCard>
-          )}
-
-          <AgentCard
-            name="Newsletter digest"
-            description="Gathers the week's articles and drafts the digest."
-            icon={Mail}
-            iconTone="muted"
-            status="Scheduled"
-            stats={[{ label: "Runs", value: "On a cron" }]}
-            open={openAgent === "digest"}
-            onToggle={() => toggle("digest")}
-          >
-            <EmptyState
-              icon={Mail}
-              variant="compact"
-              title="This agent runs on a schedule and does not report here yet."
-            />
-          </AgentCard>
-        </>
+          <AgentControlCard
+            {...cardFor("analytics")}
+            metrics={[
+              {
+                label: "Runs today",
+                value: String(agentByKey("analytics")?.runsToday ?? 0),
+              },
+            ]}
+            primaryLink={{ label: "Analytics", to: "/analytics" }}
+          />
+        </div>
       )}
 
       {selectedDraftId && (

@@ -1,6 +1,7 @@
 import { BarChart3, Bot, Mail, Rss, type LucideIcon } from "lucide-react";
 import type { AgentRun } from "@/types/accountGroup";
-import type { AgentKey } from "@/types/agents";
+import { formatDateShort } from "@/lib/dateFormat";
+import type { AgentKey, AgentLastRun, AgentStatus } from "@/types/agents";
 
 export const AGENT_NAMES: Record<AgentKey, string> = {
   post: "Post agent",
@@ -42,3 +43,43 @@ export const runOutcome = (run: AgentRun) =>
   run.errorMessage ??
   [...run.steps].reverse().find((step) => step.detail)?.detail ??
   null;
+
+export type AgentStatusTone = "running" | "waiting" | "off" | "server" | "idle";
+
+export interface AgentStatusPill {
+  label: string;
+  tone: AgentStatusTone;
+}
+
+export function agentStatusPill(agent: AgentStatus): AgentStatusPill {
+  if (agent.lastRun?.status === "running") {
+    return { label: "Working now", tone: "running" };
+  }
+  if (agent.active) {
+    return {
+      label: agent.enabled ? "On" : "On for the workspace",
+      tone: "running",
+    };
+  }
+  switch (agent.blockedBy) {
+    case "server":
+      return { label: "Off on the server", tone: "server" };
+    case "autopilot":
+      return { label: "Waiting for Agents drive", tone: "waiting" };
+    default:
+      return { label: "Off", tone: "off" };
+  }
+}
+
+export function describeLastRun(run: AgentLastRun | null): string {
+  if (!run) {
+    return "No runs yet";
+  }
+  const when =
+    run.status === "running"
+      ? "Running now"
+      : `Last run ${formatDateShort(run.finishedAt ?? run.startedAt)}`;
+  return [when, describeTrigger(run.trigger).toLowerCase(), run.summary]
+    .filter(Boolean)
+    .join(" · ");
+}

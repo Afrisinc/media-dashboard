@@ -101,9 +101,29 @@ export async function uploadBrandAssets(
   return unwrap(data);
 }
 
+export interface BrandAssetUpdate {
+  name?: string;
+  description?: string;
+  subjects?: string[];
+}
+
+/** Uploads photographs from the machine into a set that already exists. */
+export async function uploadImagesToAsset(
+  id: string,
+  files: File[],
+  subjects?: string[],
+): Promise<UploadResult> {
+  const payload = await Promise.all(files.map(toUploadPayload));
+  const { data } = await getApiClient().post<Envelope<UploadResult>>(
+    `${BASE}/${id}/upload`,
+    { files: payload, subjects },
+  );
+  return unwrap(data);
+}
+
 export async function updateBrandAsset(
   id: string,
-  payload: { name?: string; description?: string },
+  payload: BrandAssetUpdate,
 ): Promise<BrandAsset> {
   const { data } = await getApiClient().patch<Envelope<BrandAsset>>(
     `${BASE}/${id}`,

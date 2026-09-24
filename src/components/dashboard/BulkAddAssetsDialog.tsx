@@ -19,18 +19,14 @@ import {
   type BrandAsset,
 } from "@/services/brandAssetService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Images, Loader2, Upload, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { PhotoDropzone } from "@/components/dashboard/PhotoDropzone";
+import { useStagedPhotos } from "@/hooks/useStagedPhotos";
+import { Images, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface BulkAddAssetsDialogProps {
   open: boolean;
   onClose: () => void;
-}
-
-/** A file waiting to be uploaded, with a preview the browser can draw. */
-interface StagedFile {
-  file: File;
-  preview: string;
 }
 
 /**
@@ -46,25 +42,17 @@ export function BulkAddAssetsDialog({
   const [raw, setRaw] = useState("");
   const [name, setName] = useState("");
   const [subjects, setSubjects] = useState("");
-  const [staged, setStaged] = useState<StagedFile[]>([]);
-  const [dragging, setDragging] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const photos = useStagedPhotos();
+  const { staged, clear: clearPhotos } = photos;
 
   useEffect(() => {
     if (open) {
       setRaw("");
       setName("");
       setSubjects("");
-      setStaged([]);
-      setDragging(false);
+      clearPhotos();
     }
-  }, [open]);
-
-  // Object URLs are held by the browser until they are revoked.
-  useEffect(
-    () => () => staged.forEach((item) => URL.revokeObjectURL(item.preview)),
-    [staged],
-  );
+  }, [open, clearPhotos]);
 
   const urls = parseUrls(raw);
 
@@ -119,23 +107,6 @@ export function BulkAddAssetsDialog({
     },
   });
 
-  const stageFiles = (list: FileList | null) => {
-    const files = Array.from(list ?? []).filter((file) =>
-      file.type.startsWith("image/"),
-    );
-    if (!files.length) return;
-
-    setStaged((current) => [
-      ...current,
-      ...files.map((file) => ({ file, preview: URL.createObjectURL(file) })),
-    ]);
-  };
-
-  const unstage = (preview: string) => {
-    URL.revokeObjectURL(preview);
-    setStaged((current) => current.filter((item) => item.preview !== preview));
-  };
-
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-lg">
@@ -173,72 +144,12 @@ export function BulkAddAssetsDialog({
           the slide; the name falls back to today's date.
         </p>
 
-        <div
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(event) => {
-            event.preventDefault();
-            setDragging(false);
-            stageFiles(event.dataTransfer.files);
-          }}
-          className={cn(
-            "flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors",
-            dragging ? "border-primary bg-primary/5" : "border-border bg-inset",
-          )}
-        >
-          <Upload className="h-5 w-5 text-muted-foreground" />
-          <p className="text-sm font-semibold">Drop photographs here</p>
-          <p className="text-xs text-muted-foreground">
-            JPEG, PNG, WebP or GIF · up to 12MB each
-          </p>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            multiple
-            className="hidden"
-            onChange={(event) => {
-              stageFiles(event.target.files);
-              event.target.value = "";
-            }}
-          />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="mt-1"
-            disabled={create.isPending}
-            onClick={() => fileInput.current?.click()}
-          >
-            Choose files
-          </Button>
-        </div>
-
-        {staged.length > 0 && (
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-            {staged.map((item) => (
-              <div key={item.preview} className="group relative">
-                <img
-                  src={item.preview}
-                  alt={item.file.name}
-                  title={item.file.name}
-                  className="aspect-square w-full rounded-md border border-border object-cover"
-                />
-                <button
-                  type="button"
-                  aria-label={`Remove ${item.file.name}`}
-                  onClick={() => unstage(item.preview)}
-                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-overlay/90 text-foreground transition-opacity reveal-on-hover after:absolute after:-inset-1 after:content-['']"
-                >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <PhotoDropzone
+          staged={staged}
+          onAdd={photos.add}
+          onRemove={photos.remove}
+          disabled={create.isPending}
+        />
 
         <div className="flex items-center gap-3">
           <span className="h-px flex-1 bg-border" />

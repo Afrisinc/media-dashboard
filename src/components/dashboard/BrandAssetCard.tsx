@@ -1,3 +1,4 @@
+import { EditBrandAssetDialog } from "@/components/dashboard/EditBrandAssetDialog";
 import { MediaLightbox } from "@/components/dashboard/MediaLightbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import {
 } from "@/hooks/useBrandAssets";
 import { cn } from "@/lib/utils";
 import type { BrandAsset } from "@/services/brandAssetService";
-import { Check, Pencil, Trash2, X } from "lucide-react";
+import { Check, ImagePlus, Pencil, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
 /** The subjects across a set's photographs, deduplicated. */
@@ -32,6 +33,9 @@ export function BrandAssetCard({ asset }: { asset: BrandAsset }) {
   const [confirming, setConfirming] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [editingSet, setEditingSet] = useState<"details" | "photos" | null>(
+    null,
+  );
 
   const urls = asset.images.map((image) => image.url);
   const subjects = subjectsOf(asset);
@@ -128,6 +132,14 @@ export function BrandAssetCard({ asset }: { asset: BrandAsset }) {
         <div className="flex flex-shrink-0 items-center gap-1.5">
           <Button
             size="sm"
+            variant="outline"
+            onClick={() => setEditingSet("details")}
+          >
+            <Pencil className="mr-1 h-3.5 w-3.5" aria-hidden />
+            Edit
+          </Button>
+          <Button
+            size="sm"
             variant={asset.approved ? "default" : "outline"}
             disabled={approve.isPending}
             onClick={() =>
@@ -155,42 +167,49 @@ export function BrandAssetCard({ asset }: { asset: BrandAsset }) {
         </div>
       </ListRow>
 
-      {asset.images.length > 1 && (
-        <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-8 lg:grid-cols-10">
-          {asset.images.map((image, index) => (
-            <div key={image.id} className="group relative">
-              <button
-                type="button"
-                onClick={() => openAt(index)}
-                aria-label={`Open ${image.reference}`}
-                className="block aspect-square w-full overflow-hidden rounded-md border border-border transition-opacity hover:opacity-80"
-              >
-                <img
-                  src={image.url}
-                  alt={image.reference}
-                  title={image.reference}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-              </button>
-              <button
-                type="button"
-                aria-label={`Remove ${image.reference} from ${asset.name}`}
-                disabled={removeImage.isPending}
-                onClick={() =>
-                  removeImage.mutate({ id: asset.id, imageId: image.id })
-                }
-                className={cn(
-                  "absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full",
-                  "bg-overlay/90 text-foreground transition-opacity reveal-on-hover after:absolute after:-inset-1 after:content-['']",
-                )}
-              >
-                <X className="h-2.5 w-2.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+        {asset.images.map((image, index) => (
+          <div key={image.id} className="group relative">
+            <button
+              type="button"
+              onClick={() => openAt(index)}
+              aria-label={`Open ${image.reference}`}
+              className="block aspect-square w-full overflow-hidden rounded-md border border-border transition-opacity hover:opacity-80"
+            >
+              <img
+                src={image.url}
+                alt={image.reference}
+                title={image.reference}
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            </button>
+            <button
+              type="button"
+              aria-label={`Remove ${image.reference} from ${asset.name}`}
+              disabled={removeImage.isPending}
+              onClick={() =>
+                removeImage.mutate({ id: asset.id, imageId: image.id })
+              }
+              className={cn(
+                "absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full",
+                "bg-overlay/90 text-foreground transition-opacity reveal-on-hover after:absolute after:-inset-1 after:content-['']",
+              )}
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setEditingSet("photos")}
+          aria-label={`Add photographs to ${asset.name}`}
+          className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ImagePlus className="h-4 w-4" aria-hidden />
+          <span className="text-[10px] font-medium">Add</span>
+        </button>
+      </div>
 
       <MediaLightbox
         images={urls}
@@ -199,6 +218,15 @@ export function BrandAssetCard({ asset }: { asset: BrandAsset }) {
         onOpenChange={setLightboxOpen}
         onIndexChange={setLightboxIndex}
       />
+
+      {editingSet && (
+        <EditBrandAssetDialog
+          key={asset.id}
+          asset={asset}
+          startAt={editingSet}
+          onClose={() => setEditingSet(null)}
+        />
+      )}
 
       <ConfirmDialog
         open={confirming}

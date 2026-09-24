@@ -10,6 +10,13 @@ import {
   RUN_STATUS_VARIANT,
   type AgentRun,
 } from "@/types/accountGroup";
+import {
+  AGENT_ICONS,
+  describeTrigger,
+  isWorkspaceRun,
+  runOutcome,
+  runOwnerLabel,
+} from "@/lib/agents";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 
@@ -29,6 +36,8 @@ export function AgentRunRow({ run }: { run: AgentRun }) {
   const active = run.status === "running";
   const progress = runProgress(run);
   const current = run.steps.find((step) => step.status === "running");
+  const workspace = isWorkspaceRun(run);
+  const AgentIcon = run.agentKey ? AGENT_ICONS[run.agentKey] : null;
 
   return (
     <div
@@ -57,25 +66,48 @@ export function AgentRunRow({ run }: { run: AgentRun }) {
           )}
         />
 
+        {AgentIcon && (
+          <span
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+            title={runOwnerLabel(run)}
+          >
+            <AgentIcon className="h-3.5 w-3.5" aria-hidden />
+          </span>
+        )}
+
         <div className="min-w-[140px] flex-1">
           <p className="truncate text-xs font-semibold">
             {run.topic ?? `${run.agent} run`}
           </p>
-          <p className="mt-0.5 truncate text-[11px] text-dim-5">
+          <p
+            className={cn(
+              "mt-0.5 truncate text-[11px]",
+              run.errorMessage ? "text-destructive/80" : "text-dim-5",
+            )}
+          >
             {active && current
               ? `${current.label}…`
-              : run.errorMessage
-                ? run.errorMessage
-                : `${progress}% · ${run.steps.length} stages`}
+              : workspace
+                ? (runOutcome(run) ?? describeTrigger(run.trigger))
+                : run.errorMessage
+                  ? run.errorMessage
+                  : `${progress}% · ${run.steps.length} stages`}
           </p>
         </div>
 
         <span className="min-w-0 max-w-full truncate text-xs text-dim-4">
-          {run.groupName ?? "—"}
+          {runOwnerLabel(run)}
         </span>
         <span className="flex-shrink-0 text-xs text-dim-5">
-          {run.postIds.length} post{run.postIds.length === 1 ? "" : "s"} ·{" "}
-          {run.accountsTargeted} page{run.accountsTargeted === 1 ? "" : "s"}
+          {workspace ? (
+            describeTrigger(run.trigger)
+          ) : (
+            <>
+              {run.postIds.length} post{run.postIds.length === 1 ? "" : "s"} ·{" "}
+              {run.accountsTargeted} page
+              {run.accountsTargeted === 1 ? "" : "s"}
+            </>
+          )}
         </span>
         <span className="flex-shrink-0 text-xs text-dim-6 sm:w-16 sm:text-right">
           <RunDuration run={run} />

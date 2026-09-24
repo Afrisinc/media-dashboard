@@ -117,7 +117,9 @@ export interface NewsAgentStageStatus<T> {
 }
 
 export interface NewsAgentStatus {
+  /** Runs on its schedule right now: server allows it, switch on, autopilot on. */
   enabled: boolean;
+  allowedByServer: boolean;
   sources: number;
   minScore: number;
   batchSize: number;

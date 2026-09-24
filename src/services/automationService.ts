@@ -7,6 +7,7 @@ import type {
   RunRequestOutcome,
   UpdateAutomationPolicyPayload,
 } from "@/types/accountGroup";
+import type { AgentKey, AgentStatus } from "@/types/agents";
 
 const BASE = "/media/automation";
 
@@ -24,6 +25,7 @@ function unwrap<T>(body: Envelope<T>): T {
 
 export interface RunListParams {
   groupId?: string;
+  agent?: AgentKey;
   status?: AgentRunStatus;
   page?: number;
   limit?: number;
@@ -46,6 +48,24 @@ export async function updateAutomationPolicy(
   return unwrap(data);
 }
 
+export async function listAgents(): Promise<AgentStatus[]> {
+  const { data } = await getApiClient().get<Envelope<AgentStatus[]>>(
+    `${BASE}/agents`,
+  );
+  return unwrap(data);
+}
+
+export async function updateAgent(
+  key: AgentKey,
+  enabled: boolean,
+): Promise<AgentStatus> {
+  const { data } = await getApiClient().patch<Envelope<AgentStatus>>(
+    `${BASE}/agents/${key}`,
+    { enabled },
+  );
+  return unwrap(data);
+}
+
 export async function listAgentRuns(
   params: RunListParams = {},
 ): Promise<AgentRunPage> {
@@ -63,9 +83,12 @@ export async function getAgentRun(id: string): Promise<AgentRun> {
   return unwrap(data);
 }
 
-export async function getAutomationSummary(): Promise<Record<string, number>> {
+export async function getAutomationSummary(
+  agent?: AgentKey,
+): Promise<Record<string, number>> {
   const { data } = await getApiClient().get<Envelope<Record<string, number>>>(
     `${BASE}/summary`,
+    { params: agent ? { agent } : undefined },
   );
   return unwrap(data) ?? {};
 }

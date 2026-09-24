@@ -1,3 +1,4 @@
+import type { AgentKey } from "@/types/agents";
 import type { SocialPlatformKey } from "@/config/socialPlatforms";
 
 export type AutomationMode = "manual" | "autopilot";
@@ -120,6 +121,7 @@ export interface AgentRun {
   groupId: string | null;
   groupName: string | null;
   agent: string;
+  agentKey: AgentKey | null;
   trigger: string;
   status: AgentRunStatus;
   topic: string | null;

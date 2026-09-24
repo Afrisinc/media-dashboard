@@ -7,12 +7,16 @@ import {
   getAutomationPolicy,
   getAutomationSummary,
   listAgentRuns,
+  listAgents,
+  updateAgent,
   resumeAgentRun,
   runAutomationNow,
   updateAutomationPolicy,
   type RunListParams,
 } from "@/services/automationService";
 import { accountGroupKeys } from "@/hooks/useAccountGroups";
+import { newsDeskKeys } from "@/hooks/useNewsDesk";
+import type { AgentKey, AgentStatus } from "@/types/agents";
 import type {
   AgentRunPage,
   AutomationPolicy,
@@ -32,6 +36,9 @@ export const automationKeys = {
   run: (id: string) => ["automation", "run", id] as const,
   active: ["automation", "active"] as const,
   summary: ["automation", "summary"] as const,
+  summaryFor: (agent?: AgentKey) =>
+    ["automation", "summary", agent ?? "all"] as const,
+  agents: ["automation", "agents"] as const,
 };
 
 export function useAutomationPolicy() {
@@ -122,11 +129,59 @@ export function useLatestAgentRun() {
   };
 }
 
-export function useAutomationSummary() {
+export function useAutomationSummary(agent?: AgentKey) {
   return useQuery({
-    queryKey: automationKeys.summary,
-    queryFn: getAutomationSummary,
+    queryKey: automationKeys.summaryFor(agent),
+    queryFn: () => getAutomationSummary(agent),
     refetchInterval: 60_000,
+  });
+}
+
+export function useAgents() {
+  return useQuery({
+    queryKey: automationKeys.agents,
+    queryFn: listAgents,
+    refetchInterval: IDLE_POLL_MS,
+  });
+}
+
+/**
+ * Flips one agent's switch. The row updates at once and rolls back if the
+ * server refuses; the list is then refetched because turning an agent on can
+ * change whether others run too.
+ */
+export function useUpdateAgent() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ key, enabled }: { key: AgentKey; enabled: boolean }) =>
+      updateAgent(key, enabled),
+    onMutate: async ({ key, enabled }) => {
+      await queryClient.cancelQueries({ queryKey: automationKeys.agents });
+      const previous = queryClient.getQueryData<AgentStatus[]>(
+        automationKeys.agents,
+      );
+      queryClient.setQueryData<AgentStatus[]>(automationKeys.agents, (agents) =>
+        agents?.map((agent) =>
+          agent.key === key ? { ...agent, enabled, chosen: true } : agent,
+        ),
+      );
+      return { previous };
+    },
+    onError: (error, _variables, context) => {
+      queryClient.setQueryData(automationKeys.agents, context?.previous);
+      toast({ variant: "destructive", title: describeError(error) });
+    },
+    onSuccess: (agent) => {
+      toast({
+        title: `${agent.name} ${agent.enabled ? "switched on" : "switched off"}`,
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: automationKeys.agents });
+      queryClient.invalidateQueries({ queryKey: newsDeskKeys.all });
+    },
   });
 }
 
@@ -140,6 +195,7 @@ export function useUpdateAutomationPolicy() {
     onSuccess: (policy: AutomationPolicy) => {
       queryClient.invalidateQueries({ queryKey: automationKeys.all });
       queryClient.invalidateQueries({ queryKey: accountGroupKeys.all });
+      queryClient.invalidateQueries({ queryKey: newsDeskKeys.all });
       toast({
         title:
           policy.mode === "autopilot"

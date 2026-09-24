@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ArrowRight, Bot, Loader2, Play, Rss, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -147,12 +148,21 @@ export function NewsAgentPanel({
 
         {!agent.enabled && (
           <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-            Scheduled runs are off. Set{" "}
-            <code className="font-mono text-foreground">
-              NEWS_AGENT_ENABLED=true
-            </code>{" "}
-            on content-service to run on a schedule — each stage can still be
-            run by hand below.
+            {agent.allowedByServer ? (
+              <>
+                Scheduled runs are off. Switch the News agent on under{" "}
+                <Link
+                  to="/automation"
+                  className="font-medium text-primary hover:underline"
+                >
+                  Automation
+                </Link>{" "}
+                — it runs while the workspace is on Agents drive. Each stage can
+                still be run by hand below.
+              </>
+            ) : (
+              "The server has the news agent turned off, so it cannot run on a schedule. Each stage can still be run by hand below."
+            )}
           </p>
         )}
 

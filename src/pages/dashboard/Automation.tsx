@@ -1,5 +1,6 @@
 import { AgentRunRow } from "@/components/dashboard/AgentRunRow";
 import { AgentRunTimeline } from "@/components/dashboard/AgentRunTimeline";
+import { AgentSwitchboard } from "@/components/dashboard/AgentSwitchboard";
 import { AutomationModeCard } from "@/components/dashboard/AutomationModeCard";
 import { StatStrip, type StripStat } from "@/components/dashboard/StatStrip";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import { useAccountGroups } from "@/hooks/useAccountGroups";
 import {
   useActiveAgentRun,
   useAgentRuns,
+  useAgents,
   useAutomationSummary,
 } from "@/hooks/useAutomation";
 import { formatDurationMs } from "@/lib/dateFormat";
@@ -36,23 +38,69 @@ import {
   Workflow,
 } from "lucide-react";
 import { useState } from "react";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  AGENT_ICONS,
+  AGENT_NAMES,
+  AGENT_SHORT_NAMES,
+  describeTrigger,
+  runOwnerLabel,
+} from "@/lib/agents";
+import type { AgentKey } from "@/types/agents";
 import { Link } from "react-router-dom";
 
 const RUN_LIMIT = 12;
 
+const AGENT_FILTER_ORDER: AgentKey[] = [
+  "post",
+  "news",
+  "newsletter",
+  "analytics",
+];
+
+type AgentFilter = AgentKey | "all";
+
 const DashboardAutomation = () => {
+  const [agentFilter, setAgentFilter] = useState<AgentFilter>("all");
+  const agent = agentFilter === "all" ? undefined : agentFilter;
   const { data: groups, isLoading: groupsLoading } = useAccountGroups();
   const {
     data: runPage,
     isLoading: runsLoading,
     isError,
-  } = useAgentRuns({ limit: RUN_LIMIT });
-  const { data: summary } = useAutomationSummary();
+  } = useAgentRuns({ limit: RUN_LIMIT, agent });
+  const { data: summary } = useAutomationSummary(agent);
   const { data: activeRun } = useActiveAgentRun();
+  const { data: agents } = useAgents();
 
   const runs = runPage?.items ?? [];
+  const showsPostAgent = agentFilter === "all" || agentFilter === "post";
   const liveRun =
-    activeRun ?? runs.find((run) => run.status === "running") ?? runs[0];
+    (showsPostAgent ? activeRun : undefined) ??
+    runs.find((run) => run.status === "running") ??
+    runs[0];
+
+  const runsToday = (key: AgentKey) =>
+    agents?.find((status) => status.key === key)?.runsToday ?? 0;
+  const filterOptions: { label: string; value: AgentFilter }[] = [
+    {
+      label: `All (${AGENT_FILTER_ORDER.reduce((total, key) => total + runsToday(key), 0)})`,
+      value: "all",
+    },
+    ...AGENT_FILTER_ORDER.map((key) => ({
+      label: `${AGENT_SHORT_NAMES[key]} (${runsToday(key)})`,
+      value: key,
+    })),
+  ];
+
+  const showRunsFor = (key: AgentKey) => {
+    setAgentFilter(key);
+    requestAnimationFrame(() =>
+      document
+        .getElementById("recent-runs")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
   const autopilotGroups = (groups ?? []).filter(
     (group) => group.autopilotEnabled,
   );
@@ -78,19 +126,19 @@ const DashboardAutomation = () => {
 
   const stats: StripStat[] = [
     {
-      label: "Shipped today",
+      label: "Succeeded today",
       value: String(succeeded),
       icon: CheckCircle2,
       tone: succeeded > 0 ? "success" : "default",
     },
     { label: "Success rate", value: successRate, icon: Radio },
     {
-      label: "Needs a look",
+      label: "Failed today",
       value: String(failed),
       icon: AlertTriangle,
       tone: failed > 0 ? "danger" : "default",
     },
-    { label: "Skipped", value: String(skipped), icon: Inbox },
+    { label: "Skipped today", value: String(skipped), icon: Inbox },
   ];
 
   return (
@@ -109,6 +157,7 @@ const DashboardAutomation = () => {
       />
 
       <AutomationModeCard />
+      <AgentSwitchboard onShowRuns={showRunsFor} />
       <StatStrip stats={stats} />
 
       <Card className="overflow-hidden">
@@ -150,8 +199,8 @@ const DashboardAutomation = () => {
                   {liveRun.topic ?? "Latest run"}
                 </span>
                 <span className="mt-0.5 block truncate text-[11px] text-dim-5">
-                  {liveRun.groupName ?? "—"} ·{" "}
-                  {liveRun.trigger === "autopilot" ? "agents" : "you"} ·{" "}
+                  {runOwnerLabel(liveRun)} · {describeTrigger(liveRun.trigger)}{" "}
+                  ·{" "}
                   {liveRun.steps.filter((s) => s.status === "succeeded").length}
                   /{liveRun.steps.length} stages
                 </span>
@@ -176,7 +225,7 @@ const DashboardAutomation = () => {
         )}
       </Card>
 
-      {autopilotGroups.length > 0 && (
+      {showsPostAgent && autopilotGroups.length > 0 && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {autopilotGroups.map((group) => (
             <Card
@@ -208,7 +257,7 @@ const DashboardAutomation = () => {
         </div>
       )}
 
-      {!groupsLoading && autopilotGroups.length === 0 && (
+      {showsPostAgent && !groupsLoading && autopilotGroups.length === 0 && (
         <EmptyState
           icon={Bot}
           variant="compact"
@@ -216,13 +265,32 @@ const DashboardAutomation = () => {
         />
       )}
 
-      <Card className="p-5">
+      <Card id="recent-runs" className="scroll-mt-4 p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-bold">Recent runs</h2>
           <span className="text-xs text-dim-6">
             {runPage?.total ?? 0} logged
           </span>
         </div>
+
+        <SegmentedControl
+          options={filterOptions}
+          value={agentFilter}
+          onChange={setAgentFilter}
+          className="mb-4"
+        />
+
+        {!runsLoading && !isError && runs.length === 0 && (
+          <EmptyState
+            icon={agent ? AGENT_ICONS[agent] : Workflow}
+            variant="compact"
+            title={
+              agent
+                ? `${AGENT_NAMES[agent]} has not run yet.`
+                : "No agent has run yet."
+            }
+          />
+        )}
 
         {isError && (
           <EmptyState

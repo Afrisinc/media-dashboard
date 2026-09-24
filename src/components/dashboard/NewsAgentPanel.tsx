@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Bot, Loader2, Play, Rss, Sparkles } from "lucide-react";
+import { ArrowRight, Bot, Loader2, Play, Rss, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -111,11 +111,13 @@ function StageCard<T>({
 interface NewsAgentPanelProps {
   summary: NewsDeskSummary | undefined;
   loading: boolean;
+  onShowQueued: () => void;
 }
 
 export function NewsAgentPanel({
   summary,
   loading,
+  onShowQueued,
 }: Readonly<NewsAgentPanelProps>) {
   if (loading || !summary) {
     return <Skeleton className="h-44 w-full rounded-xl" />;
@@ -161,14 +163,31 @@ export function NewsAgentPanel({
             icon={Rss}
             status={agent.ingest}
             summarize={ingestSummary}
-            detail={(result) =>
-              result.failedSources.length > 0 && (
-                <p className="text-xs text-amber">
-                  {`${plural(result.failedSources.length, "feed")} failed: `}
-                  {result.failedSources.map((source) => source.name).join(", ")}
-                </p>
-              )
-            }
+            detail={(result) => (
+              <>
+                {summary.byStatus.draft > 0 && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={onShowQueued}
+                  >
+                    {`See the ${plural(summary.byStatus.draft, "article")} waiting for the AI editor`}
+                    <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {result.failedSources.length > 0 && (
+                  <ul className="space-y-0.5">
+                    {result.failedSources.map((source) => (
+                      <li key={source.name} className="text-xs text-amber">
+                        <span className="font-medium">{source.name}</span>
+                        {` failed: ${source.error}`}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
           />
           <StageCard
             stage="enhance"

@@ -25,8 +25,11 @@ const DashboardChrome = () => {
   );
 };
 
+const sidebarStartsOpen = () =>
+  !document.cookie.split("; ").some((entry) => entry === "sidebar:state=false");
+
 const DashboardLayout = () => (
-  <SidebarProvider>
+  <SidebarProvider defaultOpen={sidebarStartsOpen()}>
     <AutopilotProvider>
       <CommandPaletteProvider>
         <DashboardChrome />

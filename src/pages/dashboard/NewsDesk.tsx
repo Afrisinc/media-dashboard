@@ -87,7 +87,10 @@ const articleWhen = (article: NewsArticle) => {
   if (article.status === "published" && article.mediaPost?.published_at) {
     return `Published ${formatDateShort(article.mediaPost.published_at)}`;
   }
-  return `Ingested ${formatDateShort(article.created_at)}`;
+  if (article.pub_date) {
+    return `Source published ${formatDateShort(article.pub_date)}`;
+  }
+  return `Fetched ${formatDateShort(article.created_at)}`;
 };
 
 function StatusBadge({
@@ -167,8 +170,15 @@ function ArticleCard({ article, onOpen }: Readonly<ArticleViewProps>) {
       }
       caption={
         <>
+          {!article.mediaPost && article.source_summary && (
+            <span className="mb-1 line-clamp-2 text-foreground/80">
+              {article.source_summary}
+            </span>
+          )}
           <span className="block">
-            {articleWhen(article)} · {article.read_time} min read
+            {article.status === "draft"
+              ? `Waiting for the AI editor · ${articleWhen(article)}`
+              : `${articleWhen(article)} · ${article.read_time} min read`}
           </span>
           {article.processing_error && (
             <span
@@ -259,6 +269,17 @@ const NewsDesk = () => {
     setPage(1);
   };
 
+  const showQueued = () => {
+    setCategory(ALL_CATEGORIES);
+    setSearchInput("");
+    applyStatus("draft");
+    requestAnimationFrame(() =>
+      document
+        .getElementById("news-articles")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+
   const clearFilters = () => {
     setStatus("all");
     setCategory(ALL_CATEGORIES);
@@ -323,9 +344,13 @@ const NewsDesk = () => {
 
       <StatStrip variant="tiles" stats={stats} loading={summary.isLoading} />
 
-      <NewsAgentPanel summary={summary.data} loading={summary.isLoading} />
+      <NewsAgentPanel
+        summary={summary.data}
+        loading={summary.isLoading}
+        onShowQueued={showQueued}
+      />
 
-      <Card>
+      <Card id="news-articles" className="scroll-mt-4">
         <CardContent className="space-y-4 p-4 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             {articles.isLoading ? (

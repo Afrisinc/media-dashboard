@@ -17,6 +17,7 @@ import { describeCron } from "@/lib/newsDesk";
 import type {
   NewsAgentStage,
   NewsAgentStageStatus,
+  NewsArticleResult,
   NewsDeskSummary,
   NewsEnhancementResult,
   NewsIngestionResult,
@@ -26,7 +27,8 @@ const plural = (count: number, word: string) =>
   `${count} ${word}${count === 1 ? "" : "s"}`;
 
 function ingestSummary(result: NewsIngestionResult) {
-  return `${plural(result.fetched, "item")} read · ${result.created} new`;
+  const stale = result.stale > 0 ? ` · ${result.stale} too old` : "";
+  return `${plural(result.fetched, "item")} read · ${result.created} new${stale}`;
 }
 
 function enhanceSummary(result: NewsEnhancementResult) {
@@ -63,6 +65,36 @@ function IssueList({ items }: IssueListProps) {
       ))}
     </ul>
   );
+}
+
+function articleIssues(article: NewsArticleResult): IssueListProps["items"] {
+  const headline = <span className="font-medium">{article.headline}</span>;
+
+  if (article.outcome === "published") {
+    return article.social
+      .filter((outcome) => outcome.status === "failed")
+      .map((outcome) => ({
+        id: `${article.articleId}-social-${outcome.userId}`,
+        content: (
+          <>
+            {headline}
+            {` published, but its social post failed: ${outcome.reason}`}
+          </>
+        ),
+      }));
+  }
+
+  return [
+    {
+      id: article.articleId,
+      content: (
+        <>
+          {headline}
+          {` ${article.outcome === "failed" ? "failed" : "was rejected"}: ${article.reason}`}
+        </>
+      ),
+    },
+  ];
 }
 
 function StageCard<T>({
@@ -249,19 +281,9 @@ export function NewsAgentPanel({
             detail={(result) => (
               <>
                 <IssueList
-                  items={result.articles
-                    .filter((article) => article.outcome !== "published")
-                    .map((article) => ({
-                      id: article.articleId,
-                      content: (
-                        <>
-                          <span className="font-medium">
-                            {article.headline}
-                          </span>
-                          {` ${article.outcome === "failed" ? "failed" : "was rejected"}: ${article.reason}`}
-                        </>
-                      ),
-                    }))}
+                  items={result.articles.flatMap((article) =>
+                    articleIssues(article),
+                  )}
                 />
                 {result.recovered > 0 && (
                   <p className="text-xs text-amber">

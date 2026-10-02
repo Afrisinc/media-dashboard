@@ -82,9 +82,24 @@ const OPENAI_TEXT_MODELS: AiModelOption[] = [
 
 const OPENAI_IMAGE_MODELS: AiModelOption[] = [
   {
-    value: "dall-e-3",
-    label: "DALL·E 3",
-    hint: "Article covers and illustrations",
+    value: "gpt-image-1",
+    label: "GPT Image 1",
+    hint: "The standard image model for article covers",
+  },
+  {
+    value: "gpt-image-1-mini",
+    label: "GPT Image 1 Mini",
+    hint: "A smaller, lower-cost image model",
+  },
+  {
+    value: "gpt-image-1.5",
+    label: "GPT Image 1.5",
+    hint: "A newer generation of the image model",
+  },
+  {
+    value: "gpt-image-2",
+    label: "GPT Image 2",
+    hint: "The latest generation of the image model",
   },
 ];
 

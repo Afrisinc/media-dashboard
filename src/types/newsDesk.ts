@@ -95,7 +95,15 @@ export interface NewsIngestionResult {
   fetched: number;
   created: number;
   duplicates: number;
+  stale: number;
   failedSources: { name: string; error: string }[];
+}
+
+export interface NewsSocialOutcome {
+  userId: string;
+  groupName: string | null;
+  status: "drafted" | "skipped" | "failed";
+  reason: string | null;
 }
 
 export interface NewsArticleResult {
@@ -104,6 +112,7 @@ export interface NewsArticleResult {
   outcome: "published" | "rejected" | "failed";
   score: number | null;
   reason: string | null;
+  social: NewsSocialOutcome[];
 }
 
 export interface NewsEnhancementResult {

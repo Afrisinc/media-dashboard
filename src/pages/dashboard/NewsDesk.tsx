@@ -339,7 +339,7 @@ const NewsDesk = () => {
     <div className="space-y-4 animate-fade-up">
       <PageHeader
         title="News Desk"
-        subtitle="The news agent reads African business and tech feeds, lets GPT-4o judge and rewrite what matters, draws a cover and publishes it to the website."
+        subtitle="The news agent reads African business and tech feeds, lets GPT-4o judge and rewrite what matters, draws a cover, publishes it to the website and drafts a matching social post on the same cover."
       />
 
       <StatStrip variant="tiles" stats={stats} loading={summary.isLoading} />

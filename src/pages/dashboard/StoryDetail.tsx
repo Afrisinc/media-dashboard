@@ -11,7 +11,11 @@ import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { useGenerateEpisode, useStory } from "@/hooks/useStoryAgent";
+import {
+  useGenerateEpisode,
+  useGenerateStoryCover,
+  useStory,
+} from "@/hooks/useStoryAgent";
 import { compactNumber } from "@/lib/numberFormat";
 import { coverTint } from "@/lib/storyCover";
 import { episodeNeedsYou } from "@/lib/storyEpisode";
@@ -26,6 +30,7 @@ import {
   BookCheck,
   BookOpen,
   Eye,
+  ImagePlus,
   Loader2,
   Send,
   Sparkles,
@@ -203,6 +208,7 @@ function DetailSkeleton() {
 }
 
 function StoryHero({ story }: Readonly<{ story: Story }>) {
+  const cover = useGenerateStoryCover();
   const details = [story.genre, story.tone, story.audience].filter(
     (detail): detail is string => Boolean(detail),
   );
@@ -247,6 +253,19 @@ function StoryHero({ story }: Readonly<{ story: Story }>) {
             {story.language}
           </Badge>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={cover.isPending}
+          onClick={() => cover.mutate(story.id)}
+        >
+          {cover.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <ImagePlus className="mr-2 h-4 w-4" />
+          )}
+          {story.coverImageUrl ? "Redraw cover" : "Generate cover"}
+        </Button>
       </div>
     </div>
   );

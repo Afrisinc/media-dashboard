@@ -64,6 +64,15 @@ export async function generateEpisode(
   return unwrap(data);
 }
 
+export async function generateStoryCover(
+  storyId: string,
+): Promise<{ coverImageUrl: string }> {
+  const { data } = await getApiClient().post<
+    Envelope<{ coverImageUrl: string }>
+  >(`${BASE}/${storyId}/cover`, {});
+  return unwrap(data);
+}
+
 export async function listStoryEpisodes(
   storyId: string,
   params: { page?: number; limit?: number } = {},

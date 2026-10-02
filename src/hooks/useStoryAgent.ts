@@ -4,6 +4,7 @@ import {
   createStory,
   describeStoryError,
   generateEpisode,
+  generateStoryCover,
   getStory,
   listStories,
   listStoryEpisodes,
@@ -14,6 +15,8 @@ import {
 } from "@/services/storyService";
 import type { Story, StoryBrief, StoryEpisode } from "@/types/story";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+const COVER_POLL_MS = 15_000;
 
 export const storyKeys = {
   all: ["stories"] as const,
@@ -36,6 +39,12 @@ export function useStory(id: string | undefined) {
     queryKey: storyKeys.detail(id ?? ""),
     queryFn: () => getStory(id as string),
     enabled: Boolean(id),
+    refetchInterval: (query) => {
+      const story = query.state.data;
+      return story && !story.coverImageUrl && story.episodes?.length
+        ? COVER_POLL_MS
+        : false;
+    },
   });
 }
 
@@ -83,6 +92,13 @@ export function useGenerateEpisode() {
       }),
     (episode: StoryEpisode) =>
       `Episode ${episode.episodeNumber} drafted — ready for review`,
+  );
+}
+
+export function useGenerateStoryCover() {
+  return useStoryMutation(
+    (storyId: string) => generateStoryCover(storyId),
+    () => "Cover ready",
   );
 }
 

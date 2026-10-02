@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { isAdminRole, roleFromToken } from "@/lib/authUtils";
 
 interface CustomUser {
   id: string;
@@ -16,6 +17,8 @@ interface AuthContextType {
   user: CustomUser | null;
   session: null;
   token: string | null;
+  role: string | null;
+  isAdmin: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   handleSSO: (token: string) => void;
@@ -82,16 +85,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("token_expires_at");
   };
 
+  const role = useMemo(() => roleFromToken(token), [token]);
+
   const value = useMemo(
     () => ({
       user,
       session: null,
       token,
+      role,
+      isAdmin: isAdminRole(role),
       loading,
       signOut,
       handleSSO,
     }),
-    [user, token, loading, signOut, handleSSO],
+    [user, token, role, loading, signOut, handleSSO],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

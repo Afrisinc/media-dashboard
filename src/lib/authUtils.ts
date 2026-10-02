@@ -4,6 +4,7 @@ import { toast } from "sonner";
 export interface TokenPayload {
   username?: string;
   email?: string;
+  role?: string;
   [key: string]: unknown;
 }
 
@@ -20,6 +21,22 @@ export function decodeUserToken(): TokenPayload {
   }
 
   return user;
+}
+
+const ADMIN_ROLES = new Set(["admin", "super_admin"]);
+
+export function isAdminRole(role: string | null | undefined): boolean {
+  return Boolean(role) && ADMIN_ROLES.has((role as string).toLowerCase());
+}
+
+export function roleFromToken(token: string | null): string | null {
+  if (!token) return null;
+
+  try {
+    return jwtDecode<TokenPayload>(token).role ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function getToken(): string | null {

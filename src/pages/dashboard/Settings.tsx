@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Bot, Hand, Images, Plug, Users } from "lucide-react";
+import { Bot, Hand, Images, Plug, Sparkles, Users } from "lucide-react";
+import { AiProviderConfigDialog } from "@/components/dashboard/AiProviderConfigDialog";
+import { AiProviderConfigList } from "@/components/dashboard/AiProviderConfigList";
 import { BrandAssetsManager } from "@/components/dashboard/BrandAssetsManager";
 import {
   ConnectPlatformDialog,
@@ -26,27 +28,40 @@ import {
   SOCIAL_PLATFORMS,
   type SocialPlatformKey,
 } from "@/config/socialPlatforms";
+import { AI_PROVIDER_SLOTS, type AiProviderSlot } from "@/config/aiProviders";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAutopilot } from "@/contexts/AutopilotContext";
+import { useAiProviderConfigs } from "@/hooks/useAiProviderConfigs";
 import { useAccountGroups } from "@/hooks/useAccountGroups";
 import { useBrandAssets } from "@/hooks/useBrandAssets";
 import { useSocialMediaIntegrations } from "@/hooks/useSocialMediaIntegrations";
 
 const SETTINGS_TABS = [
-  { value: "publishing", label: "Publishing" },
-  { value: "platforms", label: "Platforms" },
-  { value: "assets", label: "Brand assets" },
+  { value: "publishing", label: "Publishing", adminOnly: false },
+  { value: "platforms", label: "Platforms", adminOnly: false },
+  { value: "assets", label: "Brand assets", adminOnly: false },
+  { value: "ai", label: "AI providers", adminOnly: true },
 ] as const;
 
 type SettingsTab = (typeof SETTINGS_TABS)[number]["value"];
 
-function isSettingsTab(value: string | null): value is SettingsTab {
-  return SETTINGS_TABS.some((tab) => tab.value === value);
+function isSettingsTab(
+  value: string | null,
+  available: readonly { value: SettingsTab }[] = SETTINGS_TABS,
+): value is SettingsTab {
+  return available.some((tab) => tab.value === value);
 }
 
 const DashboardSettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { isAdmin } = useAuth();
+  const visibleTabs = SETTINGS_TABS.filter(
+    (item) => !item.adminOnly || isAdmin,
+  );
   const tabParam = searchParams.get("tab");
-  const tab: SettingsTab = isSettingsTab(tabParam) ? tabParam : "publishing";
+  const tab: SettingsTab = isSettingsTab(tabParam, visibleTabs)
+    ? tabParam
+    : "publishing";
   const setTab = (next: string) =>
     setSearchParams(
       (params) => {
@@ -60,6 +75,8 @@ const DashboardSettings = () => {
   const integrations = useSocialMediaIntegrations();
   const { data: groups } = useAccountGroups();
   const brandAssets = useBrandAssets();
+  const aiConfigs = useAiProviderConfigs({ enabled: isAdmin });
+  const [editingSlot, setEditingSlot] = useState<AiProviderSlot | null>(null);
   const [connectingKey, setConnectingKey] = useState<SocialPlatformKey | null>(
     null,
   );
@@ -168,7 +185,7 @@ const DashboardSettings = () => {
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-auto">
-          {SETTINGS_TABS.map((item) => (
+          {visibleTabs.map((item) => (
             <TabsTrigger key={item.value} value={item.value}>
               {item.label}
             </TabsTrigger>
@@ -213,6 +230,36 @@ const DashboardSettings = () => {
         <TabsContent value="assets" className="mt-0">
           <BrandAssetsManager />
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="ai" className="mt-0">
+            <SectionCard
+              title="AI providers"
+              icon={Sparkles}
+              iconTone="primary"
+              description="API keys and models the agents run on. A saved key replaces the server environment key within a minute."
+              contentClassName="px-0 pb-0 pt-3"
+            >
+              <div className="border-t border-border/60">
+                {aiConfigs.isError ? (
+                  <ErrorState
+                    title="Could not load the AI provider settings"
+                    description="content-service is not answering, or your account is not an administrator."
+                    onRetry={() => aiConfigs.refetch()}
+                    retrying={aiConfigs.isFetching}
+                  />
+                ) : (
+                  <AiProviderConfigList
+                    slots={AI_PROVIDER_SLOTS}
+                    configs={aiConfigs.data ?? []}
+                    loading={aiConfigs.isLoading}
+                    onEdit={setEditingSlot}
+                  />
+                )}
+              </div>
+            </SectionCard>
+          </TabsContent>
+        )}
       </Tabs>
 
       <ConnectPlatformDialog
@@ -223,6 +270,16 @@ const DashboardSettings = () => {
       <EditCredentialsDialog
         platform={editingPlatform}
         onClose={() => setEditingKey(null)}
+      />
+
+      <AiProviderConfigDialog
+        slot={editingSlot}
+        config={aiConfigs.data?.find(
+          (row) =>
+            row.provider === editingSlot?.provider &&
+            row.purpose === editingSlot?.purpose,
+        )}
+        onClose={() => setEditingSlot(null)}
       />
     </div>
   );

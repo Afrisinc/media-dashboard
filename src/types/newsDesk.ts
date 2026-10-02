@@ -105,6 +105,7 @@ export interface NewsEnhancementResult {
   published: number;
   rejected: number;
   failed: number;
+  failureReasons: string[];
   recovered: number;
 }
 
@@ -123,8 +124,14 @@ export interface NewsAgentStatus {
   sources: number;
   minScore: number;
   batchSize: number;
+  batchSizeOptions: number[];
   ingest: NewsAgentStageStatus<NewsIngestionResult>;
   enhance: NewsAgentStageStatus<NewsEnhancementResult>;
+}
+
+export interface NewsAgentSettings {
+  batchSize: number;
+  batchSizeOptions: number[];
 }
 
 export interface NewsDeskSummary {

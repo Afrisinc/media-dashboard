@@ -18,6 +18,7 @@ import { FormField } from "@/components/ui/form-field";
 import { IconBox } from "@/components/ui/icon-box";
 import { Input } from "@/components/ui/input";
 import { SecretInput } from "@/components/ui/secret-input";
+import { SettingRow } from "@/components/ui/setting-row";
 import { Switch } from "@/components/ui/switch";
 import { AI_PROVIDER_CATALOG, type AiProviderSlot } from "@/config/aiProviders";
 import { useSaveAiProviderConfig } from "@/hooks/useAiProviderConfigs";
@@ -224,21 +225,17 @@ export function AiProviderConfigDialog({
           </Collapsible>
 
           {isEditing && (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-inset px-3.5 py-2.5">
-              <label htmlFor={activeField} className="min-w-0 flex-1">
-                <span className="block text-xs font-bold">
-                  Use the stored key
-                </span>
-                <span className="block text-[11px] text-muted-foreground">
-                  Turn off to fall back to the server environment key.
-                </span>
-              </label>
+            <SettingRow
+              title="Use the stored key"
+              description="Turn off to fall back to the server environment key."
+              htmlFor={activeField}
+            >
               <Switch
                 id={activeField}
                 checked={isActive}
                 onCheckedChange={setIsActive}
               />
-            </div>
+            </SettingRow>
           )}
         </div>
 

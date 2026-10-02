@@ -9,6 +9,7 @@ interface SegmentedControlProps<T extends string> {
   // string: SetStateAction includes an updater function, which is not a string,
   // so inferring from this position falls back to the constraint.
   onChange: (value: NoInfer<T>) => void;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -16,6 +17,7 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  disabled = false,
   className,
 }: SegmentedControlProps<T>) {
   return (
@@ -33,6 +35,7 @@ export function SegmentedControl<T extends string>({
           size="sm"
           className={cn("shrink-0", option.icon && "gap-1.5")}
           aria-pressed={value === option.value}
+          disabled={disabled}
           onClick={() => onChange(option.value)}
         >
           {option.icon && <option.icon className="h-4 w-4" />}

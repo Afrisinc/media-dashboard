@@ -8,6 +8,7 @@ import {
   requeueNewsArticle,
   runNewsAgentStage,
   skipNewsArticle,
+  updateNewsSettings,
   type ListNewsParams,
 } from "@/services/newsDeskService";
 import {
@@ -89,6 +90,14 @@ export function useRunNewsAgentStage() {
       stage === "ingest"
         ? "Fetching the feeds now"
         : "Writing and publishing the queued articles now",
+  );
+}
+
+export function useUpdateNewsSettings() {
+  return useNewsMutation(
+    (batchSize: number) => updateNewsSettings(batchSize),
+    (batchSize) =>
+      `The agent now writes ${batchSize} ${batchSize === 1 ? "article" : "articles"} per run`,
   );
 }
 

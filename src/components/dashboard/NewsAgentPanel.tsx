@@ -5,8 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconBox } from "@/components/ui/icon-box";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { SettingRow } from "@/components/ui/setting-row";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRunNewsAgentStage } from "@/hooks/useNewsDesk";
+import {
+  useRunNewsAgentStage,
+  useUpdateNewsSettings,
+} from "@/hooks/useNewsDesk";
 import { formatDateShort } from "@/lib/dateFormat";
 import { describeCron } from "@/lib/newsDesk";
 import type {
@@ -40,6 +45,24 @@ interface StageCardProps<T> {
   status: NewsAgentStageStatus<T>;
   summarize: (result: T) => string;
   detail?: (result: T) => ReactNode;
+}
+
+interface IssueListProps {
+  items: { id: string; content: ReactNode }[];
+}
+
+function IssueList({ items }: IssueListProps) {
+  if (items.length === 0) return null;
+
+  return (
+    <ul className="space-y-0.5">
+      {items.map((item) => (
+        <li key={item.id} className="text-xs text-amber">
+          {item.content}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function StageCard<T>({
@@ -120,6 +143,8 @@ export function NewsAgentPanel({
   loading,
   onShowQueued,
 }: Readonly<NewsAgentPanelProps>) {
+  const updateSettings = useUpdateNewsSettings();
+
   if (loading || !summary) {
     return <Skeleton className="h-44 w-full rounded-xl" />;
   }
@@ -145,6 +170,21 @@ export function NewsAgentPanel({
             </p>
           </div>
         </div>
+
+        <SettingRow
+          title="Articles per run"
+          description="How many queued articles the AI editor writes and publishes each run. Every article costs two OpenAI calls."
+        >
+          <SegmentedControl
+            options={agent.batchSizeOptions.map((size) => ({
+              label: String(size),
+              value: String(size),
+            }))}
+            value={String(agent.batchSize)}
+            onChange={(size) => updateSettings.mutate(Number(size))}
+            disabled={updateSettings.isPending}
+          />
+        </SettingRow>
 
         {!agent.enabled && (
           <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
@@ -186,16 +226,17 @@ export function NewsAgentPanel({
                     <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
                 )}
-                {result.failedSources.length > 0 && (
-                  <ul className="space-y-0.5">
-                    {result.failedSources.map((source) => (
-                      <li key={source.name} className="text-xs text-amber">
+                <IssueList
+                  items={result.failedSources.map((source) => ({
+                    id: source.name,
+                    content: (
+                      <>
                         <span className="font-medium">{source.name}</span>
                         {` failed: ${source.error}`}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                      </>
+                    ),
+                  }))}
+                />
               </>
             )}
           />
@@ -205,13 +246,21 @@ export function NewsAgentPanel({
             icon={Sparkles}
             status={agent.enhance}
             summarize={enhanceSummary}
-            detail={(result) =>
-              result.recovered > 0 && (
-                <p className="text-xs text-amber">
-                  {`${plural(result.recovered, "interrupted article")} marked failed`}
-                </p>
-              )
-            }
+            detail={(result) => (
+              <>
+                <IssueList
+                  items={result.failureReasons.map((reason) => ({
+                    id: reason,
+                    content: reason,
+                  }))}
+                />
+                {result.recovered > 0 && (
+                  <p className="text-xs text-amber">
+                    {`${plural(result.recovered, "interrupted article")} marked failed`}
+                  </p>
+                )}
+              </>
+            )}
           />
         </div>
       </CardContent>

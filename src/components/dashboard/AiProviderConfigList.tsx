@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ConnectivityBadge } from "@/components/ui/connectivity-badge";
 import { IconBox } from "@/components/ui/icon-box";
 import { ListRow } from "@/components/ui/list-row";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { AI_PROVIDER_CATALOG, type AiProviderSlot } from "@/config/aiProviders";
 import { formatDateProfessional } from "@/lib/dateFormat";
 import type { AiProviderConfig } from "@/types/aiProviderConfig";
@@ -34,20 +34,11 @@ export function AiProviderConfigList({
 }: AiProviderConfigListProps) {
   if (loading) {
     return (
-      <div className="divide-y divide-border/60" aria-hidden>
-        {slots.map((slot) => (
-          <div
-            key={`${slot.provider}:${slot.purpose}`}
-            className="flex items-center gap-3 px-5 py-3.5"
-          >
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <div className="flex-1 space-y-1.5">
-              <Skeleton className="h-3.5 w-40" />
-              <Skeleton className="h-3 w-64 max-w-full" />
-            </div>
-          </div>
-        ))}
-      </div>
+      <ListSkeleton
+        rows={slots.length}
+        label="Loading AI provider settings"
+        className="px-5"
+      />
     );
   }
 

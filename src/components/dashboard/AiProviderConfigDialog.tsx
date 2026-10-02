@@ -86,7 +86,11 @@ export function AiProviderConfigDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <IconBox icon={slot.icon} tone={slot.tone} />
+            <IconBox
+              icon={catalog.icon}
+              tone={catalog.tone}
+              className={catalog.iconClassName}
+            />
             <div>
               <DialogTitle>{slot.title}</DialogTitle>
               <DialogDescription>

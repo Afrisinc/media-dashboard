@@ -4,7 +4,7 @@ import { ConnectivityBadge } from "@/components/ui/connectivity-badge";
 import { IconBox } from "@/components/ui/icon-box";
 import { ListRow } from "@/components/ui/list-row";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AiProviderSlot } from "@/config/aiProviders";
+import { AI_PROVIDER_CATALOG, type AiProviderSlot } from "@/config/aiProviders";
 import { formatDateProfessional } from "@/lib/dateFormat";
 import type { AiProviderConfig } from "@/types/aiProviderConfig";
 
@@ -59,10 +59,17 @@ export function AiProviderConfigList({
             row.provider === slot.provider && row.purpose === slot.purpose,
         );
 
+        const brand = AI_PROVIDER_CATALOG[slot.provider];
+
         return (
           <li key={`${slot.provider}:${slot.purpose}`}>
             <ListRow className="px-5 py-3.5">
-              <IconBox icon={slot.icon} tone={slot.tone} size="sm" />
+              <IconBox
+                icon={brand.icon}
+                tone={brand.tone}
+                size="sm"
+                className={brand.iconClassName}
+              />
               <div className="min-w-[180px] flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold">{slot.title}</p>

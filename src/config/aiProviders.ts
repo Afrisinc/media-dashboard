@@ -1,10 +1,14 @@
-import type { LucideIcon } from "lucide-react";
-import { Brain, ImageIcon, ScrollText, Sparkles } from "lucide-react";
+import type { IconType } from "react-icons";
+import { RiOpenaiFill } from "react-icons/ri";
+import { SiClaude } from "react-icons/si";
 import type { IconBoxTone } from "@/components/ui/icon-box";
 import type { AiProviderKey, AiPurposeKey } from "@/types/aiProviderConfig";
 
 export interface AiProviderCatalogEntry {
   displayName: string;
+  icon: IconType;
+  tone: IconBoxTone;
+  iconClassName?: string;
   keyPlaceholder: string;
   modelPlaceholder: Record<AiPurposeKey, string>;
   supportsOrganization: boolean;
@@ -15,8 +19,6 @@ export interface AiProviderSlot {
   purpose: AiPurposeKey;
   title: string;
   description: string;
-  icon: LucideIcon;
-  tone: IconBoxTone;
 }
 
 export const AI_PROVIDER_CATALOG: Record<
@@ -25,6 +27,8 @@ export const AI_PROVIDER_CATALOG: Record<
 > = {
   anthropic: {
     displayName: "Claude",
+    icon: SiClaude,
+    tone: "terra",
     keyPlaceholder: "sk-ant-…",
     modelPlaceholder: {
       text: "claude-sonnet-5-5",
@@ -35,6 +39,9 @@ export const AI_PROVIDER_CATALOG: Record<
   },
   openai: {
     displayName: "ChatGPT",
+    icon: RiOpenaiFill,
+    tone: "muted",
+    iconClassName: "text-foreground",
     keyPlaceholder: "sk-…",
     modelPlaceholder: {
       text: "gpt-4o",
@@ -57,31 +64,23 @@ export const AI_PROVIDER_SLOTS: readonly AiProviderSlot[] = [
     purpose: "text",
     title: "Claude · Text",
     description: "Stories, post copy and every agent that writes.",
-    icon: Brain,
-    tone: "terra",
   },
   {
     provider: "anthropic",
     purpose: "summary",
     title: "Claude · Summaries",
     description: "Compresses long conversations. Falls back to the text key.",
-    icon: ScrollText,
-    tone: "gold",
   },
   {
     provider: "openai",
     purpose: "text",
     title: "ChatGPT · Text",
     description: "News articles and the daily newsletter digest.",
-    icon: Sparkles,
-    tone: "primary",
   },
   {
     provider: "openai",
     purpose: "image",
     title: "ChatGPT · Images",
     description: "Article cover images. Falls back to the text key.",
-    icon: ImageIcon,
-    tone: "success",
   },
 ];

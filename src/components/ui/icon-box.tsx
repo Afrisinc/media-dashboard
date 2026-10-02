@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { IconType } from "react-icons";
 import { cn } from "@/lib/utils";
 
 const sizeClass = {
@@ -22,7 +23,7 @@ const toneClass = {
 export type IconBoxTone = keyof typeof toneClass;
 
 interface IconBoxProps {
-  icon: LucideIcon;
+  icon: LucideIcon | IconType;
   size?: keyof typeof sizeClass;
   tone?: IconBoxTone;
   className?: string;

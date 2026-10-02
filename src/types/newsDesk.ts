@@ -98,6 +98,14 @@ export interface NewsIngestionResult {
   failedSources: { name: string; error: string }[];
 }
 
+export interface NewsArticleResult {
+  articleId: string;
+  headline: string;
+  outcome: "published" | "rejected" | "failed";
+  score: number | null;
+  reason: string | null;
+}
+
 export interface NewsEnhancementResult {
   startedAt: string;
   finishedAt: string;
@@ -105,7 +113,7 @@ export interface NewsEnhancementResult {
   published: number;
   rejected: number;
   failed: number;
-  failureReasons: string[];
+  articles: NewsArticleResult[];
   recovered: number;
 }
 

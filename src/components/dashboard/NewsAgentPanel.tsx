@@ -249,10 +249,19 @@ export function NewsAgentPanel({
             detail={(result) => (
               <>
                 <IssueList
-                  items={result.failureReasons.map((reason) => ({
-                    id: reason,
-                    content: reason,
-                  }))}
+                  items={result.articles
+                    .filter((article) => article.outcome !== "published")
+                    .map((article) => ({
+                      id: article.articleId,
+                      content: (
+                        <>
+                          <span className="font-medium">
+                            {article.headline}
+                          </span>
+                          {` ${article.outcome === "failed" ? "failed" : "was rejected"}: ${article.reason}`}
+                        </>
+                      ),
+                    }))}
                 />
                 {result.recovered > 0 && (
                   <p className="text-xs text-amber">

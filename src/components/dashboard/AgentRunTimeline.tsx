@@ -15,6 +15,9 @@ import {
   type AgentRunStep,
 } from "@/types/accountGroup";
 import { AlertCircle, Check, Loader2, Minus } from "lucide-react";
+import { useState } from "react";
+
+const LONG_STEP_TEXT = 48;
 
 function StepIcon({ status }: { status: AgentRunStep["status"] }) {
   if (status === "running") return <Loader2 className="h-3 w-3 animate-spin" />;
@@ -40,7 +43,15 @@ function StepDuration({ step }: { step: AgentRunStep }) {
 }
 
 function StepCard({ step }: { step: AgentRunStep }) {
+  const [expanded, setExpanded] = useState(false);
   const body = step.errorMessage ?? step.detail;
+  const expandable = (body?.length ?? 0) > LONG_STEP_TEXT;
+  const bodyClass = cn(
+    "mt-1.5 text-xs font-semibold",
+    step.errorMessage ? "text-destructive" : "text-foreground",
+    !body && "text-dim-6",
+    !expanded && "line-clamp-2 min-h-[2rem]",
+  );
 
   return (
     <div
@@ -56,15 +67,22 @@ function StepCard({ step }: { step: AgentRunStep }) {
         <StepIcon status={step.status} />
       </div>
 
-      <p
-        className={cn(
-          "mt-1.5 line-clamp-2 min-h-[2rem] text-xs font-semibold",
-          step.errorMessage ? "text-destructive" : "text-foreground",
-          !body && "text-dim-6",
-        )}
-      >
-        {body ?? "—"}
-      </p>
+      {expandable ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          title={expanded ? "Show less" : "Show the full text"}
+          className={cn(
+            bodyClass,
+            "block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          )}
+        >
+          {body}
+        </button>
+      ) : (
+        <p className={bodyClass}>{body ?? "—"}</p>
+      )}
 
       <p className="mt-1 text-[10px] font-bold uppercase tracking-wider opacity-80">
         <StepDuration step={step} />

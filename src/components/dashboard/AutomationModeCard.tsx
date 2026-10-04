@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAutopilot } from "@/contexts/AutopilotContext";
+import { BrandSelect } from "@/components/dashboard/BrandSelect";
 import { useAccountGroups } from "@/hooks/useAccountGroups";
 import {
   useActiveAgentRun,
@@ -133,29 +134,16 @@ export function AutomationModeCard() {
             </SelectContent>
           </Select>
 
-          <Select
-            value={policy?.defaultGroupId ?? "none"}
-            onValueChange={(value) =>
-              updatePolicy.mutate({
-                defaultGroupId: value === "none" ? null : value,
-              })
+          <BrandSelect
+            value={policy?.defaultGroupId ?? ""}
+            onChange={(groupId) =>
+              updatePolicy.mutate({ defaultGroupId: groupId || null })
             }
-          >
-            <SelectTrigger
-              aria-label="Brand a hand-written brief lands on"
-              className="h-8 w-[150px] text-xs"
-            >
-              <SelectValue placeholder="First brand" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">First brand</SelectItem>
-              {(groups ?? []).map((group) => (
-                <SelectItem key={group.id} value={group.id}>
-                  {group.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            defaultLabel="First brand"
+            showLivePages={false}
+            ariaLabel="Brand a hand-written brief lands on"
+            triggerClassName="h-8 w-[150px] text-xs"
+          />
 
           <Tooltip>
             <TooltipTrigger asChild>

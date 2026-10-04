@@ -5,6 +5,7 @@ import type {
   NewsArticlePage,
   NewsAgentStage,
   NewsAgentSettings,
+  NewsSettingsInput,
   NewsArticleStatus,
   NewsDeskSummary,
 } from "@/types/newsDesk";
@@ -38,11 +39,11 @@ export async function getNewsDeskSummary(): Promise<NewsDeskSummary> {
 }
 
 export async function updateNewsSettings(
-  batchSize: number,
+  settings: NewsSettingsInput,
 ): Promise<NewsAgentSettings> {
   const { data } = await getApiClient().put<Envelope<NewsAgentSettings>>(
     `${BASE}/settings`,
-    { batchSize },
+    settings,
   );
   return unwrap(data);
 }

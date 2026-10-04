@@ -4,9 +4,11 @@ import {
   getPostingPlan,
   getAnalyticsSummary,
   getTopPosts,
+  suggestPostIdeas,
+  type PlanParams,
   type TopBy,
 } from "@/services/analyticsService";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export const analyticsKeys = {
   all: ["analytics"] as const,
@@ -18,8 +20,7 @@ export const analyticsKeys = {
     ["analytics", "overview", params] as const,
   accounts: (params: { from?: string; to?: string }) =>
     ["analytics", "accounts", params] as const,
-  plan: (params: { from?: string; to?: string }) =>
-    ["analytics", "plan", params] as const,
+  plan: (params: PlanParams) => ["analytics", "plan", params] as const,
 };
 
 const FRESH_FOR_MS = 5 * 60 * 1000;
@@ -65,7 +66,14 @@ export function useConnectedAccounts(
   });
 }
 
-export function usePostingPlan(params: { from?: string; to?: string } = {}) {
+export function useSuggestPostIdeas() {
+  return useMutation({
+    mutationFn: (params: PlanParams & { refresh?: boolean }) =>
+      suggestPostIdeas(params),
+  });
+}
+
+export function usePostingPlan(params: PlanParams = {}) {
   return useQuery({
     queryKey: analyticsKeys.plan(params),
     queryFn: () => getPostingPlan(params),

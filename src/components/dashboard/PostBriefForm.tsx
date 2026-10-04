@@ -1,4 +1,5 @@
 import { AssetSelector } from "@/components/AssetSelector";
+import { BrandSelect } from "@/components/dashboard/BrandSelect";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,13 +38,23 @@ const DEFAULT_FRAMES: Record<PostFormatName, string> = {
   story: "",
 };
 
-export function PostBriefForm() {
+export interface PostBriefStart {
+  topic?: string;
+  format?: PostFormatName;
+  groupId?: string;
+}
+
+export function PostBriefForm({
+  initial = {},
+}: Readonly<{ initial?: PostBriefStart }>) {
   const create = useCreatePostDraft();
   const { data: groups } = useAccountGroups();
   const { autopilot } = useAutopilot();
-  const [groupId, setGroupId] = useState<string>("");
-  const [format, setFormat] = useState<PostFormatName>("post");
-  const [topic, setTopic] = useState("");
+  const [groupId, setGroupId] = useState<string>(initial.groupId ?? "");
+  const [format, setFormat] = useState<PostFormatName>(
+    initial.format ?? "post",
+  );
+  const [topic, setTopic] = useState(initial.topic ?? "");
   const [offer, setOffer] = useState("");
   const [serviceLine, setServiceLine] = useState("");
   const [audience, setAudience] = useState("");
@@ -109,25 +120,7 @@ export function PostBriefForm() {
 
           <div className="space-y-2">
             <Label htmlFor="brand">Publish to</Label>
-            <Select
-              value={groupId || "default"}
-              onValueChange={(value) =>
-                setGroupId(value === "default" ? "" : value)
-              }
-            >
-              <SelectTrigger id="brand">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Default brand</SelectItem>
-                {(groups ?? []).map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name} · {group.activeMemberCount} live page
-                    {group.activeMemberCount === 1 ? "" : "s"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <BrandSelect id="brand" value={groupId} onChange={setGroupId} />
             <p className="text-xs text-muted-foreground">
               {selectedGroup
                 ? selectedGroup.activeMemberCount === 0

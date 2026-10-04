@@ -142,6 +142,8 @@ export interface NewsAgentStatus {
   minScore: number;
   batchSize: number;
   batchSizeOptions: number[];
+  /** Weekdays the schedule runs on, 0=Sunday..6=Saturday, in UTC. */
+  days: number[];
   ingest: NewsAgentStageStatus<NewsIngestionResult>;
   enhance: NewsAgentStageStatus<NewsEnhancementResult>;
 }
@@ -149,6 +151,12 @@ export interface NewsAgentStatus {
 export interface NewsAgentSettings {
   batchSize: number;
   batchSizeOptions: number[];
+  days: number[];
+}
+
+export interface NewsSettingsInput {
+  batchSize: number;
+  days?: number[];
 }
 
 export interface NewsDeskSummary {

@@ -3,7 +3,10 @@ import { LayoutToggle } from "@/components/dashboard/LayoutToggle";
 import { MediaLightbox } from "@/components/dashboard/MediaLightbox";
 import { StoriesPanel } from "@/components/dashboard/StoriesPanel";
 import { PostMediaPreview } from "@/components/dashboard/PostMediaPreview";
-import { PostBriefForm } from "@/components/dashboard/PostBriefForm";
+import {
+  PostBriefForm,
+  type PostBriefStart,
+} from "@/components/dashboard/PostBriefForm";
 import { PostDraftReview } from "@/components/dashboard/PostDraftReview";
 import PostsTable from "@/components/dashboard/PostsTable";
 import SocialMediaPostForm from "@/components/dashboard/SocialMediaPostForm";
@@ -34,6 +37,7 @@ import {
   STATUS_VARIANT,
   type PostDraft,
   type PostDraftStatus,
+  type PostFormatName,
 } from "@/types/postAgent";
 import {
   AlertCircle,
@@ -276,6 +280,33 @@ const Studio = () => {
     );
   };
 
+  const [briefStart, setBriefStart] = useState<PostBriefStart | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get("compose") !== "agent") return;
+
+    const format = searchParams.get("format");
+    setBriefStart({
+      topic: searchParams.get("topic") ?? undefined,
+      groupId: searchParams.get("groupId") ?? undefined,
+      format:
+        format && format in FORMAT_LABELS
+          ? (format as PostFormatName)
+          : undefined,
+    });
+    setComposer("agent");
+    setComposing(true);
+    setSearchParams(
+      (params) => {
+        ["compose", "topic", "format", "groupId"].forEach((key) =>
+          params.delete(key),
+        );
+        return params;
+      },
+      { replace: true },
+    );
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     if (!composing) return;
 
@@ -427,7 +458,10 @@ const Studio = () => {
             </div>
 
             <TabsContent value="agent" className="m-0 p-5">
-              <PostBriefForm />
+              <PostBriefForm
+                key={briefStart ? JSON.stringify(briefStart) : "blank"}
+                initial={briefStart ?? undefined}
+              />
             </TabsContent>
 
             <TabsContent value="manual" className="m-0 p-5">

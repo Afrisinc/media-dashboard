@@ -134,7 +134,7 @@ export interface RankedPost {
 }
 
 export interface Recommendation {
-  kind: "timing" | "format" | "platform" | "volume";
+  kind: "timing" | "format" | "platform" | "volume" | "intent";
   title: string;
   detail: string;
 }
@@ -204,7 +204,10 @@ export interface TopicPerformance {
   topic: string;
   posts: number;
   averageEngagement: number;
+  score?: number;
 }
+
+export type ScoreMetric = "rate" | "count";
 
 export interface PlannedSlot {
   when: string;
@@ -224,15 +227,46 @@ export interface PostingPlan {
   recommendations: Recommendation[];
   slots: PlannedSlot[];
   postsAnalysed: number;
+  postsPublished?: number;
+  metric?: ScoreMetric;
 }
 
-export async function getPostingPlan(params: {
+export interface PlanParams {
   from?: string;
   to?: string;
-}): Promise<PostingPlan> {
+  groupId?: string;
+}
+
+export async function getPostingPlan(params: PlanParams): Promise<PostingPlan> {
   const { data } = await getApiClient().get<Envelope<PostingPlan>>(
     `${BASE}/plan`,
     { params },
+  );
+  return unwrap(data);
+}
+
+export interface PostIdea {
+  slot: number;
+  when: string;
+  platform: string;
+  format: string;
+  topic: string | null;
+  hook: string;
+  angle: string;
+}
+
+export interface PostIdeas {
+  generatedAt: string;
+  provider: string;
+  ideas: PostIdea[];
+}
+
+export async function suggestPostIdeas(
+  params: PlanParams & { refresh?: boolean },
+): Promise<PostIdeas> {
+  const { data } = await getApiClient().post<Envelope<PostIdeas>>(
+    `${BASE}/plan/ideas`,
+    params,
   );
   return unwrap(data);
 }

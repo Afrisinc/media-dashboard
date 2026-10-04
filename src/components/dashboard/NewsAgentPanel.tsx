@@ -8,12 +8,13 @@ import { IconBox } from "@/components/ui/icon-box";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SettingRow } from "@/components/ui/setting-row";
 import { Skeleton } from "@/components/ui/skeleton";
+import { WeekdayPicker } from "@/components/ui/weekday-picker";
 import {
   useRunNewsAgentStage,
   useUpdateNewsSettings,
 } from "@/hooks/useNewsDesk";
 import { formatDateShort } from "@/lib/dateFormat";
-import { describeCron } from "@/lib/newsDesk";
+import { describeCron, describeRunDays } from "@/lib/newsDesk";
 import type {
   NewsAgentStage,
   NewsAgentStageStatus,
@@ -213,8 +214,28 @@ export function NewsAgentPanel({
               value: String(size),
             }))}
             value={String(agent.batchSize)}
-            onChange={(size) => updateSettings.mutate(Number(size))}
+            onChange={(size) =>
+              updateSettings.mutate({ batchSize: Number(size) })
+            }
             disabled={updateSettings.isPending}
+          />
+        </SettingRow>
+
+        <SettingRow
+          title="Run on these days"
+          description={`The agent only fetches and publishes ${describeRunDays(agent.days)} (UTC). Running a stage by hand works on any day.`}
+        >
+          <WeekdayPicker
+            value={agent.days}
+            disabled={updateSettings.isPending}
+            onToggle={(day) => {
+              const days = agent.days.includes(day)
+                ? agent.days.filter((current) => current !== day)
+                : [...agent.days, day].sort((a, b) => a - b);
+              if (days.length > 0) {
+                updateSettings.mutate({ batchSize: agent.batchSize, days });
+              }
+            }}
           />
         </SettingRow>
 

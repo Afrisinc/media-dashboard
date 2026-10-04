@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { BrandSelect } from "@/components/dashboard/BrandSelect";
 import { useAccountGroups } from "@/hooks/useAccountGroups";
 import { useCreateStory } from "@/hooks/useStoryAgent";
 import type { StoryBrief } from "@/types/story";
@@ -212,25 +213,11 @@ export function StoryBriefForm() {
 
           <div className="space-y-2">
             <Label htmlFor="story-brand">Advertise on</Label>
-            <Select
-              value={groupId || "default"}
-              onValueChange={(value) =>
-                setGroupId(value === "default" ? "" : value)
-              }
-            >
-              <SelectTrigger id="story-brand">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Default brand</SelectItem>
-                {(groups ?? []).map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name} · {group.activeMemberCount} live page
-                    {group.activeMemberCount === 1 ? "" : "s"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <BrandSelect
+              id="story-brand"
+              value={groupId}
+              onChange={setGroupId}
+            />
             <p className="text-xs text-muted-foreground">
               {selectedGroup
                 ? selectedGroup.activeMemberCount === 0

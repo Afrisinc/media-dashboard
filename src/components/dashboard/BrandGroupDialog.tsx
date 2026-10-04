@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { WeekdayPicker } from "@/components/ui/weekday-picker";
 import {
   useCreateAccountGroup,
   useUpdateAccountGroup,
@@ -26,7 +27,6 @@ import { cn } from "@/lib/utils";
 import {
   GROUP_COLORS,
   GROUP_COLOR_SWATCH,
-  WEEKDAY_LABELS,
   type AccountGroup,
   type GroupColor,
   FRAME_CHOICES,
@@ -262,24 +262,7 @@ export function BrandGroupDialog({
 
             <div className="space-y-2">
               <Label>Posting days</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {WEEKDAY_LABELS.map((label, day) => (
-                  <button
-                    key={label}
-                    type="button"
-                    aria-pressed={form.weekdays.includes(day)}
-                    onClick={() => toggleWeekday(day)}
-                    className={cn(
-                      "rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors",
-                      form.weekdays.includes(day)
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border bg-background text-dim-5 hover:bg-inset-2",
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <WeekdayPicker value={form.weekdays} onToggle={toggleWeekday} />
               {form.weekdays.length === 0 && (
                 <p className="text-xs text-destructive">
                   Pick at least one posting day.

@@ -17,7 +17,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import type { NewsAgentStage } from "@/types/newsDesk";
+import { describeRunDays } from "@/lib/newsDesk";
+import type { NewsAgentStage, NewsSettingsInput } from "@/types/newsDesk";
 
 export const newsDeskKeys = {
   all: ["news-desk"] as const,
@@ -95,9 +96,9 @@ export function useRunNewsAgentStage() {
 
 export function useUpdateNewsSettings() {
   return useNewsMutation(
-    (batchSize: number) => updateNewsSettings(batchSize),
-    (batchSize) =>
-      `The agent now writes ${batchSize} ${batchSize === 1 ? "article" : "articles"} per run`,
+    (settings: NewsSettingsInput) => updateNewsSettings(settings),
+    ({ batchSize, days }) =>
+      `The agent now writes ${batchSize} ${batchSize === 1 ? "article" : "articles"} per run, ${describeRunDays(days)}`,
   );
 }
 

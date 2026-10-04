@@ -38,6 +38,7 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  Bookmark,
   Heart,
   MessageCircle,
   Share2,
@@ -193,6 +194,9 @@ const engagementStats = (post: SocialMediaPost) =>
       ["Likes", post.likes],
       ["Comments", post.comments],
       ["Shares", post.shares],
+      ["Saves", post.saves],
+      ["Clicks", post.clicks],
+      ["Profile visits", post.profileVisits],
       ["Reach", post.reach],
       ["Impressions", post.impressions],
     ] as [string, number | null | undefined][]
@@ -205,6 +209,7 @@ const postMetrics = (post: SocialMediaPost): MetricItem[] => [
   { label: "Likes", value: post.likes, icon: Heart },
   { label: "Comments", value: post.comments, icon: MessageCircle },
   { label: "Shares", value: post.shares, icon: Share2 },
+  { label: "Saves", value: post.saves ?? 0, icon: Bookmark },
 ];
 
 interface PostGalleryCardProps {

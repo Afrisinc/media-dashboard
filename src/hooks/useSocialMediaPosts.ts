@@ -30,6 +30,9 @@ export type SocialMediaPost = {
   views: number;
   reach?: number | null;
   impressions?: number | null;
+  saves?: number | null;
+  clicks?: number | null;
+  profileVisits?: number | null;
   lastMetricsUpdate?: string | null;
   mediaUrls?: string[] | null;
   postFormat?: string | null;

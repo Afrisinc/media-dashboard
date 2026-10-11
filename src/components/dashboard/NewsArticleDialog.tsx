@@ -8,6 +8,7 @@ import {
   Star,
 } from "lucide-react";
 import { PlatformIcon } from "@/components/ui/platform-icon";
+import { NewsSocialPanel } from "@/components/dashboard/NewsSocialPanel";
 import { PostMediaPreview } from "@/components/dashboard/PostMediaPreview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import {
 } from "@/hooks/useNewsDesk";
 import { formatDateShort } from "@/lib/dateFormat";
 import {
+  canGenerateSocial,
   canRequeue,
   canSkip,
   isAiRejected,
@@ -222,6 +224,8 @@ function ArticleBody({ article }: Readonly<{ article: NewsArticleDetail }>) {
             </p>
           </div>
         )}
+
+      {canGenerateSocial(article) && <NewsSocialPanel articleId={article.id} />}
 
       <Tabs defaultValue={enhanced ? "enhanced" : "original"}>
         <TabsList>

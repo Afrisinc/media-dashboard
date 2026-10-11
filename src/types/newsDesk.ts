@@ -188,3 +188,16 @@ export const NEWS_STATUS_VARIANT: Record<NewsArticleStatus, BadgeVariant> = {
   skipped: "secondary",
   failed: "destructive",
 };
+
+export type NewsSocialFormat = "story" | "single";
+
+export interface NewsSocialResult {
+  articleId: string;
+  format: NewsSocialFormat;
+  groupName: string;
+}
+
+export const NEWS_SOCIAL_FORMAT_LABELS: Record<NewsSocialFormat, string> = {
+  story: "Story · 9:16",
+  single: "Square post · 1:1",
+};

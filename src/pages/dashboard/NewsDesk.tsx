@@ -9,6 +9,7 @@ import {
   Search,
   SearchX,
   ServerCrash,
+  Smartphone,
   Star,
   X,
 } from "lucide-react";
@@ -44,6 +45,7 @@ import { useLayoutParam } from "@/hooks/useLayoutParam";
 import { useNewsArticles, useNewsDeskSummary } from "@/hooks/useNewsDesk";
 import { formatDateShort } from "@/lib/dateFormat";
 import {
+  canGenerateSocial,
   isAiRejected,
   newsArticleCover,
   newsArticleTitle,
@@ -194,6 +196,17 @@ function ArticleCard({ article, onOpen }: Readonly<ArticleViewProps>) {
           )}
           {article.status === "published" && (
             <MetricList items={newsReadMetrics(article)} className="mt-2" />
+          )}
+          {canGenerateSocial(article) && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 w-full"
+              onClick={onOpen}
+            >
+              <Smartphone className="mr-1.5 h-4 w-4" />
+              Create social post
+            </Button>
           )}
         </>
       }

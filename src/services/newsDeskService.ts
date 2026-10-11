@@ -8,6 +8,8 @@ import type {
   NewsSettingsInput,
   NewsArticleStatus,
   NewsDeskSummary,
+  NewsSocialFormat,
+  NewsSocialResult,
 } from "@/types/newsDesk";
 
 const BASE = "/media/news-desk";
@@ -86,6 +88,17 @@ export async function featureNewsArticle(
   const { data } = await getApiClient().post<Envelope<NewsArticle>>(
     `${BASE}/articles/${id}/feature`,
     { featured },
+  );
+  return unwrap(data);
+}
+
+export async function generateNewsSocial(
+  id: string,
+  format: NewsSocialFormat,
+): Promise<NewsSocialResult> {
+  const { data } = await getApiClient().post<Envelope<NewsSocialResult>>(
+    `${BASE}/articles/${id}/social`,
+    { format },
   );
   return unwrap(data);
 }

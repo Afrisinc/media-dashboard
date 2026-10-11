@@ -34,6 +34,9 @@ export const canRequeue = (article: AnyNewsArticle) =>
 export const canSkip = (article: AnyNewsArticle) =>
   article.status === "draft" || article.status === "failed";
 
+export const canGenerateSocial = (article: AnyNewsArticle) =>
+  article.status === "published" && Boolean(article.mediaPost?.cover_image);
+
 export const newsReadMetrics = (article: AnyNewsArticle): MetricItem[] => [
   { label: "Views", value: article.viewCount, icon: Eye },
   { label: "Reads", value: article.readCount, icon: BookCheck },

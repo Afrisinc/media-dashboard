@@ -2,6 +2,7 @@ import { useToast } from "@/components/ui/use-toast";
 import {
   describeNewsError,
   featureNewsArticle,
+  generateNewsSocial,
   getNewsArticle,
   getNewsDeskSummary,
   listNewsArticles,
@@ -18,7 +19,11 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { describeRunDays } from "@/lib/newsDesk";
-import type { NewsAgentStage, NewsSettingsInput } from "@/types/newsDesk";
+import type {
+  NewsAgentStage,
+  NewsSettingsInput,
+  NewsSocialFormat,
+} from "@/types/newsDesk";
 
 export const newsDeskKeys = {
   all: ["news-desk"] as const,
@@ -122,5 +127,13 @@ export function useFeatureNewsArticle() {
       featureNewsArticle(id, featured),
     ({ featured }) =>
       featured ? "Featured on the website" : "Removed from featured",
+  );
+}
+
+export function useGenerateNewsSocial() {
+  return useNewsMutation(
+    ({ id, format }: { id: string; format: NewsSocialFormat }) =>
+      generateNewsSocial(id, format),
+    "Post drafted — it is waiting for your review",
   );
 }
